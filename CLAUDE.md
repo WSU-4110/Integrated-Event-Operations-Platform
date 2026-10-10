@@ -17,11 +17,11 @@ The code was first built on Replit and imported here. Some of it still depends o
 
 ## Commands
 
-Uses pnpm workspaces (npm and yarn are blocked by a preinstall check). Node 24, TypeScript 5.9.
+Uses pnpm workspaces (npm and yarn are blocked by a preinstall check). Node 24, TypeScript 5.9. The pnpm version is pinned in `package.json` (`packageManager`); run `corepack enable pnpm` to use it. pnpm 11 and later ignore `onlyBuiltDependencies` and fail the install.
 
 - `pnpm install` — install everything
 - `pnpm run typecheck` — typecheck all packages
-- `pnpm run build` — typecheck, then build all packages
+- `pnpm run build` — typecheck, then build all packages. Requires `PORT` and `BASE_PATH`, because the Vite configs check them at load time.
 - `pnpm --filter @workspace/hackathon run dev` — web app (Vite). Requires `PORT` and `BASE_PATH`.
 - `pnpm --filter @workspace/api-server run dev` — API server (builds, then starts). Requires `PORT`.
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -72,9 +72,8 @@ Environment variables are listed in `.env.example`. Nothing loads a `.env` file 
 
 These need replacing before the app runs fully outside Replit:
 
-1. **Platform lock in `pnpm-workspace.yaml`.** The `overrides` block removes every esbuild, rollup, lightningcss, and Tailwind native binary except linux-x64. On macOS, Windows, or ARM Linux, `pnpm install` succeeds but Vite and esbuild fail. Remove those overrides and refresh the lockfile.
-2. **Login.** `lib/auth.ts` defaults to the `https://replit.com/oidc` issuer and uses `REPL_ID` as the client id. Admin login needs another OIDC provider or a different auth approach. The `users` and `sessions` tables are generic and can stay.
-3. **Email.** `waitlistConfirmationEmail.ts` sends through `@replit/connectors-sdk`, which proxies to Resend. Replace it with a direct Resend API call and a `RESEND_API_KEY`. Until then, waitlist signups fail with a 502.
-4. **Vite plugins.** `@replit/vite-plugin-runtime-error-modal`, `-cartographer`, and `-dev-banner` in both Vite configs and the pnpm catalog.
-5. **Leftovers.** `artifacts/mockup-sandbox/`, `scripts/post-merge.sh` (a Replit merge hook), the `@replit/*` entries in `minimumReleaseAgeExclude`, and the `replit-auth-web` package name.
-6. **Hosting and database.** The site was deployed on Replit autoscale with Replit's Postgres. A new host, a new database, and a data export are needed. The old ports were 8080 (API) and 19235 (web).
+1. **Login.** `lib/auth.ts` defaults to the `https://replit.com/oidc` issuer and uses `REPL_ID` as the client id. Admin login needs another OIDC provider or a different auth approach. The `users` and `sessions` tables are generic and can stay.
+2. **Email.** `waitlistConfirmationEmail.ts` sends through `@replit/connectors-sdk`, which proxies to Resend. Replace it with a direct Resend API call and a `RESEND_API_KEY`. Until then, waitlist signups fail with a 502.
+3. **Vite plugins.** `@replit/vite-plugin-runtime-error-modal`, `-cartographer`, and `-dev-banner` in both Vite configs and the pnpm catalog.
+4. **Leftovers.** `artifacts/mockup-sandbox/`, `scripts/post-merge.sh` (a Replit merge hook), the `@replit/*` entries in `minimumReleaseAgeExclude`, and the `replit-auth-web` package name.
+5. **Hosting and database.** The site was deployed on Replit autoscale with Replit's Postgres. A new host, a new database, and a data export are needed. The old ports were 8080 (API) and 19235 (web).

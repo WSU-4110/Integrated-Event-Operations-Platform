@@ -12,12 +12,13 @@ Planned work is tracked in this repository's issues.
 
 ## Getting started
 
-Requires Node 24 and pnpm.
+Requires Node 24. The pnpm version is pinned in `package.json`; `corepack enable pnpm` sets it up.
 
 ```bash
+corepack enable pnpm
 pnpm install
 pnpm run typecheck
-pnpm run build
+PORT=5173 BASE_PATH=/ pnpm run build
 ```
 
 Copy `.env.example` to `.env` and fill in the values. The app does not load `.env` on its own, so export the variables in your shell before starting a package:
