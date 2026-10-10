@@ -1,0 +1,37 @@
+# dependencies
+node_modules
+
+# build output
+dist
+tmp
+out-tsc
+*.tsbuildinfo
+
+# environment and secrets
+.env
+.env.*
+!.env.example
+
+# logs
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# test output
+/coverage
+
+# editors
+/.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+
+# system files
+.DS_Store
+Thumbs.db
+
+# personal Claude Code overrides (the shared .claude/settings.json is committed)
+.claude/settings.local.json

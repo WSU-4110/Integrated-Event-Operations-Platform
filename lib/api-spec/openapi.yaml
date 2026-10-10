@@ -1,0 +1,347 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Hackathon website API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: waitlist
+    description: Waitlist registration operations
+  - name: admin
+    description: Admin operations (protected)
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /waitlist:
+    post:
+      operationId: submitWaitlist
+      tags: [waitlist]
+      summary: Submit waitlist registration
+      description: Register for the hackathon waitlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaitlistInput"
+      responses:
+        "201":
+          description: Successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistRegistration"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: Confirmation email could not be delivered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /waitlist/information-packet:
+    get:
+      operationId: downloadWaitlistInformationPacket
+      tags: [waitlist]
+      summary: Download the BuilderFest information packet
+      responses:
+        "200":
+          description: BuilderFest information packet PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /waitlist/check:
+    get:
+      operationId: checkWaitlist
+      tags: [waitlist]
+      summary: Check if email is already registered
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Check result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistCheckResult"
+
+  /admin/registrations:
+    get:
+      operationId: listRegistrations
+      tags: [admin]
+      summary: List all waitlist registrations
+      description: Returns paginated registrations with optional search and filter. Requires authentication.
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: experience_level
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of registrations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRegistrationList"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /admin/registrations/{id}:
+    delete:
+      operationId: deleteRegistration
+      tags: [admin]
+      summary: Delete a waitlist registration
+      description: Permanently delete one waitlist registration. Requires organizer authentication.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "204":
+          description: Registration deleted
+        "400":
+          description: Invalid registration ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Registration not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get registration statistics
+      description: Returns total count and breakdown by experience level. Requires authentication.
+      responses:
+        "200":
+          description: Registration stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/export:
+    get:
+      operationId: exportRegistrations
+      tags: [admin]
+      summary: Export registrations as CSV
+      description: Download all registrations as a CSV file. Requires authentication.
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /auth/user:
+    get:
+      operationId: getAuthUser
+      tags: [admin]
+      summary: Get current authenticated user info
+      responses:
+        "200":
+          description: Authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    WaitlistInput:
+      type: object
+      required: [name, email, school, experience_level]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          pattern: "^[^\\s@]+@[^\\s@]+\\.[Ee][Dd][Uu]$"
+          maxLength: 255
+        school:
+          type: string
+          minLength: 1
+          maxLength: 255
+        discord_username:
+          type: ["string", "null"]
+          maxLength: 100
+        experience_level:
+          type: string
+          enum: [beginner, intermediate, advanced, professional]
+
+    WaitlistRegistration:
+      type: object
+      required: [id, name, email, school, experience_level, created_at]
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        email:
+          type: string
+        school:
+          type: string
+        discord_username:
+          type: ["string", "null"]
+        experience_level:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    WaitlistCheckResult:
+      type: object
+      required: [registered]
+      properties:
+        registered:
+          type: boolean
+
+    AdminRegistrationList:
+      type: object
+      required: [registrations, total]
+      properties:
+        registrations:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaitlistRegistration"
+        total:
+          type: number
+
+    AdminStats:
+      type: object
+      required: [total, by_experience_level]
+      properties:
+        total:
+          type: number
+        by_experience_level:
+          type: object
+          additionalProperties:
+            type: number
+
+    AuthUser:
+      type: object
+      required: [id, name, roles]
+      properties:
+        id:
+          type: string
+        name:
+          type: ["string", "null"]
+        profileImage:
+          type: ["string", "null"]
+        roles:
+          type: array
+          items:
+            type: string
+
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
