@@ -6,7 +6,12 @@ The code was first built on Replit and imported here. Some of it still depends o
 
 ## Commit and PR rules
 
-- Never add `Co-Authored-By`, "Generated with", session links, or any other AI attribution to commits, PR descriptions, or code comments.
+- Do not add AI attribution to commits or PR descriptions by default. Automatic attribution is turned off in `.claude/settings.json`.
+- Add a co-author line only when the person running the session asks for it on that commit. They ask when Claude wrote a substantial part of the change. Use exactly this as the last line of the commit message:
+  `Co-Authored-By: Claude <noreply@anthropic.com>`
+- When you finish a change you mostly wrote yourself, say so and ask whether to add the co-author line. Do not decide either way on your own.
+- Never add "Generated with" text, session links, or AI attribution in code comments.
+- AI use on this project is disclosed in the "AI assistance" section of `README.md`. If the way Claude is used changes, update that section in the same change.
 - Commits are authored by the human running the session. Do not change `user.name` or `user.email`.
 - Never commit `.env` files or secrets.
 
