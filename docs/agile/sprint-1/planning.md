@@ -43,3 +43,4 @@ From the kickoff presentation, adjusted as needed:
 
 - [PR #26](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/26): removed the Replit linux-x64-only install restriction so the project builds on macOS, Windows, and ARM Linux.
 - [PR #27](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/27): pinned pnpm 10 and updated the setup docs.
+- [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28): rebranded the site to BuilderWars: name, venue, schedule, eligibility, FAQ, sponsors, Instagram, sponsor packet, purple accent, and the pixel logo set.

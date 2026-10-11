@@ -52,32 +52,32 @@ The event is Saturday–Sunday, November 14–15, 2026. Sprint-2 ends November 1
 
 ## Migration and rebrand updates
 
-Recorded 2026-10-10 from Mohammad's decisions. Each item is done as part of the issue in the last column; check it off in the PR that delivers it.
+Recorded 2026-10-10 from Mohammad's decisions. Each item belongs to the issue in the last column; check it off in the PR that delivers it. The content and visual rebrand shipped together in PR #28, ahead of the issue work, so those rows note that PR.
 
 ### Name, content, and logistics
 
 | | Update | Delivered under |
 | --- | --- | --- |
-| [ ] | Event name is **BuilderWars** (not "AWS BuilderWars"). Organized by the AWS Student Builder Group at Wayne State University; AWS is a sponsor. | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
+| [x] | Event name is **BuilderWars** (not "AWS BuilderWars"). Organized by the AWS Student Builder Group at Wayne State University; AWS is a sponsor. | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
 | [ ] | Domain is **builderwars.dev** (not awsbuilderwars.dev) | [#24](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/24) |
-| [ ] | Location: STEM Innovation Learning Center (not Newlab Detroit). Date unchanged. | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
-| [ ] | Schedule: add doors close 10:00 PM Saturday, reopen 7:00 AM Sunday. Check-in stays 10:00 AM Saturday; the rest of the schedule stays. | [#13](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/13) |
-| [ ] | Countdown targets hacking start, 12:00 PM Saturday Nov 14 Detroit time, computed in the America/Detroit time zone (DST ends Nov 1, so the event is in EST) | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
+| [x] | Location: STEM Innovation Learning Center (not Newlab Detroit). Date unchanged. | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
+| [x] | Schedule: add doors close 10:00 PM Saturday, reopen 7:00 AM Sunday. Check-in stays 10:00 AM Saturday; the rest of the schedule stays. | [#13](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/13), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
+| [x] | Countdown targets hacking start, 12:00 PM Saturday Nov 14 Detroit time, computed in the America/Detroit time zone (DST ends Nov 1, so the event is in EST) | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
 | [ ] | Live schedule on event days: current item highlighted with a progress bar | [#13](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/13), [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
-| [ ] | Eligibility: currently enrolled college or university students only. Remove "recent graduates" everywhere (details, "Who is it for", FAQ). | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
-| [ ] | FAQ: experience and beginner answers mention mentors at the event | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
-| [ ] | FAQ "What can we build?": company-specific tracks announced before the event, plus overall top 3 projects (excluding company-specific tracks) | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
-| [ ] | Instagram link goes to https://www.instagram.com/builderwars.hack/ | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
-| [ ] | Sponsors: AWS logo in a single color on the dark background; add FREE WILI and the Wayne State Engineering Student Senate; keep "more sponsors to come" | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
-| [ ] | Sponsor packet replaced with the updated version (Google Drive, shared by Mohammad) | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
+| [x] | Eligibility: currently enrolled college or university students only. Remove "recent graduates" everywhere (details, "Who is it for", FAQ). | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
+| [x] | FAQ: experience and beginner answers mention mentors at the event | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
+| [x] | FAQ "What can we build?": company-specific tracks announced before the event, plus overall top 3 projects (excluding company-specific tracks) | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
+| [x] | Instagram link goes to https://www.instagram.com/builderwars.hack/ | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
+| [x] | Sponsors: AWS logo in a single color on the dark background; add FREE WILI and the Wayne State Engineering Student Senate; keep "more sponsors to come" | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
+| [x] | Sponsor packet replaced with the updated version (Google Drive, shared by Mohammad) | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
 
 ### Visual identity
 
 | | Update | Delivered under |
 | --- | --- | --- |
-| [ ] | Purple replaces light orange as the accent color. Keep the dark, minimal layout. | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
-| [ ] | Pixel / 8-bit logo set based on the BuilderWars Instagram picture and flier, in purple: primary logo, secondary logo, submark, favicon. Used sparingly so the site stays minimal. | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
-| [ ] | "Student Hub" links keep pointing to the AWS Student Builder Group site, wayneaws.dev | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
+| [x] | Purple replaces light orange as the accent color. Keep the dark, minimal layout. | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
+| [x] | Pixel / 8-bit logo set based on the BuilderWars Instagram picture and flier, in purple: primary logo, secondary logo, submark, favicon. Used sparingly so the site stays minimal. | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
+| [x] | "Student Hub" links keep pointing to the AWS Student Builder Group site, wayneaws.dev | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
 
 ### Infrastructure and data
 
