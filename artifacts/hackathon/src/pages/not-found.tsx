@@ -1,23 +1,29 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import logoSubmark from '@assets/brand/builderwars-submark.svg';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardContent className="pt-6">
-          <div className="flex mb-4 gap-2">
-            <AlertCircle className="h-8 w-8 text-red-500" />
-            <h1 className="text-2xl font-bold text-gray-900">
-              404 Page Not Found
-            </h1>
-          </div>
-
-          <p className="mt-4 text-sm text-gray-600">
-            Did you forget to add the page to the router?
-          </p>
-        </CardContent>
-      </Card>
+    <div className="flex min-h-screen w-full items-center justify-center bg-[#111418] p-5">
+      <div className="panel w-full max-w-md p-10 text-center">
+        <img
+          src={logoSubmark}
+          alt="BuilderWars"
+          className="mx-auto h-14 w-14"
+        />
+        <p className="eyebrow mt-6">404</p>
+        <h1 className="display mt-3 text-3xl text-[#f7f4ed]">Page not found</h1>
+        <p className="mt-3 text-sm leading-6 text-[#9ca3af]">
+          This page doesn't exist or has moved.
+        </p>
+        <a
+          href={import.meta.env.BASE_URL}
+          className="btn btn-primary mt-7"
+          data-testid="link-not-found-home"
+        >
+          <ArrowLeft size={16} />
+          Back to BuilderWars
+        </a>
+      </div>
     </div>
   );
 }
