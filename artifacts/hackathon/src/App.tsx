@@ -41,8 +41,10 @@ import {
   X,
 } from "lucide-react";
 import logoImg from "@assets/WhatsApp_Image_2026-07-07_at_10.12.05_PM_1787336440039.jpeg";
-import eventPacket from "@assets/Hackathon_Information_Packet_(2)_1788097059307.pdf";
-import sponsorshipPacket from "@assets/BuilderWars_Sponsorship_Packet_1788098030836.pdf";
+import sponsorshipPacket from "@assets/BuilderWars_Sponsorship_Packet.pdf";
+import awsLogo from "@assets/sponsors/aws.png";
+import freeWiliLogo from "@assets/sponsors/free-wili.webp";
+import essLogo from "@assets/sponsors/wsu-engineering-student-senate.png";
 import { Switch, Route } from "wouter";
 import { EVENT_CONFIG, FAQ, SCHEDULE } from "@/config/event";
 import NotFound from "@/pages/not-found";
@@ -57,7 +59,7 @@ const nav = [
   ["FAQ", "#faq"],
 ];
 const Icon = ({ children }: { children: ReactNode }) => (
-  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#111418] text-[#f5a623]">
+  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#111418] text-[#a78bfa]">
     {children}
   </span>
 );
@@ -72,7 +74,7 @@ function Header() {
         <div className="flex items-center gap-5">
           <a
             href="https://www.wayneaws.dev/events"
-            className="flex items-center gap-1.5 text-xs text-[#7d848e] transition hover:text-[#f5a623]"
+            className="flex items-center gap-1.5 text-xs text-[#7d848e] transition hover:text-[#a78bfa]"
             data-testid="link-student-hub"
           >
             <ArrowLeft size={13} />
@@ -80,7 +82,7 @@ function Header() {
           </a>
           <a
             href="#top"
-            className="flex items-center text-sm font-bold tracking-[.14em] text-[#f5a623]"
+            className="flex items-center text-sm font-bold tracking-[.14em] text-[#a78bfa]"
             data-testid="link-logo"
           >
             <img
@@ -95,12 +97,12 @@ function Header() {
             <a
               key={href}
               href={href}
-              className={`relative py-6 text-sm text-[#9ca3af] transition hover:text-[#f5a623] ${i === 0 ? "text-[#f5a623]" : ""}`}
+              className={`relative py-6 text-sm text-[#9ca3af] transition hover:text-[#a78bfa] ${i === 0 ? "text-[#a78bfa]" : ""}`}
               data-testid={`link-nav-${label.toLowerCase()}`}
             >
               {label}
               {i === 0 && (
-                <span className="absolute bottom-[17px] left-0 right-0 mx-auto h-px bg-[#f5a623]" />
+                <span className="absolute bottom-[17px] left-0 right-0 mx-auto h-px bg-[#a78bfa]" />
               )}
             </a>
           ))}
@@ -115,7 +117,7 @@ function Header() {
           </a>
         </div>
         <button
-          className="text-[#f5a623] md:hidden"
+          className="text-[#a78bfa] md:hidden"
           onClick={() => setOpen(!open)}
           data-testid="button-mobile-menu"
         >
@@ -170,7 +172,7 @@ function Countdown() {
         {values.map((v, i) => (
           <div className="panel px-2 py-4 text-center" key={i}>
             <strong
-              className="block font-mono text-2xl font-semibold tracking-tight text-[#f5a623] sm:text-3xl"
+              className="block font-mono text-2xl font-semibold tracking-tight text-[#a78bfa] sm:text-3xl"
               data-testid={`text-countdown-${i}`}
             >
               {String(v).padStart(2, "0")}
@@ -196,7 +198,7 @@ function Hero() {
       <div className="glow bottom-[-100px] left-[10%] h-72 w-72" />
       <div className="glow bottom-[-80px] right-[15%] h-64 w-64" />
       <div className="container-shell relative text-center">
-        <div className="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#f5a623]/40 bg-[#1a1f27] shadow-[0_0_80px_rgba(245,166,35,.13)]">
+        <div className="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#a78bfa]/40 bg-[#1a1f27] shadow-[0_0_80px_rgba(139,92,246,.13)]">
           <img
             src={logoImg}
             alt="Hackathon logo"
@@ -205,23 +207,24 @@ function Hero() {
         </div>
         <p className="eyebrow">The build starts here</p>
         <h1 className="display mx-auto mt-5 max-w-4xl text-5xl font-bold leading-[.98] text-[#f7f4ed] sm:text-7xl md:text-8xl">
-          AWS BuilderWars Hackathon
+          BuilderWars Hackathon
         </h1>
-        <p className="mt-7 text-lg font-semibold tracking-wide text-[#f5a623] sm:text-xl">
+        <p className="mt-7 text-lg font-semibold tracking-wide text-[#a78bfa] sm:text-xl">
           {EVENT_CONFIG.tagline}
         </p>
         <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-[#9ca3af]">
           A high-stakes sprint for curious minds, brave ideas, and the teams
-          that refuse to ship ordinary.
+          that refuse to ship ordinary. Hosted by the AWS Student Builder Group
+          at Wayne State University.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-5 text-sm text-[#9ca3af]">
           <span className="flex items-center gap-2">
-            <CalendarDays size={16} className="text-[#f5a623]" />
+            <CalendarDays size={16} className="text-[#a78bfa]" />
             {EVENT_CONFIG.date}
           </span>
           <span className="hidden h-5 w-px bg-[#343941] sm:block" />
           <span className="flex items-center gap-2">
-            <LocateFixed size={16} className="text-[#f5a623]" />
+            <LocateFixed size={16} className="text-[#a78bfa]" />
             {EVENT_CONFIG.location}
           </span>
         </div>
@@ -248,7 +251,7 @@ function Hero() {
         className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 text-[10px] tracking-[.25em] text-[#7d848e]"
         data-testid="link-explore"
       >
-        EXPLORE <ArrowDown size={15} className="float text-[#f5a623]" />
+        EXPLORE <ArrowDown size={15} className="float text-[#a78bfa]" />
       </a>
     </section>
   );
@@ -301,7 +304,7 @@ function About() {
               ],
               [
                 "Who Is It For",
-                "Currently enrolled college or university students and recent graduates who are passionate about development and career readiness.",
+                "Currently enrolled college or university students who are passionate about development and career readiness.",
                 Users,
               ],
               [
@@ -329,7 +332,7 @@ function About() {
           </div>
           <div className="mt-14 grid grid-cols-3 divide-x divide-[#2a3039] text-center">
             <div>
-              <b className="font-mono text-3xl text-[#f5a623] sm:text-5xl">
+              <b className="font-mono text-3xl text-[#a78bfa] sm:text-5xl">
                 24
               </b>
               <p className="mt-2 text-xs uppercase tracking-[.18em] text-[#7d848e]">
@@ -337,7 +340,7 @@ function About() {
               </p>
             </div>
             <div>
-              <b className="font-mono text-3xl text-[#f5a623] sm:text-5xl">
+              <b className="font-mono text-3xl text-[#a78bfa] sm:text-5xl">
                 1–4
               </b>
               <p className="mt-2 text-xs uppercase tracking-[.18em] text-[#7d848e]">
@@ -345,25 +348,13 @@ function About() {
               </p>
             </div>
             <div>
-              <b className="font-mono text-3xl text-[#f5a623] sm:text-5xl">
+              <b className="font-mono text-3xl text-[#a78bfa] sm:text-5xl">
                 $0
               </b>
               <p className="mt-2 text-xs uppercase tracking-[.18em] text-[#7d848e]">
                 To enter
               </p>
             </div>
-          </div>
-          <div className="mt-8 text-center">
-            <a
-              href={eventPacket}
-              target="_blank"
-              rel="noreferrer"
-              className="btn btn-ghost"
-              data-testid="link-event-information-packet"
-            >
-              <FileText size={16} />
-              Read the event information packet <ExternalLink size={14} />
-            </a>
           </div>
         </div>
       </section>
@@ -406,13 +397,13 @@ function Schedule() {
           className="grid grid-cols-[105px_26px_1fr] gap-3 sm:grid-cols-[150px_32px_1fr] sm:gap-4"
           key={`${item.time}-${item.event}`}
         >
-          <div className="pt-1 text-right font-mono text-[10px] leading-5 text-[#f5a623] sm:text-xs">
+          <div className="pt-1 text-right font-mono text-[10px] leading-5 text-[#a78bfa] sm:text-xs">
             {item.time}
           </div>
           <div className="relative flex justify-center">
-            <span className="z-10 mt-1 h-3 w-3 rounded-full border-2 border-[#f5a623] bg-[#111418]" />
+            <span className="z-10 mt-1 h-3 w-3 rounded-full border-2 border-[#a78bfa] bg-[#111418]" />
             <span
-              className={`absolute top-4 h-full w-px bg-[#3a3326] ${i === items.length - 1 ? "hidden" : ""}`}
+              className={`absolute top-4 h-full w-px bg-[#2d2840] ${i === items.length - 1 ? "hidden" : ""}`}
             />
           </div>
           <article className="panel mb-4 p-4 sm:p-5">
@@ -458,17 +449,40 @@ function Prizes() {
         <SectionHeading
           label="04 / THE UPSIDE"
           title="Prizes."
-          copy="Prize details will be announced soon."
+          copy="Prizes for the top 3 projects overall, plus company-specific tracks. Details will be announced before the event."
           icon={<Gift size={17} />}
         />
         <div className="panel mx-auto max-w-3xl p-10 text-center">
           <p className="eyebrow">Prizes</p>
-          <p className="mt-4 font-mono text-5xl text-[#f5a623]">TBD</p>
+          <p className="mt-4 font-mono text-5xl text-[#a78bfa]">TBD</p>
         </div>
       </div>
     </section>
   );
 }
+const SPONSORS = [
+  {
+    id: "aws",
+    name: "Amazon Web Services",
+    url: "https://aws.amazon.com/",
+    logo: awsLogo,
+    logoClassName: "h-12 w-auto object-contain",
+  },
+  {
+    id: "free-wili",
+    name: "FREE WILI",
+    url: "https://freewili.com/",
+    logo: freeWiliLogo,
+    logoClassName: "h-16 w-auto object-contain",
+  },
+  {
+    id: "wsu-ess",
+    name: "Wayne State Engineering Student Senate",
+    url: "https://www.instagram.com/wsu_ess/",
+    logo: essLogo,
+    logoClassName: "h-20 w-20 rounded-full object-cover",
+  },
+];
 function Sponsors() {
   return (
     <section id="sponsors" className="section">
@@ -476,41 +490,58 @@ function Sponsors() {
         <SectionHeading
           label="05 / BACKED BY"
           title="Our sponsors."
-          copy="AWS is helping make the build possible. More partner details will be announced soon."
+          copy="These partners help make the build possible. More sponsors will be announced soon."
           icon={<Network size={17} />}
         />
         <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2">
-          <a
-            href="https://aws.amazon.com/"
-            target="_blank"
-            rel="noreferrer"
-            className="panel flex min-h-[150px] items-center gap-5 p-6 transition hover:border-[#f5a623]/50"
-            data-testid="link-sponsor-aws"
-          >
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-[#f5a623]/25 bg-[#111418]">
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg"
-                alt="AWS logo"
-                className="h-10 w-10"
-              />
-            </div>
-            <div>
-              <p className="text-xl font-semibold text-[#f7f4ed]">
-                Amazon Web Services
-              </p>
-              <p className="mt-2 text-sm text-[#9ca3af]">
-                Confirmed sponsor{" "}
-                <ExternalLink
-                  size={12}
-                  className="ml-1 inline text-[#f5a623]"
-                />
-              </p>
-            </div>
-          </a>
-          <div className="panel flex min-h-[150px] items-center justify-center p-6 text-center">
+          {SPONSORS.map((sponsor) => {
+            const content = (
+              <>
+                <div className="flex h-20 items-center justify-center">
+                  <img
+                    src={sponsor.logo}
+                    alt={`${sponsor.name} logo`}
+                    className={sponsor.logoClassName}
+                  />
+                </div>
+                <p className="mt-4 text-sm font-semibold text-[#f7f4ed]">
+                  {sponsor.name}
+                  {sponsor.url && (
+                    <ExternalLink
+                      size={12}
+                      className="ml-1.5 inline text-[#a78bfa]"
+                    />
+                  )}
+                </p>
+              </>
+            );
+            const className =
+              "panel flex min-h-[170px] flex-col items-center justify-center p-6 text-center";
+            return sponsor.url ? (
+              <a
+                key={sponsor.name}
+                href={sponsor.url}
+                target="_blank"
+                rel="noreferrer"
+                className={`${className} transition hover:border-[#a78bfa]/50`}
+                data-testid={`link-sponsor-${sponsor.id}`}
+              >
+                {content}
+              </a>
+            ) : (
+              <div
+                key={sponsor.name}
+                className={className}
+                data-testid={`card-sponsor-${sponsor.id}`}
+              >
+                {content}
+              </div>
+            );
+          })}
+          <div className="panel flex min-h-[170px] items-center justify-center p-6 text-center">
             <div>
               <p className="eyebrow">More sponsors</p>
-              <p className="mt-3 font-mono text-4xl text-[#f5a623]">TBD</p>
+              <p className="mt-3 text-sm text-[#9ca3af]">To be announced</p>
             </div>
           </div>
         </div>
@@ -562,7 +593,7 @@ function Faq() {
                 <span className="font-medium text-[#f7f4ed]">{item.q}</span>
                 <ChevronDown
                   size={18}
-                  className={`shrink-0 text-[#f5a623] transition ${active === i ? "rotate-180" : ""}`}
+                  className={`shrink-0 text-[#a78bfa] transition ${active === i ? "rotate-180" : ""}`}
                 />
               </button>
               {active === i && (
@@ -645,7 +676,7 @@ function Waitlist() {
         <div className="panel mx-auto max-w-2xl p-6 sm:p-9">
           {success ? (
             <div className="py-12 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f5a623] text-[#111418]">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#7c3aed] text-white">
                 <Check size={26} />
               </div>
               <h3 className="display mt-6 text-3xl text-[#f7f4ed]">
@@ -728,7 +759,7 @@ function Waitlist() {
               </label>
               {error && (
                 <p
-                  className="sm:col-span-2 text-sm text-[#f5a623]"
+                  className="sm:col-span-2 text-sm text-[#a78bfa]"
                   data-testid="status-waitlist-error"
                 >
                   {error}
@@ -763,7 +794,7 @@ function Footer() {
     <footer className="border-t border-[#252a32] bg-[#0e1114] py-14">
       <div className="container-shell grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <div className="flex items-center gap-2 text-sm font-bold tracking-[.08em] text-[#f5a623]">
+          <div className="flex items-center gap-2 text-sm font-bold tracking-[.08em] text-[#a78bfa]">
             <img
               src={logoImg}
               alt="Hackathon logo"
@@ -780,7 +811,7 @@ function Footer() {
           <p className="eyebrow">Quick links</p>
           <div className="mt-4 flex flex-col gap-3 text-sm text-[#9ca3af]">
             {nav.map(([l, h]) => (
-              <a href={h} key={h} className="hover:text-[#f5a623]">
+              <a href={h} key={h} className="hover:text-[#a78bfa]">
                 {l}
               </a>
             ))}
@@ -791,18 +822,18 @@ function Footer() {
           <div className="mt-4 flex flex-col gap-3 text-sm text-[#9ca3af]">
             <a
               href={`mailto:${EVENT_CONFIG.contactEmail}`}
-              className="hover:text-[#f5a623]"
+              className="hover:text-[#a78bfa]"
             >
               {EVENT_CONFIG.contactEmail}
             </a>
-            <a href={EVENT_CONFIG.discordUrl} className="hover:text-[#f5a623]">
+            <a href={EVENT_CONFIG.discordUrl} className="hover:text-[#a78bfa]">
               Our Main Website
             </a>
             <button
               onClick={() => {
                 window.location.href = "/api/login?returnTo=%2Fadmin";
               }}
-              className="w-fit text-left transition hover:text-[#f5a623]"
+              className="w-fit text-left transition hover:text-[#a78bfa]"
               data-testid="button-footer-admin"
             >
               Admin Access
@@ -819,7 +850,7 @@ function Footer() {
               title="Meetup.com"
             >
               <img
-                src="https://cdn.simpleicons.org/meetup/f5a623"
+                src="https://cdn.simpleicons.org/meetup/a78bfa"
                 alt="Meetup.com logo"
                 className="h-4 w-4"
               />
@@ -893,7 +924,7 @@ function AdminGate() {
   }, [isLoading, isAuthenticated, accessStatus]);
   if (isLoading || !isAuthenticated || access.isLoading)
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#111418] text-[#f5a623]">
+      <div className="flex min-h-screen items-center justify-center bg-[#111418] text-[#a78bfa]">
         <Loader2 className="animate-spin" />
       </div>
     );
@@ -966,7 +997,7 @@ function DeleteRegistrationButton({
         <span>{remove.isPending ? "Deleting…" : "Delete"}</span>
       </button>
       {hint && !remove.isPending && (
-        <span className="text-[10px] uppercase tracking-wide text-[#f5a623]">
+        <span className="text-[10px] uppercase tracking-wide text-[#a78bfa]">
           Double-click to confirm
         </span>
       )}
@@ -1008,7 +1039,7 @@ function Admin() {
   };
   if (isLoading)
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#111418] text-[#f5a623]">
+      <div className="flex min-h-screen items-center justify-center bg-[#111418] text-[#a78bfa]">
         <Loader2 className="animate-spin" />
       </div>
     );
@@ -1041,7 +1072,7 @@ function Admin() {
     <div className="min-h-screen bg-[#111418] text-[#f7f4ed]">
       <header className="border-b border-[#292e36] px-5 py-5">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <span className="flex items-center gap-3 font-bold tracking-[.12em] text-[#f5a623]">
+          <span className="flex items-center gap-3 font-bold tracking-[.12em] text-[#a78bfa]">
             <img
               src={logoImg}
               alt="Hackathon logo"
@@ -1072,7 +1103,7 @@ function Admin() {
             <div className="panel p-5" key={l as string}>
               <p className="eyebrow">{l as string}</p>
               <strong
-                className="mt-3 block font-mono text-4xl text-[#f5a623]"
+                className="mt-3 block font-mono text-4xl text-[#a78bfa]"
                 data-testid={`text-admin-stat-${i}`}
               >
                 {v as string}
@@ -1140,7 +1171,7 @@ function Admin() {
               {rows.isLoading ? (
                 <tr>
                   <td colSpan={7} className="p-10 text-center text-[#9ca3af]">
-                    <Loader2 className="mx-auto animate-spin text-[#f5a623]" />
+                    <Loader2 className="mx-auto animate-spin text-[#a78bfa]" />
                   </td>
                 </tr>
               ) : (
@@ -1152,7 +1183,7 @@ function Admin() {
                     <td className="p-4 text-[#9ca3af]">
                       {r.discord_username || "—"}
                     </td>
-                    <td className="p-4 capitalize text-[#f5a623]">
+                    <td className="p-4 capitalize text-[#a78bfa]">
                       {r.experience_level}
                     </td>
                     <td className="p-4 text-[#9ca3af]">
