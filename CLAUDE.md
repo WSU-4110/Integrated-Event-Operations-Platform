@@ -28,6 +28,7 @@ Uses pnpm workspaces (npm and yarn are blocked by a preinstall check). Node 24, 
 - `pnpm --filter @workspace/api-server run dev` — API server (builds, then starts). Requires `PORT`.
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push schema changes to the database (dev only)
+- `docker build -t builderwars .` — production image (API plus built web app). Deployment steps are in `docs/deployment.md`.
 
 There are no automated tests yet.
 
@@ -56,6 +57,7 @@ Environment variables are listed in `.env.example`. Nothing loads a `.env` file 
 ## Architecture decisions
 
 - Single-page site with anchor navigation; `/admin` is the only other route.
+- Production runs on Amazon Lightsail (container service plus managed PostgreSQL). The API server also serves the built web app, so site and API share one origin. `CANONICAL_HOST` redirects other hostnames, such as awsbuilderwars.dev, to builderwars.dev.
 - Dark theme only. `html` is forced to `class="dark"`; there is no light mode.
 - Admin authorization is enforced on the server. Middleware on `/api/admin` looks up the signed-in user's email in the `users` table and compares it to `ADMIN_EMAIL`: 401 when signed out, 403 for anyone else. The session's public user object does not include the email, so never authorize from client state or the session shape.
 - `GET /api/auth/user` returns `{ user: AuthUser | null }`, which is what `useAuth()` expects. Use `useAuth()` for auth state, not the generated API hooks.
@@ -79,4 +81,4 @@ These need replacing before the app runs fully outside Replit:
 2. **Email.** `waitlistConfirmationEmail.ts` sends through `@replit/connectors-sdk`, which proxies to Resend. Replace it with a direct Resend API call and a `RESEND_API_KEY`. Until then, waitlist signups fail with a 502.
 3. **Vite plugins.** `@replit/vite-plugin-runtime-error-modal`, `-cartographer`, and `-dev-banner` in both Vite configs and the pnpm catalog.
 4. **Leftovers.** `artifacts/mockup-sandbox/`, `scripts/post-merge.sh` (a Replit merge hook), the `@replit/*` entries in `minimumReleaseAgeExclude`, and the `replit-auth-web` package name.
-5. **Hosting and database.** The site was deployed on Replit autoscale with Replit's Postgres. A new host, a new database, and a data export are needed. The old ports were 8080 (API) and 19235 (web).
+5. **Hosting and database.** The site was deployed on Replit autoscale with Replit's Postgres. The replacement is Lightsail (see `docs/deployment.md`); the image is ready, but the AWS resources, the domain, and the data import are not done yet. The waitlist was exported as CSV and is kept outside the repo.
