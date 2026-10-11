@@ -36,6 +36,7 @@ The project was first built on Replit, and parts of it still depend on Replit se
 - `artifacts/api-server/` — Express API
 - `lib/` — database schema, API contract, and generated API clients
 - `attached_assets/` — logo and PDF packets used by the site and the confirmation email
+- `docs/agile/` — product backlog and sprint records (planning, scrum meetings, reviews, retrospectives)
 
 ## AI assistance
 
@@ -43,6 +44,7 @@ AI tools were used on this project, and this section says how.
 
 - **Replit Agent** generated the initial version of the site (the web app, the API, and the database schema) on Replit between July and September 2026, working from written prompts.
 - **Claude** (Anthropic) moved the project from Replit into this repository: it removed Replit-only files, checked the code for secrets, and wrote `CLAUDE.md` and `.env.example`, and it drafted this README.
+- **Agile documentation:** Claude helps draft the files in `docs/agile/` from the team's own notes and from GitHub activity (commits, pull requests, issues). Discussions, decisions, and feedback recorded there come from the team. Peer reviews are written by each student.
 - **From here on**, Claude is used as a coding assistant on some changes. When Claude wrote a substantial part of a change, that commit ends with a `Co-Authored-By: Claude` line. Other commits may still have had minor AI help, such as explanations or small suggestions.
 
 The two setup commits described above (the import and the one adding this README) do not carry that line; this section is their disclosure.
