@@ -37,6 +37,10 @@ From the kickoff presentation, adjusted as needed:
 - **2026-10-10 (Mohammad):** Name, domain, location, schedule, eligibility, FAQ, sponsor, Instagram, and visual identity changes recorded in [product-backlog.md](../product-backlog.md).
 - **2026-10-10 (Mohammad):** Organizers sign in with Google. First admins are the club's Gmail account and Mohammad's personal account; more can be added later.
 - **2026-10-10 (Mohammad):** Project submissions stay on Shipyard.
+- **2026-10-11 (Mohammad):** Host on AWS, in the club's account, with PostgreSQL. Claude recommended Lightsail (container service plus managed database) over App Runner (closed to new customers), ECS with a load balancer (too much cost and setup), and Lambda (would need the API rewritten). Steps in [deployment.md](../../deployment.md).
+- **2026-10-11 (Mohammad):** builderwars.dev is not purchased yet. awsbuilderwars.dev should redirect to it, as long as that costs nothing extra.
+- **2026-10-11 (Mohammad):** Waitlist data exported from the old admin portal and stored privately. The 10–15 waitlisted people are imported as registered rather than emailed that registration is open. If registration asks for more than the waitlist did (Discord username, dietary restrictions), they are asked for it later, for example in the registration confirmation email.
+- **2026-10-11 (Mohammad):** Registration opens now. Email goes through Resend; the free plan covers this volume.
 - **2026-10-10 (Mohammad):** Updated sponsor packet and sponsor logos (AWS, FREE WILI, Engineering Student Senate) provided. Information packet and code of conduct are on hold until they're finished.
 
 ## Done so far
