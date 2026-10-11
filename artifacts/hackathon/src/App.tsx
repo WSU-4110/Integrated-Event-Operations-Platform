@@ -40,7 +40,9 @@ import {
   Users,
   X,
 } from "lucide-react";
-import logoImg from "@assets/WhatsApp_Image_2026-07-07_at_10.12.05_PM_1787336440039.jpeg";
+import logoPrimary from "@assets/brand/builderwars-primary.svg";
+import logoSecondary from "@assets/brand/builderwars-secondary.svg";
+import logoSubmark from "@assets/brand/builderwars-submark.svg";
 import sponsorshipPacket from "@assets/BuilderWars_Sponsorship_Packet.pdf";
 import awsLogo from "@assets/sponsors/aws.png";
 import freeWiliLogo from "@assets/sponsors/free-wili.webp";
@@ -86,9 +88,9 @@ function Header() {
             data-testid="link-logo"
           >
             <img
-              src={logoImg}
-              alt="Hackathon logo"
-              className="h-7 w-7 rounded-sm object-contain"
+              src={logoSecondary}
+              alt="BuilderWars"
+              className="h-5 w-auto sm:h-6"
             />
           </a>
         </div>
@@ -198,16 +200,13 @@ function Hero() {
       <div className="glow bottom-[-100px] left-[10%] h-72 w-72" />
       <div className="glow bottom-[-80px] right-[15%] h-64 w-64" />
       <div className="container-shell relative text-center">
-        <div className="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#a78bfa]/40 bg-[#1a1f27] shadow-[0_0_80px_rgba(139,92,246,.13)]">
-          <img
-            src={logoImg}
-            alt="Hackathon logo"
-            className="h-10 w-10 object-contain"
-          />
-        </div>
         <p className="eyebrow">The build starts here</p>
-        <h1 className="display mx-auto mt-5 max-w-4xl text-5xl font-bold leading-[.98] text-[#f7f4ed] sm:text-7xl md:text-8xl">
-          BuilderWars Hackathon
+        <h1 className="mx-auto mt-8 w-[min(100%,420px)]">
+          <img
+            src={logoPrimary}
+            alt="BuilderWars Hackathon"
+            className="h-auto w-full"
+          />
         </h1>
         <p className="mt-7 text-lg font-semibold tracking-wide text-[#a78bfa] sm:text-xl">
           {EVENT_CONFIG.tagline}
@@ -794,14 +793,11 @@ function Footer() {
     <footer className="border-t border-[#252a32] bg-[#0e1114] py-14">
       <div className="container-shell grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <div className="flex items-center gap-2 text-sm font-bold tracking-[.08em] text-[#a78bfa]">
-            <img
-              src={logoImg}
-              alt="Hackathon logo"
-              className="h-5 w-5 shrink-0 rounded-sm object-contain"
-            />
-            <span>{EVENT_CONFIG.name}</span>
-          </div>
+          <img
+            src={logoSecondary}
+            alt={EVENT_CONFIG.name}
+            className="h-6 w-auto"
+          />
           <p className="mt-4 max-w-[220px] text-sm leading-6 text-[#7d848e]">
             A weekend for people who would rather make the future than wait for
             it.
@@ -1048,9 +1044,9 @@ function Admin() {
       <div className="flex min-h-screen items-center justify-center bg-[#111418] p-5">
         <div className="panel max-w-md p-10 text-center">
           <img
-            src={logoImg}
-            alt="Hackathon logo"
-            className="mx-auto h-10 w-10 object-contain"
+            src={logoSubmark}
+            alt="BuilderWars"
+            className="mx-auto h-14 w-14"
           />
           <h1 className="display mt-6 text-3xl text-[#f7f4ed]">Admin Access</h1>
           <p className="mt-3 text-sm leading-6 text-[#9ca3af]">
@@ -1073,11 +1069,7 @@ function Admin() {
       <header className="border-b border-[#292e36] px-5 py-5">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <span className="flex items-center gap-3 font-bold tracking-[.12em] text-[#a78bfa]">
-            <img
-              src={logoImg}
-              alt="Hackathon logo"
-              className="h-6 w-6 object-contain rounded-sm"
-            />
+            <img src={logoSubmark} alt="BuilderWars" className="h-7 w-7" />
             ADMIN DASHBOARD
           </span>
           <button
