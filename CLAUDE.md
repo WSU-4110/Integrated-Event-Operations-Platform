@@ -1,6 +1,8 @@
 # Integrated Event Operations Platform
 
-Event website and operations tooling for the AWS BuilderWars Hackathon (AWS Student Builder Group at Wayne State). Today it is a public marketing site with a waitlist form, a confirmation email, and an organizer-only admin dashboard. The backlog lives in this repo's GitHub issues.
+Event website and operations tooling for the BuilderWars Hackathon, run by the AWS Student Builder Group at Wayne State (AWS is a sponsor, not part of the event name). Today it is a public marketing site with a waitlist form, a confirmation email, and an organizer-only admin dashboard. The backlog lives in this repo's GitHub issues.
+
+The site is being rebranded and moved off Replit. Those updates are not separate issues; they are listed in `docs/agile/product-backlog.md` under the issue that delivers each one. When working on an issue, check that list for updates mapped to it, and tell the person running the session if anything in the code looks like it should have changed but isn't on the list.
 
 The code was first built on Replit and imported here. Some of it still depends on Replit services; see "Still tied to Replit" before running it anywhere else.
 
@@ -48,7 +50,8 @@ Environment variables are listed in `.env.example`. Nothing loads a `.env` file 
 - `lib/db/` — Drizzle ORM schema and Postgres client. Tables: `waitlist_registrations`, `users`, `sessions`.
 - `lib/replit-auth-web/` — `useAuth()` hook used by the web app
 - `attached_assets/` — logo and PDF packets. The web app imports them through the `@assets` alias, and the API reads the information packet from here by path. Renaming a file breaks both.
-- `screenshots/` — reference screenshots of wayneaws.dev, the design the site follows
+- `screenshots/` — reference screenshots of wayneaws.dev, the design the site was based on. The rebrand moves away from it: purple accent instead of orange, pixel-style BuilderWars logo.
+- `docs/agile/` — Scrum records required by the course: product backlog, team, and one folder per sprint (planning, scrum meetings, review, retrospective, contributions). Record what the team said and decided; never invent meeting content. Peer reviews are written by students and are not stored here.
 
 ## Architecture decisions
 
