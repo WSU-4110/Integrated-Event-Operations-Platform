@@ -41,6 +41,7 @@ From the kickoff presentation, adjusted as needed:
 - **2026-10-11 (Mohammad):** builderwars.dev is not purchased yet. awsbuilderwars.dev should redirect to it, as long as that costs nothing extra.
 - **2026-10-11 (Mohammad):** Waitlist data exported from the old admin portal and stored privately. The 10–15 waitlisted people are imported as registered rather than emailed that registration is open. If registration asks for more than the waitlist did (Discord username, dietary restrictions), they are asked for it later, for example in the registration confirmation email.
 - **2026-10-11 (Mohammad):** Registration opens now. Email goes through Resend; the free plan covers this volume.
+- **2026-10-18 (Mohammad):** The updated sponsorship and information packets are the source of truth for event details, and the site follows them. The venue is Newlab Detroit, 1st floor (not the STEM Innovation Learning Center), and the Saturday workshop and dinner times moved earlier. The sponsorship packet now expects 100+ attendees.
 - **2026-10-10 (Mohammad):** Updated sponsor packet and sponsor logos (AWS, FREE WILI, Engineering Student Senate) provided. Information packet and code of conduct are on hold until they're finished.
 
 ## Done so far

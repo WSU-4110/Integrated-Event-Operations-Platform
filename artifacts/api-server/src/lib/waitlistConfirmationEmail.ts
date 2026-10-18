@@ -68,7 +68,7 @@ AWS SBG Team`,
       `,
       attachments: [
         {
-          filename: "AWS-SBG-Hackathon-Information-Packet.pdf",
+          filename: "BuilderWars-Information-Packet.pdf",
           content: packetContent,
         },
       ],

@@ -11,7 +11,7 @@ import { sendWaitlistConfirmation } from "../lib/waitlistConfirmationEmail";
 const router: IRouter = Router();
 const informationPacketPath = fileURLToPath(
   new URL(
-    "../../../attached_assets/Hackathon_Information_Packet_(2)_1788097059307.pdf",
+    "../../../attached_assets/BuilderWars_Information_Packet.pdf",
     import.meta.url,
   ),
 );
@@ -101,7 +101,7 @@ router.post("/waitlist", async (req, res): Promise<void> => {
 router.get("/waitlist/information-packet", (_req, res): void => {
   res.download(
     informationPacketPath,
-    "AWS-BuilderWars-Information-Packet.pdf",
+    "BuilderWars-Information-Packet.pdf",
     (err) => {
       if (err && !res.headersSent) {
         res.status(500).json({ error: "The information packet is unavailable." });
