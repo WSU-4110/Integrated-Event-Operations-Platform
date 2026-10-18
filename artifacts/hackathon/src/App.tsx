@@ -43,6 +43,7 @@ import {
 import logoPrimary from "@assets/brand/builderwars-primary.svg";
 import logoSecondary from "@assets/brand/builderwars-secondary.svg";
 import logoSubmark from "@assets/brand/builderwars-submark.svg";
+import informationPacket from "@assets/BuilderWars_Information_Packet.pdf";
 import sponsorshipPacket from "@assets/BuilderWars_Sponsorship_Packet.pdf";
 import awsLogo from "@assets/sponsors/aws.png";
 import freeWiliLogo from "@assets/sponsors/free-wili.webp";
@@ -354,6 +355,18 @@ function About() {
                 To enter
               </p>
             </div>
+          </div>
+          <div className="mt-8 text-center">
+            <a
+              href={informationPacket}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-ghost"
+              data-testid="link-event-information-packet"
+            >
+              <FileText size={16} />
+              Read the event information packet <ExternalLink size={14} />
+            </a>
           </div>
         </div>
       </section>

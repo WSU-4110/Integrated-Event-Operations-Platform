@@ -60,8 +60,8 @@ Recorded 2026-10-10 from Mohammad's decisions. Each item belongs to the issue in
 | --- | --- | --- |
 | [x] | Event name is **BuilderWars** (not "AWS BuilderWars"). Organized by the AWS Student Builder Group at Wayne State University; AWS is a sponsor. | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
 | [ ] | Domain is **builderwars.dev** (not awsbuilderwars.dev) | [#24](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/24) |
-| [x] | Location: STEM Innovation Learning Center (not Newlab Detroit). Date unchanged. | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
-| [x] | Schedule: add doors close 10:00 PM Saturday, reopen 7:00 AM Sunday. Check-in stays 10:00 AM Saturday; the rest of the schedule stays. | [#13](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/13), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
+| [x] | Location: Newlab Detroit, 1st floor. Changed to the STEM Innovation Learning Center on 2026-10-10, then back to Newlab on 2026-10-18 to match the updated packets. Date unchanged. | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
+| [x] | Schedule follows the information packet: workshops 2, 4, and 6 PM; dinner 7:30 PM; building entry closes 10:00 PM Saturday and doors reopen 7:00 AM Sunday (participants inside can stay overnight). | [#13](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/13) |
 | [x] | Countdown targets hacking start, 12:00 PM Saturday Nov 14 Detroit time, computed in the America/Detroit time zone (DST ends Nov 1, so the event is in EST) | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
 | [ ] | Live schedule on event days: current item highlighted with a progress bar | [#13](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/13), [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15) |
 | [x] | Eligibility: currently enrolled college or university students only. Remove "recent graduates" everywhere (details, "Who is it for", FAQ). | [#15](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/15), done in [PR #28](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/pull/28) |
@@ -95,7 +95,7 @@ Recorded 2026-10-10 from Mohammad's decisions. Each item belongs to the issue in
 
 | | Item | Needed by |
 | --- | --- | --- |
-| [ ] | Updated information packet (current one is outdated; leave it off the site until the new one is ready) | Before registration emails go out |
+| [x] | Updated information packet, back on the site and attached to the confirmation email (2026-10-18) | Before registration emails go out |
 | [ ] | Code of conduct (being written) | Before registration opens, since participants should agree to it |
 | [ ] | Company-specific prizes and tracks; Prizes section says "coming soon" until then | Before the event |
 | [ ] | Additional sponsors and their logos | As they confirm |
