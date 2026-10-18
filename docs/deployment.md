@@ -49,7 +49,7 @@ Set these on the container service deployment. Never commit real values.
 ## The old domain: awsbuilderwars.dev
 
 - Registered at Name.com on 2026-08-27; paid through 2027-08-27. The redirect costs nothing until then. Decide before August 2027 whether to renew it.
-- Its DNS is managed either in Replit (Publishing → Domains → edit icon, if Replit bought it) or in the Name.com account that bought it. Check Replit first.
+- Its DNS is managed in Replit (Publishing → Domains → edit icon), which allows manual DNS records (confirmed 2026-10-18). Do not use "Disconnect" there; that would take the domain off the current site.
 - Leave its records alone until the new site is live; they currently point at the Replit deployment.
 - At cutover: add awsbuilderwars.dev to the container service certificate (that adds a validation record), then point the domain at the container service. The root of a domain can't use a CNAME record, so either use the DNS provider's ALIAS/ANAME record, if it has one, or move the domain's nameservers to a Lightsail DNS zone, which supports this. Name.com's plain URL forwarding is not enough: .dev domains are HTTPS-only, so the redirect needs a certificate.
 
