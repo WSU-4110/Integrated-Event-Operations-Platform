@@ -31,7 +31,7 @@ app.use(
   }),
 );
 
-// Send every other hostname (for example the old awsbuilderwars.dev) to the
+// Send every other hostname (for example www.builderwars.dev) to the
 // main domain. The health check is exempt because the host's load balancer
 // calls it directly.
 const canonicalHost = process.env.CANONICAL_HOST?.trim().toLowerCase();
