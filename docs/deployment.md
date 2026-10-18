@@ -11,7 +11,7 @@ The `Dockerfile` at the repo root builds a single image. The API server serves t
 | App | Container service, Nano or Micro, 1 node | Listens on port 8080. Health check path: `/api/healthz`. |
 | Database | Managed PostgreSQL, standard plan | Automatic daily snapshots cover the backup requirement in #23. Consider the high-availability plan for event weekend only. |
 | Domain | builderwars.dev | Not purchased yet. Register it in the club's AWS account (Lightsail or Route 53) so DNS lives next to the app. |
-| HTTPS | Container service custom domain certificate | Add builderwars.dev, www.builderwars.dev, and awsbuilderwars.dev to the same certificate. |
+| HTTPS | Container service custom domain certificate | Add builderwars.dev and www.builderwars.dev to the same certificate. |
 | Email | Resend | Sender on builderwars.dev once the domain is verified. |
 
 Confirm prices on the official Lightsail pricing page before creating resources.
@@ -44,7 +44,13 @@ Set these on the container service deployment. Never commit real values.
 4. Create the tables: run `pnpm --filter @workspace/db run push` once with `DATABASE_URL` pointing at the new database.
 5. Import the waitlist CSV (kept privately, never in this repo) into the registration table. How depends on the registration fields decided in #1.
 6. Once the domain is registered: attach the certificate, point DNS at the container service, then set `CANONICAL_HOST` and redeploy.
-7. Point awsbuilderwars.dev's DNS at the same service so it redirects. This costs nothing beyond keeping that domain registered.
+
+## The old domain: awsbuilderwars.dev
+
+Not redirected (decided 2026-10-18). Its DNS is managed in Replit, which only offers A, CNAME, TXT, and MX records; a bare domain can't point at a Lightsail container service with those, and the address wasn't shared widely.
+
+- Registered at Name.com through Replit on 2026-08-27; paid through 2027-08-27. Let it expire.
+- Leave its DNS records alone until the Replit site is retired. They include Resend email records (`resend._domainkey`, `send`, `rsend`, `_dmarc`) used by the Replit site's emails; those belong to Replit's Resend connection, so our own Resend account needs its own records on builderwars.dev.
 
 ## Old Replit deployment
 

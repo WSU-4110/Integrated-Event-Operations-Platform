@@ -57,7 +57,7 @@ Environment variables are listed in `.env.example`. Nothing loads a `.env` file 
 ## Architecture decisions
 
 - Single-page site with anchor navigation; `/admin` is the only other route.
-- Production runs on Amazon Lightsail (container service plus managed PostgreSQL). The API server also serves the built web app, so site and API share one origin. `CANONICAL_HOST` redirects other hostnames, such as awsbuilderwars.dev, to builderwars.dev.
+- Production runs on Amazon Lightsail (container service plus managed PostgreSQL). The API server also serves the built web app, so site and API share one origin. `CANONICAL_HOST` redirects other hostnames, such as www.builderwars.dev, to builderwars.dev. The old awsbuilderwars.dev is not redirected; it goes away with the Replit site.
 - Dark theme only. `html` is forced to `class="dark"`; there is no light mode.
 - Admin authorization is enforced on the server. Middleware on `/api/admin` looks up the signed-in user's email in the `users` table and compares it to `ADMIN_EMAIL`: 401 when signed out, 403 for anyone else. The session's public user object does not include the email, so never authorize from client state or the session shape.
 - `GET /api/auth/user` returns `{ user: AuthUser | null }`, which is what `useAuth()` expects. Use `useAuth()` for auth state, not the generated API hooks.
