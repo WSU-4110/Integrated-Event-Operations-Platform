@@ -72,9 +72,39 @@ jobs:
               )) | select(.value != "")))
             }
           }' > containers.json
-          aws lightsail create-container-service-deployment \
+          echo "STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          VERSION=$(aws lightsail create-container-service-deployment \
             --service-name "$SERVICE_NAME" \
             --containers file://containers.json \
             --public-endpoint '{"containerName":"app","containerPort":8080,"healthCheck":{"path":"/api/healthz","successCodes":"200"}}' \
-            --query 'containerService.state' --output text
+            --query 'containerService.nextDeployment.version' --output text)
           rm containers.json
+          echo "Created deployment $VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      # Lightsail starts the container, runs migrations, and waits for the
+      # health check. Wait for that here so a failed start fails this run.
+      - name: Wait for the deployment
+        run: |
+          for i in $(seq 1 60); do
+            STATE=$(aws lightsail get-container-service-deployments \
+              --service-name "$SERVICE_NAME" \
+              --query "deployments[?version==\`$VERSION\`].state | [0]" --output text)
+            echo "$(date -u +%H:%M:%S) deployment $VERSION: $STATE"
+            case "$STATE" in
+              ACTIVE) exit 0 ;;
+              FAILED|INACTIVE) exit 1 ;;
+            esac
+            sleep 20
+          done
+          echo "Timed out waiting for deployment $VERSION"
+          exit 1
+
+      - name: Container logs
+        if: always() && env.VERSION != ''
+        run: |
+          aws lightsail get-container-log \
+            --service-name "$SERVICE_NAME" \
+            --container-name app \
+            --start-time "$STARTED_AT" \
+            --query 'logEvents[].[createdAt, message]' --output text | tail -n 80

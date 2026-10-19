@@ -19,7 +19,7 @@ Confirm prices on the official Lightsail pricing page before creating resources.
 ## How deploys work
 
 - `.github/workflows/ci.yml` typechecks and builds every pull request and every push to `main`.
-- `.github/workflows/deploy.yml` runs on every push to `main` (and by hand from the Actions tab). It builds the image, pushes it to the Lightsail container service, and creates a new deployment with the settings below. It does nothing until the repository variable `DEPLOY_ENABLED` is `true`.
+- `.github/workflows/deploy.yml` runs on every push to `main` (and by hand from the Actions tab). It builds the image, pushes it to the Lightsail container service, creates a new deployment with the settings below, waits until Lightsail reports it active or failed, and prints the container's recent logs. A failed start fails the run. It does nothing until the repository variable `DEPLOY_ENABLED` is `true`.
 - GitHub signs in to AWS through an IAM role (OpenID Connect), so no AWS access keys are stored anywhere.
 - On start, the app applies any new database migrations from `lib/db/drizzle/` (`RUN_MIGRATIONS=true` in the image). After changing `lib/db/src/schema/`, run `pnpm --filter @workspace/db run generate` and commit the new SQL file. Don't use `push` against the production database.
 - The image includes AWS's RDS certificate bundle, and `DATABASE_SSL_CA` points the database client at it, so the database connection is encrypted and verified.
@@ -99,7 +99,9 @@ IAM → Roles → Create role:
         "lightsail:RegisterContainerImage",
         "lightsail:GetContainerImages",
         "lightsail:GetContainerServices",
-        "lightsail:CreateContainerServiceDeployment"
+        "lightsail:CreateContainerServiceDeployment",
+        "lightsail:GetContainerServiceDeployments",
+        "lightsail:GetContainerLog"
       ],
       "Resource": "*"
     }
