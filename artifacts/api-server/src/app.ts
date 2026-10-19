@@ -2,7 +2,6 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express, { type Express } from "express";
-import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
@@ -48,7 +47,20 @@ if (canonicalHost) {
   });
 }
 
-app.use(cors({ credentials: true, origin: true }));
+// Basic browser protections (NFR-01). The site and API share one origin, so
+// no cross-origin access is allowed.
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains",
+    );
+  }
+  next();
+});
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

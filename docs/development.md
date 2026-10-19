@@ -18,7 +18,7 @@ Uses pnpm workspaces (npm and yarn are blocked by a preinstall check). Node 24, 
 - `pnpm --filter @workspace/db run generate` — after changing `lib/db/src/schema/`, generate the SQL migration in `lib/db/drizzle/` and commit it. Production applies migrations on start.
 - `docker build -t builderwars .` — production image (API plus built web app). Deployment steps are in `docs/deployment.md`.
 
-There are no automated tests yet.
+Tests: `pnpm --filter @workspace/api-server test` builds the API and runs `artifacts/api-server/test/` against a real PostgreSQL in `TEST_DATABASE_URL` (the server applies migrations to it). They check that every admin endpoint refuses signed-out and non-admin requests without leaking participant data, registration validation and duplicates, and security headers. CI runs them on every pull request with a throwaway PostgreSQL. Locally, any PostgreSQL works; without one installed, `npx @electric-sql/pglite-socket --port 5439 --max-connections 20` starts an in-memory one (then use `postgresql://postgres:postgres@127.0.0.1:5439/postgres`).
 
 Environment variables are listed in `.env.example`. Nothing loads a `.env` file automatically; export them in the shell.
 

@@ -28,6 +28,7 @@ const ADMIN_EMAILS = new Set(
 // Auth guard middleware for all admin routes
 router.use("/admin", async (req, res, next) => {
   if (!req.isAuthenticated()) {
+    req.log.warn({ path: req.path }, "Admin request without a session");
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
@@ -39,6 +40,11 @@ router.use("/admin", async (req, res, next) => {
 
   const email = user?.email?.trim().toLowerCase();
   if (!email || !ADMIN_EMAILS.has(email)) {
+    // Log the user ID, not the email address (NFR-02).
+    req.log.warn(
+      { path: req.path, userId: req.user.id },
+      "Admin access denied: not on ADMIN_EMAILS",
+    );
     res
       .status(403)
       .json({ error: "Admin access is restricted to event organizers." });
