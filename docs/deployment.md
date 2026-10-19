@@ -16,34 +16,106 @@ The `Dockerfile` at the repo root builds a single image. The API server serves t
 
 Confirm prices on the official Lightsail pricing page before creating resources.
 
-## Environment variables
+## How deploys work
 
-Set these on the container service deployment. Never commit real values.
+- `.github/workflows/ci.yml` typechecks and builds every pull request and every push to `main`.
+- `.github/workflows/deploy.yml` runs on every push to `main` (and by hand from the Actions tab). It builds the image, pushes it to the Lightsail container service, and creates a new deployment with the settings below. It does nothing until the repository variable `DEPLOY_ENABLED` is `true`.
+- GitHub signs in to AWS through an IAM role (OpenID Connect), so no AWS access keys are stored anywhere.
+- On start, the app applies any new database migrations from `lib/db/drizzle/` (`RUN_MIGRATIONS=true` in the image). After changing `lib/db/src/schema/`, run `pnpm --filter @workspace/db run generate` and commit the new SQL file. Don't use `push` against the production database.
+- The image includes AWS's RDS certificate bundle, and `DATABASE_SSL_CA` points the database client at it, so the database connection is encrypted and verified.
 
-| Variable | Value |
-| --- | --- |
-| `DATABASE_URL` | Connection string for the Lightsail database |
-| `CANONICAL_HOST` | `builderwars.dev`. Every other hostname is redirected there. Leave unset until the domain points at the service, or the default Lightsail URL will redirect to a domain that doesn't resolve yet. |
-| `ADMIN_EMAIL` | Admin email (becomes a list when Google sign-in lands, #20) |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Email sending (#1, #6) |
-| `LOG_LEVEL` | Optional, defaults to `info` |
+## Settings
 
-`PORT` (8080) and `NODE_ENV` (production) are set in the image.
+Stored in GitHub (Settings → Secrets and variables → Actions) and passed to Lightsail on each deploy. Never commit real values.
 
-## First deployment
+| Name | Kind | Value |
+| --- | --- | --- |
+| `AWS_DEPLOY_ROLE_ARN` | Secret | ARN of the IAM role below |
+| `DATABASE_URL` | Secret | `postgresql://USER:PASSWORD@ENDPOINT:5432/DBNAME`. Don't add `sslmode`; it would override the certificate check. URL-encode special characters in the password. |
+| `ADMIN_EMAILS` | Secret | Comma-separated admin emails (#20) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Secrets | Google sign-in (#20) |
+| `RESEND_API_KEY` | Secret | Email sending (#1, #6) |
+| `DEPLOY_ENABLED` | Variable | `true` once the steps below are done |
+| `RESEND_FROM_EMAIL` | Variable | For example `BuilderWars <hello@builderwars.dev>` |
+| `CANONICAL_HOST` | Variable | `builderwars.dev`. Every other hostname is redirected there. Leave unset until the domain points at the service, or the default Lightsail URL will redirect to a domain that doesn't resolve yet. |
 
-1. Create the database. Note the endpoint, user, and password.
-2. Build and push the image. Docker is needed on the machine that runs these, or run them from GitHub Actions:
+`PORT`, `NODE_ENV`, `RUN_MIGRATIONS`, and `DATABASE_SSL_CA` are set in the image.
 
-   ```bash
-   docker build -t builderwars .
-   aws lightsail push-container-image --service-name builderwars --label app --image builderwars
-   ```
+## One-time setup
 
-3. Create a deployment on the container service with the pushed image, port 8080, health check `/api/healthz`, and the environment variables above.
-4. Create the tables: run `pnpm --filter @workspace/db run push` once with `DATABASE_URL` pointing at the new database.
-5. Import the waitlist CSV (kept privately, never in this repo) into the registration table. How depends on the registration fields decided in #1.
-6. Domain: create a Lightsail DNS zone for builderwars.dev, then in Route 53 (Registered domains → builderwars.dev → Edit name servers) replace the name servers with the zone's four Lightsail name servers. Attach the certificate, point the zone's records at the container service, then set `CANONICAL_HOST` and redeploy.
+All in the club's AWS account, region **US East (Ohio), us-east-2**.
+
+### 1. Database
+
+Lightsail → Databases → Create database:
+
+- Region: Ohio (us-east-2)
+- Engine: PostgreSQL, latest version offered
+- Login credentials: let Lightsail create a strong password, and save the user name and password somewhere private right away
+- Database name: `builderwars`
+- Plan: standard (not high availability); smallest plan
+- Resource name: `builderwars-db`
+
+When it's available, note the endpoint. Leave **public mode off**. If the app's logs later show it can't reach the database, turn public mode on (the strong password and the verified SSL connection still protect it).
+
+### 2. Container service
+
+Lightsail → Containers → Create container service:
+
+- Region: Ohio (us-east-2)
+- Capacity: Nano, scale 1
+- Skip "Set up deployment"; GitHub Actions does that
+- Service name: `builderwars` (the workflow uses this exact name)
+
+### 3. IAM role for GitHub Actions
+
+IAM → Identity providers → Add provider:
+
+- Type: OpenID Connect
+- Provider URL: `https://token.actions.githubusercontent.com`
+- Audience: `sts.amazonaws.com`
+
+IAM → Roles → Create role:
+
+- Trusted entity: Web identity → the provider above, audience `sts.amazonaws.com`
+- GitHub organization: `WSU-4110`; repository: `Integrated-Event-Operations-Platform`; branch: `main`
+- Skip the permissions page, name the role `builderwars-github-deploy`, create it
+- Open the role → Add permissions → Create inline policy → JSON, paste the policy below, name it `lightsail-deploy`
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "lightsail:CreateContainerServiceRegistryLogin",
+        "lightsail:RegisterContainerImage",
+        "lightsail:GetContainerImages",
+        "lightsail:GetContainerServices",
+        "lightsail:CreateContainerServiceDeployment"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+Copy the role's ARN into the `AWS_DEPLOY_ROLE_ARN` secret.
+
+### 4. GitHub settings
+
+Add the secrets and variables from the table above. Changing repository settings needs admin access to the repo; in the WSU-4110 organization that may mean asking the instructor. Set `DEPLOY_ENABLED` to `true` last, then run the Deploy workflow from the Actions tab.
+
+### 5. Domain
+
+Create a Lightsail DNS zone for builderwars.dev, then in Route 53 (Registered domains → builderwars.dev → Edit name servers) replace the name servers with the zone's four Lightsail name servers. Route 53 also created a hosted zone for the domain when it was registered; once the name servers point at Lightsail, delete that hosted zone to stop its monthly charge.
+
+Then on the container service: Custom domains → Create certificate for builderwars.dev and www.builderwars.dev, add the validation records it shows to the Lightsail DNS zone, and once the certificate is valid, attach it and point the zone's records at the container service. Finally set the `CANONICAL_HOST` variable and rerun the Deploy workflow.
+
+### 6. Data
+
+Import the waitlist CSV (kept privately, never in this repo) into the registration table. How depends on the registration fields decided in #1.
 
 ## The old domain: awsbuilderwars.dev
 
