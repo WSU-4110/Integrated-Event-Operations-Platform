@@ -4,7 +4,13 @@ import { db, usersTable, waitlistTable } from "@workspace/db";
 import { ListRegistrationsQueryParams } from "@workspace/api-zod";
 
 const router: IRouter = Router();
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL?.trim().toLowerCase() ?? "";
+// Comma-separated list of organizer emails allowed into /api/admin.
+const ADMIN_EMAILS = new Set(
+  (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean),
+);
 
 // Auth guard middleware for all admin routes
 router.use("/admin", async (req, res, next) => {
@@ -18,8 +24,9 @@ router.use("/admin", async (req, res, next) => {
     .from(usersTable)
     .where(eq(usersTable.id, req.user.id));
 
-  if (!ADMIN_EMAIL || user?.email?.trim().toLowerCase() !== ADMIN_EMAIL) {
-    res.status(403).json({ error: "Admin access is restricted to the event organizer." });
+  const email = user?.email?.trim().toLowerCase();
+  if (!email || !ADMIN_EMAILS.has(email)) {
+    res.status(403).json({ error: "Admin access is restricted to event organizers." });
     return;
   }
 
