@@ -5,24 +5,32 @@ import { eq } from 'drizzle-orm';
 import { type Request, type Response } from 'express';
 import * as client from 'openid-client';
 
-export const ISSUER_URL = process.env.ISSUER_URL ?? 'https://replit.com/oidc';
+export const ISSUER_URL =
+  process.env.ISSUER_URL ?? 'https://accounts.google.com';
 export const SESSION_COOKIE = 'sid';
 export const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
 
+// Only the signed-in user is kept. Google's tokens aren't stored: the app
+// never calls Google after sign-in, and the session lasts SESSION_TTL.
 export interface SessionData {
   user: AuthUser;
-  access_token: string;
-  refresh_token?: string;
-  expires_at?: number;
 }
 
 let oidcConfig: client.Configuration | null = null;
 
 export async function getOidcConfig(): Promise<client.Configuration> {
   if (!oidcConfig) {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      throw new Error(
+        'GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set for sign-in.',
+      );
+    }
     oidcConfig = await client.discovery(
       new URL(ISSUER_URL),
-      process.env.REPL_ID!,
+      clientId,
+      clientSecret,
     );
   }
   return oidcConfig;
@@ -50,19 +58,6 @@ export async function getSession(sid: string): Promise<SessionData | null> {
   }
 
   return row.sess as unknown as SessionData;
-}
-
-export async function updateSession(
-  sid: string,
-  data: SessionData,
-): Promise<void> {
-  await db
-    .update(sessionsTable)
-    .set({
-      sess: data as unknown as Record<string, unknown>,
-      expire: new Date(Date.now() + SESSION_TTL),
-    })
-    .where(eq(sessionsTable.sid, sid));
 }
 
 export async function deleteSession(sid: string): Promise<void> {

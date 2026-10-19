@@ -9,7 +9,6 @@ import {
   createSession,
   getOidcConfig,
   getSessionId,
-  ISSUER_URL,
   SESSION_COOKIE,
   SESSION_TTL,
   type SessionData,
@@ -20,7 +19,7 @@ const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 const router: IRouter = Router();
 
 function getOrigin(req: Request): string {
-  const proto = req.headers['x-forwarded-proto'] || 'https';
+  const proto = req.headers['x-forwarded-proto'] || req.protocol;
   const host =
     req.headers['x-forwarded-host'] || req.headers['host'] || 'localhost';
   return `${proto}://${host}`;
@@ -58,10 +57,10 @@ function getSafeReturnTo(value: unknown): string {
 }
 
 async function upsertUser(claims: Record<string, unknown>) {
-  const firstName = (claims.first_name as string) || null;
-  const lastName = (claims.last_name as string) || null;
+  const firstName = (claims.given_name as string) || null;
+  const lastName = (claims.family_name as string) || null;
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || null;
-  const profileImageUrl = (claims.profile_image_url || claims.picture) as string | null;
+  const profileImageUrl = (claims.picture as string) || null;
   const email =
     typeof claims.email === 'string'
       ? claims.email.trim().toLowerCase()
@@ -155,10 +154,10 @@ router.get('/login', async (req: Request, res: Response) => {
 
   const redirectTo = oidc.buildAuthorizationUrl(config, {
     redirect_uri: callbackUrl,
-    scope: 'openid email profile offline_access',
+    scope: 'openid email profile',
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
-    prompt: 'login consent',
+    prompt: 'select_account',
     state,
     nonce,
   });
@@ -216,37 +215,29 @@ router.get('/callback', async (req: Request, res: Response) => {
     return;
   }
 
+  // Admin access is decided by email address, so only accept addresses
+  // Google has verified.
+  if (claims.email_verified !== true) {
+    res.status(403).send('Sign-in requires a verified Google email address.');
+    return;
+  }
+
   const { authUser } = await upsertUser(claims as unknown as Record<string, unknown>);
 
-  const now = Math.floor(Date.now() / 1000);
-  const sessionData: SessionData = {
-    user: authUser,
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
-    expires_at: tokens.expiresIn() ? now + tokens.expiresIn()! : (claims.exp as number | undefined),
-  };
+  const sessionData: SessionData = { user: authUser };
 
   const sid = await createSession(sessionData);
   setSessionCookie(res, sid);
   res.redirect(returnTo);
 });
 
+// Google has no sign-out endpoint for this kind of app, so signing out ends
+// the session here; the user stays signed in to Google itself.
 router.get('/logout', async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
-  const origin = getOrigin(req);
   const returnTo = getSafeReturnTo(req.query.returnTo);
-  const postLogoutRedirectUrl = new URL(returnTo, `${origin}/`).href;
-
   const sid = getSessionId(req);
   await clearSession(res, sid);
-
-  const endSessionUrl = oidc.buildEndSessionUrl(config, {
-    client_id: process.env.REPL_ID!,
-    post_logout_redirect_uri: postLogoutRedirectUrl,
-  });
-
-  res.redirect(endSessionUrl.href);
+  res.redirect(returnTo);
 });
 
-export { ISSUER_URL };
 export default router;
