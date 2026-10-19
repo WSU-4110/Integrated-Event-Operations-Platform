@@ -731,7 +731,7 @@ function Registration() {
               </p>
               <p className="mx-auto mt-3 max-w-md text-sm text-[#7d848e]">
                 {result.emailSent
-                  ? "A confirmation with the information packet is on its way to your inbox."
+                  ? "A confirmation with the information packet is on its way. If it isn't in your school inbox within a few minutes, check your junk or spam folder, and mark it as not junk so our next emails reach you. Questions? Email awssbg@wayne.edu."
                   : "We couldn't send your confirmation email right away, but your registration is saved. If no email arrives, contact awssbg@wayne.edu."}
               </p>
             </div>
