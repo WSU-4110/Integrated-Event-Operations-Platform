@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type WaitlistInputExperienceLevel = typeof WaitlistInputExperienceLevel[keyof typeof WaitlistInputExperienceLevel];
+export type RegistrationInputExperienceLevel = typeof RegistrationInputExperienceLevel[keyof typeof RegistrationInputExperienceLevel];
 
 
-export const WaitlistInputExperienceLevel = {
+export const RegistrationInputExperienceLevel = {
   beginner: 'beginner',
   intermediate: 'intermediate',
   advanced: 'advanced',

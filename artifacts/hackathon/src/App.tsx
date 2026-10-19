@@ -3,12 +3,12 @@ import type { ReactNode, ChangeEvent, FormEvent } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
-  useCheckWaitlist,
+  useCheckRegistration,
   useDeleteRegistration,
   useGetAdminStats,
   useListRegistrations,
-  useSubmitWaitlist,
-  getCheckWaitlistQueryKey,
+  useSubmitRegistration,
+  getCheckRegistrationQueryKey,
   getGetAdminStatsQueryKey,
   getListRegistrationsQueryKey,
 } from "@workspace/api-client-react";
@@ -112,11 +112,11 @@ function Header() {
         </nav>
         <div className="hidden items-center gap-3 md:flex">
           <a
-            href="#waitlist"
+            href="#register"
             className="btn btn-primary !min-h-[38px]"
             data-testid="link-join-header"
           >
-            Join Waitlist
+            Register
           </a>
         </div>
         <button
@@ -142,12 +142,12 @@ function Header() {
               </a>
             ))}
             <a
-              href="#waitlist"
+              href="#register"
               onClick={() => setOpen(false)}
               className="btn btn-primary"
               data-testid="link-mobile-join"
             >
-              Join Waitlist
+              Register
             </a>
           </nav>
         </div>
@@ -230,11 +230,11 @@ function Hero() {
         </div>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <a
-            href="#waitlist"
+            href="#register"
             className="btn btn-primary"
             data-testid="link-hero-join"
           >
-            Join Waitlist <ArrowRight size={16} />
+            Register <ArrowRight size={16} />
           </a>
           <a
             href="#about"
@@ -620,82 +620,118 @@ function Faq() {
     </section>
   );
 }
-function Waitlist() {
-  const [form, setForm] = useState({
+type RegistrationForm = {
+  name: string;
+  email: string;
+  school: string;
+  class_standing: "freshman" | "sophomore" | "junior" | "senior" | "graduate";
+  experience_level: "beginner" | "intermediate" | "advanced" | "professional";
+  discord_username: string;
+  team_status: "" | "has_team" | "looking" | "solo";
+  team_name: string;
+};
+const ALREADY_REGISTERED =
+  "That email is already registered. Check your inbox for the confirmation, or contact awssbg@wayne.edu.";
+function Registration() {
+  const [form, setForm] = useState<RegistrationForm>({
     name: "",
     email: "",
     school: "",
     class_standing: "freshman",
     experience_level: "beginner",
+    discord_username: "",
+    team_status: "",
+    team_name: "",
   });
-  const [success, setSuccess] = useState(false);
+  const [result, setResult] = useState<{ emailSent: boolean } | null>(null);
   const [error, setError] = useState("");
   const validEmail = /^[^\s@]+@[^\s@]+\.edu$/i.test(form.email);
-  const check = useCheckWaitlist(
+  const check = useCheckRegistration(
     { email: form.email || "invalid@example.com" },
     {
       query: {
         enabled: validEmail,
-        queryKey: getCheckWaitlistQueryKey({
+        queryKey: getCheckRegistrationQueryKey({
           email: form.email || "invalid@example.com",
         }),
       },
     },
   );
-  const submit = useSubmitWaitlist();
+  const submit = useSubmitRegistration();
   const change = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!form.name || !form.school || !validEmail) {
+    if (
+      !form.name.trim() ||
+      !form.school.trim() ||
+      !validEmail ||
+      form.discord_username.trim().length < 2 ||
+      !form.team_status
+    ) {
       setError(
-        "Please use a valid .edu email address and complete your name and school.",
+        "Please complete every required field and use your .edu email address.",
       );
       return;
     }
     if (check.data?.registered) {
-      setError(
-        "That email is already registered. You are already on the list.",
-      );
+      setError(ALREADY_REGISTERED);
       return;
     }
     submit.mutate(
       {
         data: {
-          ...form,
-          discord_username: form.class_standing || null,
-          experience_level: form.experience_level as
-            "beginner" | "intermediate" | "advanced" | "professional",
+          name: form.name,
+          email: form.email,
+          school: form.school,
+          class_standing: form.class_standing,
+          experience_level: form.experience_level,
+          discord_username: form.discord_username,
+          team_status: form.team_status,
+          team_name:
+            form.team_status === "has_team" ? form.team_name || null : null,
         },
       },
       {
-        onSuccess: () => setSuccess(true),
-        onError: () =>
-          setError("We could not save your registration. Please try again."),
+        onSuccess: (data) =>
+          setResult({ emailSent: data.confirmation_email_sent }),
+        onError: (err) =>
+          setError(
+            getApiErrorStatus(err) === 409
+              ? ALREADY_REGISTERED
+              : "We couldn't save your registration. Please try again.",
+          ),
       },
     );
   };
   return (
-    <section id="waitlist" className="section">
+    <section id="register" className="section">
       <div className="container-shell">
         <SectionHeading
           label="07 / YOUR MOVE"
-          title="Save your place."
-          copy="Drop your details. We will send the important stuff first."
+          title="Register for BuilderWars."
+          copy="Free for currently enrolled college and university students. Organizers review every registration."
           icon={<Mail size={17} />}
         />
         <div className="panel mx-auto max-w-2xl p-6 sm:p-9">
-          {success ? (
-            <div className="py-12 text-center">
+          {result ? (
+            <div className="py-12 text-center" data-testid="status-registered">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#7c3aed] text-white">
                 <Check size={26} />
               </div>
               <h3 className="display mt-6 text-3xl text-[#f7f4ed]">
-                You're on the list.
+                You're registered.
               </h3>
-              <p className="mt-3 text-[#9ca3af]">
-                We'll reach out soon with the next signal.
+              <p className="mx-auto mt-3 max-w-md text-[#9ca3af]">
+                Your registration is pending. We'll email you once an organizer
+                approves it, with how to get access to the participant Discord
+                channels.
+              </p>
+              <p className="mx-auto mt-3 max-w-md text-sm text-[#7d848e]">
+                {result.emailSent
+                  ? "A confirmation with the information packet is on its way to your inbox."
+                  : "We couldn't send your confirmation email right away, but your registration is saved. If no email arrives, contact awssbg@wayne.edu."}
               </p>
             </div>
           ) : (
@@ -707,13 +743,14 @@ function Waitlist() {
                   value={form.name}
                   onChange={change}
                   placeholder="Your name"
+                  autoComplete="name"
                   className="field"
                   data-testid="input-name"
                 />
               </label>
               <label>
                 <span className="eyebrow !text-[10px]">
-                  Email * (.edu only)
+                  School email * (.edu)
                 </span>
                 <input
                   type="email"
@@ -721,19 +758,18 @@ function Waitlist() {
                   value={form.email}
                   onChange={change}
                   placeholder="you@university.edu"
+                  autoComplete="email"
                   className="field"
                   data-testid="input-email"
                 />
               </label>
               <label>
-                <span className="eyebrow !text-[10px]">
-                  School / organization *
-                </span>
+                <span className="eyebrow !text-[10px]">School *</span>
                 <input
                   name="school"
                   value={form.school}
                   onChange={change}
-                  placeholder="Where you learn or work"
+                  placeholder="Your college or university"
                   className="field"
                   data-testid="input-school"
                 />
@@ -769,10 +805,63 @@ function Waitlist() {
                   <option value="professional">Professional</option>
                 </select>
               </label>
+              <label>
+                <span className="eyebrow !text-[10px]">Discord username *</span>
+                <input
+                  name="discord_username"
+                  value={form.discord_username}
+                  onChange={change}
+                  placeholder="yourname"
+                  className="field"
+                  data-testid="input-discord"
+                />
+              </label>
+              <label>
+                <span className="eyebrow !text-[10px]">Team *</span>
+                <select
+                  name="team_status"
+                  value={form.team_status}
+                  onChange={change}
+                  className="field"
+                  data-testid="select-team-status"
+                >
+                  <option value="" disabled>
+                    Choose one
+                  </option>
+                  <option value="has_team">I have a team</option>
+                  <option value="looking">I'm looking for a team</option>
+                  <option value="solo">I'll compete solo</option>
+                </select>
+              </label>
+              {form.team_status === "has_team" && (
+                <label className="sm:col-span-2">
+                  <span className="eyebrow !text-[10px]">
+                    Team name (optional)
+                  </span>
+                  <input
+                    name="team_name"
+                    value={form.team_name}
+                    onChange={change}
+                    placeholder="If you've picked one"
+                    className="field"
+                    data-testid="input-team-name"
+                  />
+                </label>
+              )}
+              <p
+                className="sm:col-span-2 text-xs leading-5 text-[#7d848e]"
+                data-testid="text-data-use-notice"
+              >
+                We use this information only to run BuilderWars: reviewing
+                registrations, giving approved participants Discord access,
+                check-in, and event planning. Organizers can see it; sponsors
+                only receive totals, never your details. Questions or removal
+                requests: awssbg@wayne.edu.
+              </p>
               {error && (
                 <p
                   className="sm:col-span-2 text-sm text-[#a78bfa]"
-                  data-testid="status-waitlist-error"
+                  data-testid="status-registration-error"
                 >
                   {error}
                 </p>
@@ -781,16 +870,16 @@ function Waitlist() {
                 type="submit"
                 className="btn btn-primary sm:col-span-2"
                 disabled={submit.isPending}
-                data-testid="button-submit-waitlist"
+                data-testid="button-submit-registration"
               >
                 {submit.isPending ? (
                   <>
                     <Loader2 size={17} className="animate-spin" />
-                    Saving your spot
+                    Registering
                   </>
                 ) : (
                   <>
-                    Join Waitlist <ArrowRight size={16} />
+                    Register <ArrowRight size={16} />
                   </>
                 )}
               </button>
@@ -898,7 +987,7 @@ function Home() {
         <Prizes />
         <Sponsors />
         <Faq />
-        <Waitlist />
+        <Registration />
       </main>
       <Footer />
     </>
@@ -1015,19 +1104,26 @@ function DeleteRegistrationButton({
   );
 }
 
+const TEAM_LABELS: Record<string, string> = {
+  has_team: "Has a team",
+  looking: "Looking",
+  solo: "Solo",
+};
 function Admin() {
   const { isLoading, isAuthenticated, logout } = useAuth();
   const [search, setSearch] = useState("");
   const [level, setLevel] = useState("");
+  const [team, setTeam] = useState("");
   const [offset, setOffset] = useState(0);
   const params = useMemo(
     () => ({
       search: search || undefined,
       experience_level: level || undefined,
+      team_status: team || undefined,
       limit: 50,
       offset,
     }),
-    [search, level, offset],
+    [search, level, team, offset],
   );
   const stats = useGetAdminStats({
     query: { queryKey: getGetAdminStatsQueryKey() },
@@ -1098,11 +1194,15 @@ function Admin() {
         <div className="grid gap-4 sm:grid-cols-3">
           {[
             ["Total registrations", stats.data?.total ?? "—"],
-            ["Beginners", stats.data?.by_experience_level?.beginner ?? "—"],
             [
-              "Advanced+",
-              (stats.data?.by_experience_level?.advanced ?? 0) +
-                (stats.data?.by_experience_level?.professional ?? 0) || "—",
+              "Looking for a team",
+              stats.data ? (stats.data.by_team_status?.looking ?? 0) : "—",
+            ],
+            [
+              "Beginners",
+              stats.data
+                ? (stats.data.by_experience_level?.beginner ?? 0)
+                : "—",
             ],
           ].map(([l, v], i) => (
             <div className="panel p-5" key={l as string}>
@@ -1143,6 +1243,20 @@ function Admin() {
               <option value="advanced">Advanced</option>
               <option value="professional">Professional</option>
             </select>
+            <select
+              value={team}
+              onChange={(e) => {
+                setTeam(e.target.value);
+                setOffset(0);
+              }}
+              className="field max-w-[170px]"
+              data-testid="select-admin-team"
+            >
+              <option value="">All team statuses</option>
+              <option value="has_team">Has a team</option>
+              <option value="looking">Looking for a team</option>
+              <option value="solo">Solo</option>
+            </select>
           </div>
           <a
             href="/api/admin/export"
@@ -1154,15 +1268,18 @@ function Admin() {
           </a>
         </div>
         <div className="panel mt-5 overflow-x-auto">
-          <table className="w-full min-w-[1000px] text-left text-sm">
+          <table className="w-full min-w-[1200px] text-left text-sm">
             <thead className="border-b border-[#2a3039] text-xs uppercase tracking-wider text-[#7d848e]">
               <tr>
                 {[
                   "Name",
                   "Email",
                   "School",
-                  "Class Standing",
+                  "Class",
                   "Experience",
+                  "Discord",
+                  "Team",
+                  "Status",
                   "Registered",
                   "Actions",
                 ].map((x) => (
@@ -1175,7 +1292,7 @@ function Admin() {
             <tbody>
               {rows.isLoading ? (
                 <tr>
-                  <td colSpan={7} className="p-10 text-center text-[#9ca3af]">
+                  <td colSpan={10} className="p-10 text-center text-[#9ca3af]">
                     <Loader2 className="mx-auto animate-spin text-[#a78bfa]" />
                   </td>
                 </tr>
@@ -1185,11 +1302,34 @@ function Admin() {
                     <td className="p-4 font-medium">{r.name}</td>
                     <td className="p-4 text-[#9ca3af]">{r.email}</td>
                     <td className="p-4 text-[#9ca3af]">{r.school}</td>
-                    <td className="p-4 text-[#9ca3af]">
-                      {r.discord_username || "—"}
+                    <td className="p-4 capitalize text-[#9ca3af]">
+                      {r.class_standing}
                     </td>
                     <td className="p-4 capitalize text-[#a78bfa]">
                       {r.experience_level}
+                    </td>
+                    <td className="p-4 text-[#9ca3af]">
+                      {r.discord_username || "—"}
+                    </td>
+                    <td className="p-4 text-[#9ca3af]">
+                      {r.team_status
+                        ? (TEAM_LABELS[r.team_status] ?? r.team_status)
+                        : "—"}
+                      {r.team_name ? ` · ${r.team_name}` : ""}
+                    </td>
+                    <td className="p-4">
+                      <span className="capitalize">{r.status}</span>
+                      {r.source === "waitlist" && (
+                        <span className="block text-xs text-[#7d848e]">
+                          from waitlist
+                        </span>
+                      )}
+                      {r.source !== "waitlist" &&
+                        !r.confirmation_email_sent_at && (
+                          <span className="block text-xs text-[#a78bfa]">
+                            email not sent
+                          </span>
+                        )}
                     </td>
                     <td className="p-4 text-[#9ca3af]">
                       {new Date(r.created_at).toLocaleDateString()}

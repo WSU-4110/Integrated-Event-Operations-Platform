@@ -6,13 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface WaitlistRegistration {
+export interface RegistrationConfirmation {
   id: number;
   name: string;
   email: string;
-  school: string;
-  /** @nullable */
-  discord_username?: string | null;
-  experience_level: string;
-  created_at: Date;
+  status: string;
+  confirmation_email_sent: boolean;
 }

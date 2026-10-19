@@ -5,9 +5,9 @@
  * Hackathon website API
  * OpenAPI spec version: 0.1.0
  */
-import type { WaitlistRegistration } from './waitlistRegistration';
+import type { Registration } from './registration';
 
 export interface AdminRegistrationList {
-  registrations: WaitlistRegistration[];
+  registrations: Registration[];
   total: number;
 }

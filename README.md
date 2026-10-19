@@ -1,11 +1,11 @@
 # Integrated Event Operations Platform
 
-Event website and operations tooling for the AWS BuilderWars Hackathon, run by the AWS Student Builder Group at Wayne State University.
+Event website and operations tooling for the BuilderWars Hackathon, run by the AWS Student Builder Group at Wayne State University.
 
 It currently includes:
 
 - a public event site with the schedule, prizes, sponsors, and FAQ
-- a waitlist form that stores registrations and sends a confirmation email
+- a registration form that stores registrations and sends a confirmation email
 - an organizer-only admin dashboard with search, stats, and CSV export
 
 Planned work is tracked in this repository's issues.
