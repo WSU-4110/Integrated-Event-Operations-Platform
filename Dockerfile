@@ -13,12 +13,18 @@ FROM node:24-slim
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
+# Create and update the database schema on start (lib/db/drizzle).
+ENV RUN_MIGRATIONS=true
+# AWS's certificate bundle for verifying the Lightsail PostgreSQL connection.
+ENV DATABASE_SSL_CA=/app/certs/rds-global-bundle.pem
+ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-global-bundle.pem
 # The server is a single bundled file, so no node_modules are needed. Keep the
 # repo's folder layout: the server finds the web build and the information
 # packet by paths relative to its own file.
 COPY --from=build /app/artifacts/api-server/dist artifacts/api-server/dist
 COPY --from=build /app/artifacts/hackathon/dist/public artifacts/hackathon/dist/public
 COPY --from=build /app/attached_assets attached_assets
+COPY --from=build /app/lib/db/drizzle lib/db/drizzle
 USER node
 EXPOSE 8080
 CMD ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
