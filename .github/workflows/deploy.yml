@@ -28,6 +28,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Fails early with a clear message if DATABASE_URL is malformed. Prints
+      # only non-secret parts (never the user name or password).
+      - name: Check settings
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python3 - <<'PY'
+          import os, re, sys, urllib.parse as u
+          raw = os.environ.get("DATABASE_URL", "")
+          problems = []
+          if not raw:
+              sys.exit("DATABASE_URL is empty")
+          if raw != raw.strip():
+              problems.append("leading or trailing whitespace or line break")
+          if any(c in raw for c in " \t\r\n\"'"):
+              problems.append("contains a space, tab, line break, or quote")
+          p = u.urlsplit(raw.strip())
+          print("length:", len(raw))
+          print("scheme:", p.scheme)
+          print("host:", p.hostname)
+          print("port:", p.port)
+          print("database:", p.path.lstrip("/"))
+          print("has user name:", bool(p.username), "| has password:", bool(p.password))
+          if p.scheme not in ("postgres", "postgresql"):
+              problems.append("scheme should be postgresql")
+          if not p.hostname or "." not in p.hostname:
+              problems.append("host doesn't look like a database endpoint")
+          if p.password and re.search(r"%(?![0-9A-Fa-f]{2})", p.password):
+              problems.append("password has a % that isn't followed by two hex digits")
+          if p.query:
+              problems.append("has ?query options; remove them (sslmode overrides the certificate check)")
+          if problems:
+              sys.exit("DATABASE_URL problems: " + "; ".join(problems))
+          print("DATABASE_URL looks well formed")
+          PY
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
@@ -115,3 +151,8 @@ jobs:
             --container-name app \
             --start-time "$STARTED_AT" \
             --query 'logEvents[].[createdAt, message]' --output text | tail -n 80
+          echo "Most recent log lines for the service (any deployment):"
+          aws lightsail get-container-log \
+            --service-name "$SERVICE_NAME" \
+            --container-name app \
+            --query 'logEvents[].[createdAt, message]' --output text | tail -n 15
