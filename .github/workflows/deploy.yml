@@ -103,6 +103,13 @@ jobs:
       - name: Container logs
         if: always() && env.VERSION != ''
         run: |
+          echo "Service status:"
+          aws lightsail get-container-services --service-name "$SERVICE_NAME" \
+            --query 'containerServices[0].{state: state, detail: stateDetail, currentDeployment: currentDeployment.version}' \
+            --output json
+          # Lightsail can take a minute to make new log lines available.
+          sleep 60
+          echo "Container logs since $STARTED_AT:"
           aws lightsail get-container-log \
             --service-name "$SERVICE_NAME" \
             --container-name app \
