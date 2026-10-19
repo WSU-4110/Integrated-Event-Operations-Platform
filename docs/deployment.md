@@ -135,6 +135,34 @@ DATABASE_URL='...' DATABASE_SSL_CA=rds-global-bundle.pem pnpm --filter @workspac
 
 That is a dry run: it prints how many rows are ready and which were skipped. Add `--apply` to write. Running it again skips people already registered.
 
+## Backups and the restore test (#23)
+
+Lightsail takes an automatic snapshot of `builderwars-db` every day and keeps 7 days of them (Lightsail → Databases → builderwars-db → **Snapshots & restore**). Before a risky change, such as a migration that rewrites data, also take a **manual snapshot** there.
+
+A backup only counts once it has been restored successfully. Do this once now, and again before any migration that changes existing data:
+
+1. On a computer with the repo, download AWS's certificate bundle (once):
+
+   ```bash
+   curl -o /tmp/rds-global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+   ```
+
+2. Note the live counts. Run this from the repo, paste the live database's endpoint as the last argument, and enter the password when asked:
+
+   ```bash
+   python3 -c "
+   import getpass, os, subprocess, sys, urllib.parse as u
+   pw = u.quote(getpass.getpass('Database password: '), safe='')
+   env = dict(os.environ, DATABASE_SSL_CA='/tmp/rds-global-bundle.pem', DATABASE_URL=f'postgresql://builderwars:{pw}@{sys.argv[1]}:5432/postgres')
+   sys.exit(subprocess.call(['pnpm', '--filter', '@workspace/scripts', 'run', 'db-counts'], env=env))
+   " ENDPOINT
+   ```
+
+3. In **Snapshots & restore**, create a new database from the latest restore point. Name it `builderwars-db-restore-test`, smallest plan, same region, and turn **public mode** on once it's available. It uses the same user name and password.
+4. Run the command from step 2 again with the restored database's endpoint. The counts should match step 2, except for anything created after the snapshot's time.
+5. Write the result (date, snapshot time, counts, match or not) in the current sprint's notes.
+6. **Delete `builderwars-db-restore-test`.** It's billed for as long as it exists.
+
 ## The old domain: awsbuilderwars.dev
 
 Not redirected (decided 2026-10-18). Its DNS is managed in Replit, which only offers A, CNAME, TXT, and MX records; a bare domain can't point at a Lightsail container service with those, and the address wasn't shared widely.

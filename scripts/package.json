@@ -6,7 +6,8 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "import-waitlist": "tsx ./src/import-waitlist.ts"
+    "import-waitlist": "tsx ./src/import-waitlist.ts",
+    "db-counts": "tsx ./src/db-counts.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",
