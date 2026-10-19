@@ -44,6 +44,7 @@ From the kickoff presentation, adjusted as needed:
 - **2026-10-11 (Mohammad):** Registration opens now. Email goes through Resend; the free plan covers this volume.
 - **2026-10-18 (Mohammad):** The updated sponsorship and information packets are the source of truth for event details, and the site follows them. The venue is Newlab Detroit, 1st floor (not the STEM Innovation Learning Center), and the Saturday workshop and dinner times moved earlier. The sponsorship packet now expects 100+ attendees.
 - **2026-10-10 (Mohammad):** Updated sponsor packet and sponsor logos (AWS, FREE WILI, Engineering Student Senate) provided. Information packet and code of conduct are on hold until they're finished.
+- **2026-10-18 (Mohammad):** builderwars.dev registered through Route 53 in the club's AWS account. Lightsail's domain registration doesn't offer .dev; builderwars.org was the fallback if .dev couldn't be registered anywhere.
 
 ## Done so far
 

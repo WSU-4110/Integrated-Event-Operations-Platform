@@ -10,7 +10,7 @@ The `Dockerfile` at the repo root builds a single image. The API server serves t
 | --- | --- | --- |
 | App | Container service, Nano or Micro, 1 node | Listens on port 8080. Health check path: `/api/healthz`. |
 | Database | Managed PostgreSQL, standard plan | Automatic daily snapshots cover the backup requirement in #23. Consider the high-availability plan for event weekend only. |
-| Domain | builderwars.dev | Not purchased yet. Register it in the club's AWS account (Lightsail or Route 53) so DNS lives next to the app. |
+| Domain | builderwars.dev | Registered 2026-10-18 through Route 53 in the club's AWS account (Lightsail's registration doesn't offer .dev). DNS will be a Lightsail DNS zone, which can point the bare domain at the container service. |
 | HTTPS | Container service custom domain certificate | Add builderwars.dev and www.builderwars.dev to the same certificate. |
 | Email | Resend | Sender on builderwars.dev once the domain is verified. |
 
@@ -43,7 +43,7 @@ Set these on the container service deployment. Never commit real values.
 3. Create a deployment on the container service with the pushed image, port 8080, health check `/api/healthz`, and the environment variables above.
 4. Create the tables: run `pnpm --filter @workspace/db run push` once with `DATABASE_URL` pointing at the new database.
 5. Import the waitlist CSV (kept privately, never in this repo) into the registration table. How depends on the registration fields decided in #1.
-6. Once the domain is registered: attach the certificate, point DNS at the container service, then set `CANONICAL_HOST` and redeploy.
+6. Domain: create a Lightsail DNS zone for builderwars.dev, then in Route 53 (Registered domains → builderwars.dev → Edit name servers) replace the name servers with the zone's four Lightsail name servers. Attach the certificate, point the zone's records at the container service, then set `CANONICAL_HOST` and redeploy.
 
 ## The old domain: awsbuilderwars.dev
 
