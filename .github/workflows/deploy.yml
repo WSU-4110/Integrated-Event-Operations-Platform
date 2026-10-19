@@ -40,10 +40,27 @@ jobs:
           problems = []
           if not raw:
               sys.exit("DATABASE_URL is empty")
+          if re.search(r"[\x00-\x1f\x7f]|%(1[Bb]|0[0-9A-Fa-f]|1[0-9A-Fa-f]|7[Ff])", raw.strip()):
+              problems.append("contains terminal control characters (often from pasting into a prompt); recreate it")
           if raw != raw.strip():
               problems.append("leading or trailing whitespace or line break")
           if any(c in raw for c in " \t\r\n\"'"):
               problems.append("contains a space, tab, line break, or quote")
+          # Report stray brackets by part before parsing; the parser only says
+          # "Invalid IPv6 URL", which doesn't say where the problem is.
+          rest = raw.strip().split("://", 1)[-1]
+          userinfo, _, hostpart = rest.rpartition("@")
+          user_part, _, password_part = userinfo.partition(":")
+          # Shape only, no values: lengths and any unusual characters.
+          print("starts with postgresql://:", raw.strip().startswith("postgresql://"))
+          print("number of @ signs:", raw.count("@"), "| number of :// :", raw.count("://"))
+          print("user name length:", len(user_part), "| unusual characters in it:", sorted(set(c for c in user_part if not (c.isalnum() or c == "_"))))
+          print("host part:", hostpart if "[" not in hostpart and "]" not in hostpart else "(contains brackets)")
+          for name, part in (("user name", user_part), ("password", password_part), ("host, port, or database", hostpart)):
+              if "[" in part or "]" in part:
+                  problems.append(f"the {name} contains [ or ]; encode the password, and don't wrap values in brackets")
+          if problems:
+              sys.exit("DATABASE_URL problems: " + "; ".join(problems))
           p = u.urlsplit(raw.strip())
           print("length:", len(raw))
           print("scheme:", p.scheme)
