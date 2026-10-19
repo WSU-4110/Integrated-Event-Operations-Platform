@@ -65,7 +65,7 @@ Lightsail → Containers → Create container service:
 - Region: Ohio (us-east-2)
 - Capacity: Nano, scale 1
 - Skip "Set up deployment"; GitHub Actions does that
-- Service name: `builderwars` (the workflow uses this exact name)
+- Service name: `container-service-builderwars` (the workflow uses this exact name; services can't be renamed)
 
 ### 3. IAM role for GitHub Actions
 

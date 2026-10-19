@@ -30,7 +30,7 @@ APIs & Services → Credentials → Create credentials → OAuth client ID:
   - `https://builderwars.dev/api/callback`
   - `https://www.builderwars.dev/api/callback`
   - `http://localhost:8080/api/callback` (local development)
-  - the container service's default URL plus `/api/callback`, for testing before the domain is connected (Lightsail → Containers → builderwars shows the URL)
+  - the container service's default URL plus `/api/callback`, for testing before the domain is connected (Lightsail → Containers → container-service-builderwars shows the URL)
 
 Create it, then copy the client ID and client secret into the GitHub secrets `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (see `docs/deployment.md`). Don't paste the secret anywhere else.
 
