@@ -36,7 +36,7 @@ Environment variables are listed in `.env.example`. Nothing loads a `.env` file 
 - `artifacts/mockup-sandbox/` — Replit's component preview sandbox. Not part of the product.
 - `lib/api-spec/openapi.yaml` — the API contract and source of truth. Orval generates from it.
 - `lib/api-zod/`, `lib/api-client-react/` — generated Zod schemas and React Query hooks. Do not edit `src/generated/` by hand.
-- `lib/db/` — Drizzle ORM schema and Postgres client. Tables: `registrations`, `users`, `sessions`. Migrations are in `lib/db/drizzle/`.
+- `lib/db/` — Drizzle ORM schema and Postgres client. Tables: `registrations`, `registration_status_changes`, `users`, `sessions`. Migrations are in `lib/db/drizzle/`.
 - `scripts/src/import-waitlist.ts` — one-time import of the old Replit waitlist CSV into `registrations`
 - `lib/replit-auth-web/` — `useAuth()` hook used by the web app
 - `attached_assets/` — PDF packets, `brand/` (BuilderWars logo set), and `sponsors/` (sponsor logos). The web app imports them through the `@assets` alias, and the API reads the information packet from here by path. Renaming a file breaks both.
@@ -53,6 +53,7 @@ Environment variables are listed in `.env.example`. Nothing loads a `.env` file 
 - `GET /api/auth/user` returns `{ user: AuthUser | null }`, which is what `useAuth()` expects. Use `useAuth()` for auth state, not the generated API hooks.
 - Admin CSV export is a plain browser link to `/api/admin/export`, not a hook.
 - Registration requires a `.edu` email and rejects duplicates per event (409). New registrations start as `pending`. If the confirmation email fails, the registration is kept and `confirmation_email_sent_at` stays empty; the admin table shows "email not sent" with a resend button (`POST /api/admin/registrations/:id/resend-confirmation`).
+- Organizers change a registration's status in the admin dashboard (FR-04): pending → approved, waitlisted, or declined, following `STATUS_TRANSITIONS` in `lib/db/src/schema/registrations.ts`; nothing returns to pending. The request carries the status the organizer saw, and the server refuses the change (409) if it has changed since. Each change and its `registration_status_changes` history row are saved in one transaction. Approval doesn't send anything yet; the approval email and verification code are #6.
 - People imported from the waitlist (`source = waitlist`, no Discord username) can submit the registration form with the same email: it completes their existing row, keeping their original sign-up date, instead of returning 409. The admin table labels them "waitlist · not completed" until then.
 
 ## Gotchas

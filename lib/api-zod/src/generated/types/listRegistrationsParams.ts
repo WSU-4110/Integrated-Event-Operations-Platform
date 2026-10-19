@@ -10,6 +10,7 @@ export type ListRegistrationsParams = {
 search?: string;
 experience_level?: string;
 team_status?: string;
+status?: string;
 limit?: number;
 offset?: number;
 };

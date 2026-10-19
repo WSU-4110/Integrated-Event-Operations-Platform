@@ -3,11 +3,17 @@ import { and, count, eq, ilike, or, type SQL } from "drizzle-orm";
 import {
   db,
   EVENT_ID,
+  registrationStatusChangesTable,
   registrationsTable,
+  STATUS_TRANSITIONS,
   usersTable,
   type Registration,
+  type RegistrationStatus,
 } from "@workspace/db";
-import { ListRegistrationsQueryParams } from "@workspace/api-zod";
+import {
+  ListRegistrationsQueryParams,
+  UpdateRegistrationStatusBody,
+} from "@workspace/api-zod";
 import { sendRegistrationConfirmation } from "../lib/registrationConfirmationEmail";
 
 const router: IRouter = Router();
@@ -39,6 +45,8 @@ router.use("/admin", async (req, res, next) => {
     return;
   }
 
+  // The organizer's identity for the status history (FR-04).
+  res.locals.adminEmail = email;
   next();
 });
 
@@ -54,6 +62,8 @@ function toApi(r: Registration) {
     team_status: r.teamStatus,
     team_name: r.teamName,
     status: r.status,
+    status_updated_at: r.statusUpdatedAt,
+    allowed_statuses: STATUS_TRANSITIONS[r.status as RegistrationStatus] ?? [],
     source: r.source,
     confirmation_email_sent_at: r.confirmationEmailSentAt,
     created_at: r.createdAt,
@@ -69,7 +79,8 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
     return;
   }
 
-  const { search, experience_level, team_status, limit, offset } = parsed.data;
+  const { search, experience_level, team_status, status, limit, offset } =
+    parsed.data;
 
   const conditions: SQL[] = [forThisEvent];
   if (search) {
@@ -88,6 +99,9 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
   }
   if (team_status) {
     conditions.push(eq(registrationsTable.teamStatus, team_status));
+  }
+  if (status) {
+    conditions.push(eq(registrationsTable.status, status));
   }
   const whereClause = and(...conditions);
 
@@ -134,6 +148,133 @@ router.delete("/admin/registrations/:id", async (req, res): Promise<void> => {
   res.status(204).send();
 });
 
+function parseId(raw: string): number | null {
+  const id = Number(raw);
+  return /^\d+$/.test(raw) && Number.isSafeInteger(id) && id >= 1 ? id : null;
+}
+
+class StatusChangeError extends Error {
+  constructor(
+    readonly httpStatus: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+// FR-04: change a registration's status. The request carries the status the
+// organizer saw; if someone else changed it since, the change is refused so
+// they can reload instead of overwriting. The new status and its history row
+// are saved together.
+router.patch(
+  "/admin/registrations/:id/status",
+  async (req, res): Promise<void> => {
+    const registrationId = parseId(req.params.id);
+    const parsed = UpdateRegistrationStatusBody.safeParse(req.body);
+    if (!registrationId || !parsed.success) {
+      res
+        .status(400)
+        .json({ error: "A valid registration and status are required." });
+      return;
+    }
+    const { status: nextStatus, expected_status } = parsed.data;
+
+    try {
+      const updated = await db.transaction(async (tx) => {
+        const [current] = await tx
+          .select()
+          .from(registrationsTable)
+          .where(and(eq(registrationsTable.id, registrationId), forThisEvent))
+          .for("update");
+        if (!current) {
+          throw new StatusChangeError(404, "Registration not found.");
+        }
+        if (current.status !== expected_status) {
+          throw new StatusChangeError(
+            409,
+            `Someone else already changed this registration to "${current.status}". Reload to see the latest.`,
+          );
+        }
+        const allowed =
+          STATUS_TRANSITIONS[current.status as RegistrationStatus] ?? [];
+        if (!allowed.includes(nextStatus)) {
+          throw new StatusChangeError(
+            400,
+            `A registration can't go from "${current.status}" to "${nextStatus}".`,
+          );
+        }
+
+        const now = new Date();
+        const [row] = await tx
+          .update(registrationsTable)
+          .set({ status: nextStatus, statusUpdatedAt: now })
+          .where(eq(registrationsTable.id, registrationId))
+          .returning();
+        await tx.insert(registrationStatusChangesTable).values({
+          registrationId,
+          fromStatus: current.status,
+          toStatus: nextStatus,
+          changedByUserId: req.user!.id,
+          changedByEmail: res.locals.adminEmail as string,
+          changedAt: now,
+        });
+        return row;
+      });
+
+      // #6 (FR-05) will send the approval notice and verification code here,
+      // after the change is saved; a failed notification must not undo it.
+      res.json(toApi(updated));
+    } catch (err: unknown) {
+      if (err instanceof StatusChangeError) {
+        res.status(err.httpStatus).json({ error: err.message });
+        return;
+      }
+      req.log.error(
+        { err, registrationId },
+        "Failed to change registration status",
+      );
+      res
+        .status(500)
+        .json({ error: "The status couldn't be changed. Please try again." });
+    }
+  },
+);
+
+router.get(
+  "/admin/registrations/:id/history",
+  async (req, res): Promise<void> => {
+    const registrationId = parseId(req.params.id);
+    if (!registrationId) {
+      res.status(400).json({ error: "A valid registration ID is required." });
+      return;
+    }
+    const [registration] = await db
+      .select({ id: registrationsTable.id })
+      .from(registrationsTable)
+      .where(and(eq(registrationsTable.id, registrationId), forThisEvent));
+    if (!registration) {
+      res.status(404).json({ error: "Registration not found." });
+      return;
+    }
+    const changes = await db
+      .select()
+      .from(registrationStatusChangesTable)
+      .where(eq(registrationStatusChangesTable.registrationId, registrationId))
+      .orderBy(
+        registrationStatusChangesTable.changedAt,
+        registrationStatusChangesTable.id,
+      );
+    res.json({
+      changes: changes.map((c) => ({
+        from_status: c.fromStatus,
+        to_status: c.toStatus,
+        changed_by_email: c.changedByEmail,
+        changed_at: c.changedAt,
+      })),
+    });
+  },
+);
+
 router.post(
   "/admin/registrations/:id/resend-confirmation",
   async (req, res): Promise<void> => {
@@ -178,7 +319,7 @@ router.post(
 );
 
 router.get("/admin/stats", async (_req, res): Promise<void> => {
-  const [totalResult, byLevel, byTeam] = await Promise.all([
+  const [totalResult, byLevel, byTeam, byStatus] = await Promise.all([
     db.select({ count: count() }).from(registrationsTable).where(forThisEvent),
     db
       .select({ key: registrationsTable.experienceLevel, count: count() })
@@ -190,6 +331,11 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
       .from(registrationsTable)
       .where(forThisEvent)
       .groupBy(registrationsTable.teamStatus),
+    db
+      .select({ key: registrationsTable.status, count: count() })
+      .from(registrationsTable)
+      .where(forThisEvent)
+      .groupBy(registrationsTable.status),
   ]);
 
   const tally = (rows: { key: string | null; count: number }[]) =>
@@ -201,6 +347,7 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
     total: Number(totalResult[0]?.count ?? 0),
     by_experience_level: tally(byLevel),
     by_team_status: tally(byTeam),
+    by_status: tally(byStatus),
   });
 });
 

@@ -6,6 +6,9 @@ import {
   useCheckRegistration,
   useDeleteRegistration,
   useResendConfirmation,
+  useUpdateRegistrationStatus,
+  useGetRegistrationHistory,
+  getGetRegistrationHistoryQueryKey,
   useGetAdminStats,
   useListRegistrations,
   useSubmitRegistration,
@@ -1043,6 +1046,120 @@ function AdminGate() {
   return <Admin />;
 }
 
+const STATUS_ACTIONS: Record<string, string> = {
+  approved: "Approve",
+  waitlisted: "Waitlist",
+  declined: "Decline",
+};
+function StatusControl({
+  id,
+  name,
+  status,
+  allowed,
+  onChanged,
+}: {
+  id: number;
+  name: string;
+  status: string;
+  allowed: string[];
+  onChanged: () => void;
+}) {
+  const update = useUpdateRegistrationStatus();
+  const [error, setError] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  const history = useGetRegistrationHistory(id, {
+    query: {
+      queryKey: getGetRegistrationHistoryQueryKey(id),
+      enabled: showHistory,
+    },
+  });
+  const change = (next: string) => {
+    if (!next) return;
+    if (!window.confirm(`${STATUS_ACTIONS[next]} ${name}?`)) return;
+    setError("");
+    update.mutate(
+      {
+        id,
+        data: {
+          status: next as "approved" | "waitlisted" | "declined",
+          expected_status: status,
+        },
+      },
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({
+            queryKey: getGetRegistrationHistoryQueryKey(id),
+          });
+          onChanged();
+        },
+        onError: (err) => {
+          const code = getApiErrorStatus(err);
+          setError(
+            code === 409
+              ? "Someone else changed this first. The list has been refreshed."
+              : code === 400
+                ? "That change isn't allowed."
+                : "The status couldn't be changed. Try again.",
+          );
+          onChanged();
+        },
+      },
+    );
+  };
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <span
+          className={`capitalize ${status === "approved" ? "text-[#a78bfa]" : status === "declined" ? "text-[#7d848e]" : ""}`}
+          data-testid={`text-status-${id}`}
+        >
+          {status}
+        </span>
+        {allowed.length > 0 && (
+          <select
+            value=""
+            onChange={(e) => change(e.target.value)}
+            disabled={update.isPending}
+            className="rounded border border-[#343b45] bg-[#111418] px-1 py-0.5 text-xs text-[#9ca3af]"
+            aria-label={`Change status for ${name}`}
+            data-testid={`select-status-${id}`}
+          >
+            <option value="">Change…</option>
+            {allowed.map((next) => (
+              <option key={next} value={next}>
+                {STATUS_ACTIONS[next] ?? next}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+      {error && <p className="text-xs text-[#a78bfa]">{error}</p>}
+      <button
+        type="button"
+        className="text-xs text-[#7d848e] underline"
+        onClick={() => setShowHistory(!showHistory)}
+        data-testid={`button-history-${id}`}
+      >
+        {showHistory ? "hide history" : "history"}
+      </button>
+      {showHistory && (
+        <ul
+          className="text-xs text-[#7d848e]"
+          data-testid={`list-history-${id}`}
+        >
+          {history.isLoading && <li>Loading…</li>}
+          {history.data?.changes.length === 0 && <li>No changes yet.</li>}
+          {history.data?.changes.map((c, i) => (
+            <li key={i}>
+              {c.from_status} → {c.to_status} by {c.changed_by_email},{" "}
+              {new Date(c.changed_at).toLocaleString()}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 function ResendConfirmationButton({
   id,
   onSent,
@@ -1145,16 +1262,18 @@ function Admin() {
   const [search, setSearch] = useState("");
   const [level, setLevel] = useState("");
   const [team, setTeam] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [offset, setOffset] = useState(0);
   const params = useMemo(
     () => ({
       search: search || undefined,
       experience_level: level || undefined,
       team_status: team || undefined,
+      status: statusFilter || undefined,
       limit: 50,
       offset,
     }),
-    [search, level, team, offset],
+    [search, level, team, statusFilter, offset],
   );
   const stats = useGetAdminStats({
     query: { queryKey: getGetAdminStatsQueryKey() },
@@ -1222,18 +1341,20 @@ function Admin() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl p-5 py-10">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Total registrations", stats.data?.total ?? "—"],
             [
-              "Looking for a team",
-              stats.data ? (stats.data.by_team_status?.looking ?? 0) : "—",
+              "Pending review",
+              stats.data ? (stats.data.by_status?.pending ?? 0) : "—",
             ],
             [
-              "Beginners",
-              stats.data
-                ? (stats.data.by_experience_level?.beginner ?? 0)
-                : "—",
+              "Approved",
+              stats.data ? (stats.data.by_status?.approved ?? 0) : "—",
+            ],
+            [
+              "Looking for a team",
+              stats.data ? (stats.data.by_team_status?.looking ?? 0) : "—",
             ],
           ].map(([l, v], i) => (
             <div className="panel p-5" key={l as string}>
@@ -1287,6 +1408,21 @@ function Admin() {
               <option value="has_team">Has a team</option>
               <option value="looking">Looking for a team</option>
               <option value="solo">Solo</option>
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setOffset(0);
+              }}
+              className="field max-w-[170px]"
+              data-testid="select-admin-status"
+            >
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="waitlisted">Waitlisted</option>
+              <option value="declined">Declined</option>
             </select>
           </div>
           <a
@@ -1349,7 +1485,13 @@ function Admin() {
                       {r.team_name ? ` · ${r.team_name}` : ""}
                     </td>
                     <td className="p-4">
-                      <span className="capitalize">{r.status}</span>
+                      <StatusControl
+                        id={r.id}
+                        name={r.name}
+                        status={r.status}
+                        allowed={r.allowed_statuses}
+                        onChanged={refreshAdminData}
+                      />
                       {r.source === "waitlist" && (
                         <span className="block text-xs text-[#7d848e]">
                           {r.discord_username
