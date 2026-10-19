@@ -80,6 +80,12 @@ IAM → Roles → Create role:
 - Trusted entity: Web identity → the provider above, audience `sts.amazonaws.com`
 - GitHub organization: `WSU-4110`; repository: `Integrated-Event-Operations-Platform`; branch: `main`
 - Skip the permissions page, name the role `builderwars-github-deploy`, create it
+- Open the role → Trust relationships → Edit trust policy, and make the `sub` condition exactly the value below. This repository uses GitHub's immutable subject format, which includes the organization and repository IDs, so the value the console wizard generates won't match. (`gh api repos/WSU-4110/Integrated-Event-Operations-Platform/actions/oidc/customization/sub` shows the prefix.)
+
+  ```json
+  "token.actions.githubusercontent.com:sub": "repo:WSU-4110@55041847/Integrated-Event-Operations-Platform@1372491483:ref:refs/heads/main"
+  ```
+
 - Open the role → Add permissions → Create inline policy → JSON, paste the policy below, name it `lightsail-deploy`
 
 ```json
