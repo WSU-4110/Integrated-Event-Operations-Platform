@@ -6,6 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface WaitlistCheckResult {
-  registered: boolean;
-}
+export type CheckRegistrationParams = {
+email: string;
+};

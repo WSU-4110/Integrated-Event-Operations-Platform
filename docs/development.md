@@ -25,18 +25,19 @@ Environment variables are listed in `.env.example`. Nothing loads a `.env` file 
 ## Layout
 
 - `artifacts/hackathon/` — React + Vite web app (Tailwind 4, shadcn/ui, framer-motion, wouter, TanStack Query)
-  - `src/App.tsx` — the whole site: every home section, the waitlist form, and the admin dashboard. Routes: `/` and `/admin`.
+  - `src/App.tsx` — the whole site: every home section, the registration form, and the admin dashboard. Routes: `/` and `/admin`.
   - `src/config/event.ts` — all event content (name, date, schedule, FAQ, links). Change content here, not in components.
   - `src/components/ui/` — shadcn/ui components
 - `artifacts/api-server/` — Express 5 API, bundled with esbuild, mounted at `/api`
-  - `src/routes/waitlist.ts` — `POST /waitlist`, `GET /waitlist/check`, `GET /waitlist/information-packet`
+  - `src/routes/registration.ts` — `POST /registrations`, `GET /registrations/check`, `GET /information-packet`
   - `src/routes/admin.ts` — `GET /admin/registrations`, `DELETE /admin/registrations/:id`, `GET /admin/stats`, `GET /admin/export` (CSV)
   - `src/routes/auth.ts`, `src/lib/auth.ts`, `src/middlewares/authMiddleware.ts` — Google sign-in (OpenID Connect with PKCE), sessions stored in Postgres. Setup: `docs/google-sign-in.md`
-  - `src/lib/waitlistConfirmationEmail.ts` — confirmation email with the information packet attached
+  - `src/lib/registrationConfirmationEmail.ts` — confirmation email with the information packet attached, sent through the Resend API (`RESEND_API_KEY`)
 - `artifacts/mockup-sandbox/` — Replit's component preview sandbox. Not part of the product.
 - `lib/api-spec/openapi.yaml` — the API contract and source of truth. Orval generates from it.
 - `lib/api-zod/`, `lib/api-client-react/` — generated Zod schemas and React Query hooks. Do not edit `src/generated/` by hand.
-- `lib/db/` — Drizzle ORM schema and Postgres client. Tables: `waitlist_registrations`, `users`, `sessions`.
+- `lib/db/` — Drizzle ORM schema and Postgres client. Tables: `registrations`, `users`, `sessions`. Migrations are in `lib/db/drizzle/`.
+- `scripts/src/import-waitlist.ts` — one-time import of the old Replit waitlist CSV into `registrations`
 - `lib/replit-auth-web/` — `useAuth()` hook used by the web app
 - `attached_assets/` — PDF packets, `brand/` (BuilderWars logo set), and `sponsors/` (sponsor logos). The web app imports them through the `@assets` alias, and the API reads the information packet from here by path. Renaming a file breaks both.
 - `screenshots/` — reference screenshots of wayneaws.dev, the design the site was based on. The rebrand moves away from it: purple accent instead of orange, pixel-style BuilderWars logo.
@@ -51,7 +52,7 @@ Environment variables are listed in `.env.example`. Nothing loads a `.env` file 
 - Admin authorization is enforced on the server. Middleware on `/api/admin` looks up the signed-in user's email in the `users` table and checks it against the comma-separated `ADMIN_EMAILS` list: 401 when signed out, 403 for anyone else. The session's public user object does not include the email, so never authorize from client state or the session shape.
 - `GET /api/auth/user` returns `{ user: AuthUser | null }`, which is what `useAuth()` expects. Use `useAuth()` for auth state, not the generated API hooks.
 - Admin CSV export is a plain browser link to `/api/admin/export`, not a hook.
-- Waitlist signup requires a `.edu` email, rejects duplicates (409), and rolls the registration back with a 502 if the confirmation email fails to send.
+- Registration requires a `.edu` email and rejects duplicates per event (409). New registrations start as `pending`. If the confirmation email fails, the registration is kept and `confirmation_email_sent_at` stays empty; the admin table shows "email not sent".
 
 ## Gotchas
 
@@ -59,14 +60,13 @@ Environment variables are listed in `.env.example`. Nothing loads a `.env` file 
 - In the OpenAPI spec, avoid `format: email` and `type: integer` (use `type: string` with server-side validation, and `type: number`). Orval emits Zod v4 syntax but the typecheck uses v3.
 - The Google Fonts `@import url(...)` must be the first line of `index.css`.
 - `lib/replit-auth-web` uses `import.meta.env.BASE_URL`, so its tsconfig needs `vite/client` types.
-- The waitlist form's "Class standing" field is sent as `discord_username` and stored in the `discord_username` column. There is no class-standing column yet. The admin table shows it as "Class Standing", but the API field and the CSV header are `discord_username`.
+- Rows imported from the old waitlist have `source = waitlist` and no Discord username or team status yet. (The old waitlist stored class standing in its `discord_username` column; the import script maps it to `class_standing`.)
 - Keep `App.tsx` formatted with Prettier (`pnpm exec prettier --write artifacts/hackathon/src/App.tsx`) so diffs stay reviewable.
 
 ## Still tied to Replit
 
 These need replacing before the app runs fully outside Replit:
 
-1. **Email.** `waitlistConfirmationEmail.ts` sends through `@replit/connectors-sdk`, which proxies to Resend. Replace it with a direct Resend API call and a `RESEND_API_KEY`. Until then, waitlist signups fail with a 502.
-2. **Vite plugins.** `@replit/vite-plugin-runtime-error-modal`, `-cartographer`, and `-dev-banner` in both Vite configs and the pnpm catalog.
-3. **Leftovers.** `artifacts/mockup-sandbox/`, `scripts/post-merge.sh` (a Replit merge hook), the `@replit/*` entries in `minimumReleaseAgeExclude`, and the `replit-auth-web` package name.
-4. **Hosting and database.** The site was deployed on Replit autoscale with Replit's Postgres. The replacement is Lightsail (see `docs/deployment.md`); the image is ready, but the AWS resources, the domain, and the data import are not done yet. The waitlist was exported as CSV and is kept outside the repo.
+1. **Vite plugins.** `@replit/vite-plugin-runtime-error-modal`, `-cartographer`, and `-dev-banner` in both Vite configs and the pnpm catalog.
+2. **Leftovers.** `artifacts/mockup-sandbox/`, `scripts/post-merge.sh` (a Replit merge hook), the `@replit/*` entries in `minimumReleaseAgeExclude`, and the `replit-auth-web` package name.
+3. **Old deployment.** The Replit site at awsbuilderwars.dev still runs. Turn it off once the waitlist import is verified on the new site.

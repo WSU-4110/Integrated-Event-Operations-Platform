@@ -18,61 +18,65 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * Register for the hackathon waitlist
- * @summary Submit waitlist registration
+ * Creates one registration with status "pending". The confirmation email is sent after the registration is saved; if it fails, the registration is kept and marked for a resend.
+ * @summary Register for BuilderWars
  */
-export const submitWaitlistBodyNameMax = 255;
+export const submitRegistrationBodyNameMax = 255;
 
-export const submitWaitlistBodyEmailMax = 255;
-
-
-export const submitWaitlistBodyEmailRegExp = new RegExp('^[^\\s@]+@[^\\s@]+\\.[Ee][Dd][Uu]$');
-export const submitWaitlistBodySchoolMax = 255;
-
-export const submitWaitlistBodyDiscordUsernameMax = 100;
+export const submitRegistrationBodyEmailMax = 255;
 
 
+export const submitRegistrationBodyEmailRegExp = new RegExp('^[^\\s@]+@[^\\s@]+\\.[Ee][Dd][Uu]$');
+export const submitRegistrationBodySchoolMax = 255;
 
-export const SubmitWaitlistBody = zod.object({
-  "name": zod.string().min(1).max(submitWaitlistBodyNameMax),
-  "email": zod.string().max(submitWaitlistBodyEmailMax).regex(submitWaitlistBodyEmailRegExp),
-  "school": zod.string().min(1).max(submitWaitlistBodySchoolMax),
-  "discord_username": zod.string().max(submitWaitlistBodyDiscordUsernameMax).nullish(),
-  "experience_level": zod.enum(['beginner', 'intermediate', 'advanced', 'professional'])
+export const submitRegistrationBodyDiscordUsernameMin = 2;
+export const submitRegistrationBodyDiscordUsernameMax = 37;
+
+export const submitRegistrationBodyTeamNameMax = 100;
+
+
+
+export const SubmitRegistrationBody = zod.object({
+  "name": zod.string().min(1).max(submitRegistrationBodyNameMax),
+  "email": zod.string().max(submitRegistrationBodyEmailMax).regex(submitRegistrationBodyEmailRegExp),
+  "school": zod.string().min(1).max(submitRegistrationBodySchoolMax),
+  "class_standing": zod.enum(['freshman', 'sophomore', 'junior', 'senior', 'graduate']),
+  "experience_level": zod.enum(['beginner', 'intermediate', 'advanced', 'professional']),
+  "discord_username": zod.string().min(submitRegistrationBodyDiscordUsernameMin).max(submitRegistrationBodyDiscordUsernameMax),
+  "team_status": zod.enum(['has_team', 'looking', 'solo']),
+  "team_name": zod.string().max(submitRegistrationBodyTeamNameMax).nullish()
 })
 
-export const SubmitWaitlistResponse = zod.object({
+export const SubmitRegistrationResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "email": zod.string(),
-  "school": zod.string(),
-  "discord_username": zod.string().nullish(),
-  "experience_level": zod.string(),
-  "created_at": zod.coerce.date()
+  "status": zod.string(),
+  "confirmation_email_sent": zod.boolean()
 })
 
 
 /**
- * @summary Download the BuilderFest information packet
+ * @summary Check if an email is already registered
  */
-export const DownloadWaitlistInformationPacketResponse = zod.unknown()
-
-
-/**
- * @summary Check if email is already registered
- */
-export const CheckWaitlistQueryParams = zod.object({
+export const CheckRegistrationQueryParams = zod.object({
   "email": zod.coerce.string()
 })
 
-export const CheckWaitlistResponse = zod.object({
+export const CheckRegistrationResponse = zod.object({
   "registered": zod.boolean()
 })
 
 
 /**
+ * @summary Download the BuilderWars information packet
+ */
+export const DownloadInformationPacketResponse = zod.unknown()
+
+
+/**
  * Returns paginated registrations with optional search and filter. Requires authentication.
- * @summary List all waitlist registrations
+ * @summary List registrations
  */
 export const listRegistrationsQueryLimitDefault = 50;
 export const listRegistrationsQueryOffsetDefault = 0;
@@ -80,6 +84,7 @@ export const listRegistrationsQueryOffsetDefault = 0;
 export const ListRegistrationsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "experience_level": zod.coerce.string().optional(),
+  "team_status": zod.coerce.string().optional(),
   "limit": zod.coerce.number().int().default(listRegistrationsQueryLimitDefault),
   "offset": zod.coerce.number().int().default(listRegistrationsQueryOffsetDefault)
 })
@@ -90,8 +95,14 @@ export const ListRegistrationsResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "school": zod.string(),
-  "discord_username": zod.string().nullish(),
+  "class_standing": zod.string(),
   "experience_level": zod.string(),
+  "discord_username": zod.string().nullish(),
+  "team_status": zod.string().nullish(),
+  "team_name": zod.string().nullish(),
+  "status": zod.string(),
+  "source": zod.string(),
+  "confirmation_email_sent_at": zod.coerce.date().nullish(),
   "created_at": zod.coerce.date()
 })),
   "total": zod.number()
@@ -99,8 +110,8 @@ export const ListRegistrationsResponse = zod.object({
 
 
 /**
- * Permanently delete one waitlist registration. Requires organizer authentication.
- * @summary Delete a waitlist registration
+ * Permanently delete one registration. Requires organizer authentication.
+ * @summary Delete a registration
  */
 
 
@@ -113,12 +124,13 @@ export const DeleteRegistrationResponse = zod.void()
 
 
 /**
- * Returns total count and breakdown by experience level. Requires authentication.
+ * Returns the total and breakdowns by experience level and team status. Requires authentication.
  * @summary Get registration statistics
  */
 export const GetAdminStatsResponse = zod.object({
   "total": zod.number(),
-  "by_experience_level": zod.record(zod.string(), zod.number())
+  "by_experience_level": zod.record(zod.string(), zod.number()),
+  "by_team_status": zod.record(zod.string(), zod.number())
 })
 
 

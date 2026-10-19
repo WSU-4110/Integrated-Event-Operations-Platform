@@ -9,17 +9,37 @@ export interface HealthStatus {
   status: string;
 }
 
-export type WaitlistInputExperienceLevel = typeof WaitlistInputExperienceLevel[keyof typeof WaitlistInputExperienceLevel];
+export type RegistrationInputClassStanding = typeof RegistrationInputClassStanding[keyof typeof RegistrationInputClassStanding];
 
 
-export const WaitlistInputExperienceLevel = {
+export const RegistrationInputClassStanding = {
+  freshman: 'freshman',
+  sophomore: 'sophomore',
+  junior: 'junior',
+  senior: 'senior',
+  graduate: 'graduate',
+} as const;
+
+export type RegistrationInputExperienceLevel = typeof RegistrationInputExperienceLevel[keyof typeof RegistrationInputExperienceLevel];
+
+
+export const RegistrationInputExperienceLevel = {
   beginner: 'beginner',
   intermediate: 'intermediate',
   advanced: 'advanced',
   professional: 'professional',
 } as const;
 
-export interface WaitlistInput {
+export type RegistrationInputTeamStatus = typeof RegistrationInputTeamStatus[keyof typeof RegistrationInputTeamStatus];
+
+
+export const RegistrationInputTeamStatus = {
+  has_team: 'has_team',
+  looking: 'looking',
+  solo: 'solo',
+} as const;
+
+export interface RegistrationInput {
   /**
      * @minLength 1
      * @maxLength 255
@@ -35,39 +55,66 @@ export interface WaitlistInput {
      * @maxLength 255
      */
   school: string;
+  class_standing: RegistrationInputClassStanding;
+  experience_level: RegistrationInputExperienceLevel;
+  /**
+     * @minLength 2
+     * @maxLength 37
+     */
+  discord_username: string;
+  team_status: RegistrationInputTeamStatus;
   /**
      * @maxLength 100
      * @nullable
      */
-  discord_username?: string | null;
-  experience_level: WaitlistInputExperienceLevel;
+  team_name?: string | null;
 }
 
-export interface WaitlistRegistration {
+export interface RegistrationConfirmation {
+  id: number;
+  name: string;
+  email: string;
+  status: string;
+  confirmation_email_sent: boolean;
+}
+
+export interface Registration {
   id: number;
   name: string;
   email: string;
   school: string;
+  class_standing: string;
+  experience_level: string;
   /** @nullable */
   discord_username?: string | null;
-  experience_level: string;
+  /** @nullable */
+  team_status?: string | null;
+  /** @nullable */
+  team_name?: string | null;
+  status: string;
+  source: string;
+  /** @nullable */
+  confirmation_email_sent_at?: string | null;
   created_at: string;
 }
 
-export interface WaitlistCheckResult {
+export interface RegistrationCheckResult {
   registered: boolean;
 }
 
 export interface AdminRegistrationList {
-  registrations: WaitlistRegistration[];
+  registrations: Registration[];
   total: number;
 }
 
 export type AdminStatsByExperienceLevel = {[key: string]: number};
 
+export type AdminStatsByTeamStatus = {[key: string]: number};
+
 export interface AdminStats {
   total: number;
   by_experience_level: AdminStatsByExperienceLevel;
+  by_team_status: AdminStatsByTeamStatus;
 }
 
 export interface AuthUser {
@@ -83,13 +130,14 @@ export interface ApiError {
   error: string;
 }
 
-export type CheckWaitlistParams = {
+export type CheckRegistrationParams = {
 email: string;
 };
 
 export type ListRegistrationsParams = {
 search?: string;
 experience_level?: string;
+team_status?: string;
 limit?: number;
 offset?: number;
 };

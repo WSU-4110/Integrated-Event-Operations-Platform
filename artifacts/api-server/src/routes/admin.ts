@@ -1,6 +1,12 @@
 import { Router, type IRouter } from "express";
-import { ilike, or, eq, count, sql } from "drizzle-orm";
-import { db, usersTable, waitlistTable } from "@workspace/db";
+import { and, count, eq, ilike, or, type SQL } from "drizzle-orm";
+import {
+  db,
+  EVENT_ID,
+  registrationsTable,
+  usersTable,
+  type Registration,
+} from "@workspace/db";
 import { ListRegistrationsQueryParams } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -33,6 +39,26 @@ router.use("/admin", async (req, res, next) => {
   next();
 });
 
+function toApi(r: Registration) {
+  return {
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    school: r.school,
+    class_standing: r.classStanding,
+    experience_level: r.experienceLevel,
+    discord_username: r.discordUsername,
+    team_status: r.teamStatus,
+    team_name: r.teamName,
+    status: r.status,
+    source: r.source,
+    confirmation_email_sent_at: r.confirmationEmailSentAt,
+    created_at: r.createdAt,
+  };
+}
+
+const forThisEvent = eq(registrationsTable.eventId, EVENT_ID);
+
 router.get("/admin/registrations", async (req, res): Promise<void> => {
   const parsed = ListRegistrationsQueryParams.safeParse(req.query);
   if (!parsed.success) {
@@ -40,50 +66,41 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
     return;
   }
 
-  const { search, experience_level, limit, offset } = parsed.data;
+  const { search, experience_level, team_status, limit, offset } = parsed.data;
 
-  const conditions = [];
+  const conditions: SQL[] = [forThisEvent];
   if (search) {
     conditions.push(
       or(
-        ilike(waitlistTable.name, `%${search}%`),
-        ilike(waitlistTable.email, `%${search}%`),
-        ilike(waitlistTable.school, `%${search}%`),
-      ),
+        ilike(registrationsTable.name, `%${search}%`),
+        ilike(registrationsTable.email, `%${search}%`),
+        ilike(registrationsTable.school, `%${search}%`),
+        ilike(registrationsTable.discordUsername, `%${search}%`),
+        ilike(registrationsTable.teamName, `%${search}%`),
+      )!,
     );
   }
   if (experience_level) {
-    conditions.push(eq(waitlistTable.experienceLevel, experience_level));
+    conditions.push(eq(registrationsTable.experienceLevel, experience_level));
   }
-
-  const whereClause = conditions.length > 0
-    ? conditions.reduce((acc, cond) => sql`${acc} AND ${cond}`)
-    : undefined;
+  if (team_status) {
+    conditions.push(eq(registrationsTable.teamStatus, team_status));
+  }
+  const whereClause = and(...conditions);
 
   const [registrations, totalResult] = await Promise.all([
     db
       .select()
-      .from(waitlistTable)
+      .from(registrationsTable)
       .where(whereClause)
-      .orderBy(waitlistTable.createdAt)
+      .orderBy(registrationsTable.createdAt)
       .limit(limit)
       .offset(offset),
-    db
-      .select({ count: count() })
-      .from(waitlistTable)
-      .where(whereClause),
+    db.select({ count: count() }).from(registrationsTable).where(whereClause),
   ]);
 
   res.json({
-    registrations: registrations.map((r) => ({
-      id: r.id,
-      name: r.name,
-      email: r.email,
-      school: r.school,
-      discord_username: r.discordUsername,
-      experience_level: r.experienceLevel,
-      created_at: r.createdAt,
-    })),
+    registrations: registrations.map(toApi),
     total: Number(totalResult[0]?.count ?? 0),
   });
 });
@@ -102,9 +119,9 @@ router.delete("/admin/registrations/:id", async (req, res): Promise<void> => {
   }
 
   const deleted = await db
-    .delete(waitlistTable)
-    .where(eq(waitlistTable.id, registrationId))
-    .returning({ id: waitlistTable.id });
+    .delete(registrationsTable)
+    .where(and(eq(registrationsTable.id, registrationId), forThisEvent))
+    .returning({ id: registrationsTable.id });
 
   if (deleted.length === 0) {
     res.status(404).json({ error: "Registration not found." });
@@ -114,64 +131,80 @@ router.delete("/admin/registrations/:id", async (req, res): Promise<void> => {
   res.status(204).send();
 });
 
-router.get("/admin/stats", async (req, res): Promise<void> => {
-  const [totalResult, byLevel] = await Promise.all([
-    db.select({ count: count() }).from(waitlistTable),
+router.get("/admin/stats", async (_req, res): Promise<void> => {
+  const [totalResult, byLevel, byTeam] = await Promise.all([
+    db.select({ count: count() }).from(registrationsTable).where(forThisEvent),
     db
-      .select({
-        level: waitlistTable.experienceLevel,
-        count: count(),
-      })
-      .from(waitlistTable)
-      .groupBy(waitlistTable.experienceLevel),
+      .select({ key: registrationsTable.experienceLevel, count: count() })
+      .from(registrationsTable)
+      .where(forThisEvent)
+      .groupBy(registrationsTable.experienceLevel),
+    db
+      .select({ key: registrationsTable.teamStatus, count: count() })
+      .from(registrationsTable)
+      .where(forThisEvent)
+      .groupBy(registrationsTable.teamStatus),
   ]);
 
-  const by_experience_level: Record<string, number> = {};
-  for (const row of byLevel) {
-    by_experience_level[row.level] = Number(row.count);
-  }
+  const tally = (rows: { key: string | null; count: number }[]) =>
+    Object.fromEntries(
+      rows.map((row) => [row.key ?? "unknown", Number(row.count)]),
+    );
 
   res.json({
     total: Number(totalResult[0]?.count ?? 0),
-    by_experience_level,
+    by_experience_level: tally(byLevel),
+    by_team_status: tally(byTeam),
   });
 });
 
-router.get("/admin/export", async (req, res): Promise<void> => {
+// Quote values for CSV, and neutralize spreadsheet formulas: a value starting
+// with = + - @ (or tab/return) would run as a formula in Excel or Sheets.
+function csvCell(value: string | number | Date | null | undefined): string {
+  if (value == null) return "";
+  let str = value instanceof Date ? value.toISOString() : String(value);
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
+  if (/[",\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+router.get("/admin/export", async (_req, res): Promise<void> => {
   const registrations = await db
     .select()
-    .from(waitlistTable)
-    .orderBy(waitlistTable.createdAt);
+    .from(registrationsTable)
+    .where(forThisEvent)
+    .orderBy(registrationsTable.createdAt);
 
-  const header = "id,name,email,school,discord_username,experience_level,created_at\n";
-  const rows = registrations
-    .map((r) => {
-      const escape = (v: string | null | undefined) => {
-        if (v == null) return "";
-        const str = String(v);
-        if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-          return `"${str.replace(/"/g, '""')}"`;
-        }
-        return str;
-      };
-      return [
-        r.id,
-        escape(r.name),
-        escape(r.email),
-        escape(r.school),
-        escape(r.discordUsername),
-        escape(r.experienceLevel),
-        r.createdAt.toISOString(),
-      ].join(",");
-    })
-    .join("\n");
+  const columns = [
+    "id",
+    "name",
+    "email",
+    "school",
+    "class_standing",
+    "experience_level",
+    "discord_username",
+    "team_status",
+    "team_name",
+    "status",
+    "source",
+    "confirmation_email_sent_at",
+    "created_at",
+  ] as const;
+  const rows = registrations.map((r) => {
+    const api = toApi(r);
+    return columns.map((column) => csvCell(api[column])).join(",");
+  });
 
   res.setHeader("Content-Type", "text/csv");
   res.setHeader(
     "Content-Disposition",
-    `attachment; filename="waitlist-${new Date().toISOString().split("T")[0]}.csv"`,
+    `attachment; filename="registrations-${new Date().toISOString().split("T")[0]}.csv"`,
   );
-  res.send(header + rows);
+  res.send([columns.join(","), ...rows].join("\n") + "\n");
 });
 
 export default router;

@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AdminStatsByExperienceLevel } from './adminStatsByExperienceLevel';
+import type { AdminStatsByTeamStatus } from './adminStatsByTeamStatus';
 
 export interface AdminStats {
   total: number;
   by_experience_level: AdminStatsByExperienceLevel;
+  by_team_status: AdminStatsByTeamStatus;
 }

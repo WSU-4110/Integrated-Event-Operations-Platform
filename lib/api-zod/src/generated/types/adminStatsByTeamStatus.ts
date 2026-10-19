@@ -6,6 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type CheckWaitlistParams = {
-email: string;
-};
+export type AdminStatsByTeamStatus = {[key: string]: number};

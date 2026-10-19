@@ -24,12 +24,12 @@ import type {
   AdminStats,
   ApiError,
   AuthUser,
-  CheckWaitlistParams,
+  CheckRegistrationParams,
   HealthStatus,
   ListRegistrationsParams,
-  WaitlistCheckResult,
-  WaitlistInput,
-  WaitlistRegistration
+  RegistrationCheckResult,
+  RegistrationConfirmation,
+  RegistrationInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -137,26 +137,26 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
-export const getSubmitWaitlistUrl = () => {
+export const getSubmitRegistrationUrl = () => {
 
 
 
 
-  return `/api/waitlist`
+  return `/api/registrations`
 }
 
 /**
- * Register for the hackathon waitlist
- * @summary Submit waitlist registration
+ * Creates one registration with status "pending". The confirmation email is sent after the registration is saved; if it fails, the registration is kept and marked for a resend.
+ * @summary Register for BuilderWars
  */
-export const submitWaitlist = async (waitlistInput: WaitlistInput, options?: Parameters<typeof customFetch>[1]): Promise<WaitlistRegistration> => {
+export const submitRegistration = async (registrationInput: RegistrationInput, options?: Parameters<typeof customFetch>[1]): Promise<RegistrationConfirmation> => {
 
-  return customFetch<WaitlistRegistration>(getSubmitWaitlistUrl(),
+  return customFetch<RegistrationConfirmation>(getSubmitRegistrationUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(waitlistInput)
+    body: JSON.stringify(registrationInput)
   }
 );}
 
@@ -164,11 +164,11 @@ export const submitWaitlist = async (waitlistInput: WaitlistInput, options?: Par
 
 
 
-export const getSubmitWaitlistMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitWaitlist>>, TError,{data: BodyType<WaitlistInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof submitWaitlist>>, TError,{data: BodyType<WaitlistInput>}, TContext> => {
+export const getSubmitRegistrationMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitRegistration>>, TError,{data: BodyType<RegistrationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitRegistration>>, TError,{data: BodyType<RegistrationInput>}, TContext> => {
 
-const mutationKey = ['submitWaitlist'];
+const mutationKey = ['submitRegistration'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -178,10 +178,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitWaitlist>>, {data: BodyType<WaitlistInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitRegistration>>, {data: BodyType<RegistrationInput>}> = (props) => {
           const {data} = props ?? {};
 
-          return  submitWaitlist(data,requestOptions)
+          return  submitRegistration(data,requestOptions)
         }
 
 
@@ -191,38 +191,45 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type SubmitWaitlistMutationResult = NonNullable<Awaited<ReturnType<typeof submitWaitlist>>>
-    export type SubmitWaitlistMutationBody = BodyType<WaitlistInput>
-    export type SubmitWaitlistMutationError = ErrorType<ApiError>
+    export type SubmitRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof submitRegistration>>>
+    export type SubmitRegistrationMutationBody = BodyType<RegistrationInput>
+    export type SubmitRegistrationMutationError = ErrorType<ApiError>
 
     /**
- * @summary Submit waitlist registration
+ * @summary Register for BuilderWars
  */
-export const useSubmitWaitlist = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitWaitlist>>, TError,{data: BodyType<WaitlistInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useSubmitRegistration = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitRegistration>>, TError,{data: BodyType<RegistrationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof submitWaitlist>>,
+        Awaited<ReturnType<typeof submitRegistration>>,
         TError,
-        {data: BodyType<WaitlistInput>},
+        {data: BodyType<RegistrationInput>},
         TContext
       > => {
-      return useMutation(getSubmitWaitlistMutationOptions(options));
+      return useMutation(getSubmitRegistrationMutationOptions(options));
     }
 
-export const getDownloadWaitlistInformationPacketUrl = () => {
+export const getCheckRegistrationUrl = (params: CheckRegistrationParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/waitlist/information-packet`
+  return stringifiedParams.length > 0 ? `/api/registrations/check?${stringifiedParams}` : `/api/registrations/check`
 }
 
 /**
- * @summary Download the BuilderFest information packet
+ * @summary Check if an email is already registered
  */
-export const downloadWaitlistInformationPacket = async ( options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+export const checkRegistration = async (params: CheckRegistrationParams, options?: Parameters<typeof customFetch>[1]): Promise<RegistrationCheckResult> => {
 
-  return customFetch<Blob>(getDownloadWaitlistInformationPacketUrl(),
+  return customFetch<RegistrationCheckResult>(getCheckRegistrationUrl(params),
   {
     ...options,
     method: 'GET'
@@ -235,45 +242,45 @@ export const downloadWaitlistInformationPacket = async ( options?: Parameters<ty
 
 
 
-export const getDownloadWaitlistInformationPacketQueryKey = () => {
+export const getCheckRegistrationQueryKey = (params?: CheckRegistrationParams,) => {
     return [
-    `/api/waitlist/information-packet`
+    `/api/registrations/check`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getDownloadWaitlistInformationPacketQueryOptions = <TData = Awaited<ReturnType<typeof downloadWaitlistInformationPacket>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadWaitlistInformationPacket>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getCheckRegistrationQueryOptions = <TData = Awaited<ReturnType<typeof checkRegistration>>, TError = ErrorType<unknown>>(params: CheckRegistrationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkRegistration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getDownloadWaitlistInformationPacketQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getCheckRegistrationQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadWaitlistInformationPacket>>> = ({ signal }) => downloadWaitlistInformationPacket({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkRegistration>>> = ({ signal }) => checkRegistration(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadWaitlistInformationPacket>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkRegistration>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type DownloadWaitlistInformationPacketQueryResult = NonNullable<Awaited<ReturnType<typeof downloadWaitlistInformationPacket>>>
-export type DownloadWaitlistInformationPacketQueryError = ErrorType<unknown>
+export type CheckRegistrationQueryResult = NonNullable<Awaited<ReturnType<typeof checkRegistration>>>
+export type CheckRegistrationQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Download the BuilderFest information packet
+ * @summary Check if an email is already registered
  */
 
-export function useDownloadWaitlistInformationPacket<TData = Awaited<ReturnType<typeof downloadWaitlistInformationPacket>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadWaitlistInformationPacket>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useCheckRegistration<TData = Awaited<ReturnType<typeof checkRegistration>>, TError = ErrorType<unknown>>(
+ params: CheckRegistrationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkRegistration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getDownloadWaitlistInformationPacketQueryOptions(options)
+  const queryOptions = getCheckRegistrationQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -286,27 +293,20 @@ export function useDownloadWaitlistInformationPacket<TData = Awaited<ReturnType<
 
 
 
-export const getCheckWaitlistUrl = (params: CheckWaitlistParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getDownloadInformationPacketUrl = () => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/waitlist/check?${stringifiedParams}` : `/api/waitlist/check`
+  return `/api/information-packet`
 }
 
 /**
- * @summary Check if email is already registered
+ * @summary Download the BuilderWars information packet
  */
-export const checkWaitlist = async (params: CheckWaitlistParams, options?: Parameters<typeof customFetch>[1]): Promise<WaitlistCheckResult> => {
+export const downloadInformationPacket = async ( options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
 
-  return customFetch<WaitlistCheckResult>(getCheckWaitlistUrl(params),
+  return customFetch<Blob>(getDownloadInformationPacketUrl(),
   {
     ...options,
     method: 'GET'
@@ -319,45 +319,45 @@ export const checkWaitlist = async (params: CheckWaitlistParams, options?: Param
 
 
 
-export const getCheckWaitlistQueryKey = (params?: CheckWaitlistParams,) => {
+export const getDownloadInformationPacketQueryKey = () => {
     return [
-    `/api/waitlist/check`, ...(params ? [params] : [])
+    `/api/information-packet`
     ] as const;
     }
 
 
-export const getCheckWaitlistQueryOptions = <TData = Awaited<ReturnType<typeof checkWaitlist>>, TError = ErrorType<unknown>>(params: CheckWaitlistParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getDownloadInformationPacketQueryOptions = <TData = Awaited<ReturnType<typeof downloadInformationPacket>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadInformationPacket>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCheckWaitlistQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getDownloadInformationPacketQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkWaitlist>>> = ({ signal }) => checkWaitlist(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadInformationPacket>>> = ({ signal }) => downloadInformationPacket({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkWaitlist>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadInformationPacket>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type CheckWaitlistQueryResult = NonNullable<Awaited<ReturnType<typeof checkWaitlist>>>
-export type CheckWaitlistQueryError = ErrorType<unknown>
+export type DownloadInformationPacketQueryResult = NonNullable<Awaited<ReturnType<typeof downloadInformationPacket>>>
+export type DownloadInformationPacketQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Check if email is already registered
+ * @summary Download the BuilderWars information packet
  */
 
-export function useCheckWaitlist<TData = Awaited<ReturnType<typeof checkWaitlist>>, TError = ErrorType<unknown>>(
- params: CheckWaitlistParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useDownloadInformationPacket<TData = Awaited<ReturnType<typeof downloadInformationPacket>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadInformationPacket>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getCheckWaitlistQueryOptions(params,options)
+  const queryOptions = getDownloadInformationPacketQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -387,7 +387,7 @@ export const getListRegistrationsUrl = (params?: ListRegistrationsParams,) => {
 
 /**
  * Returns paginated registrations with optional search and filter. Requires authentication.
- * @summary List all waitlist registrations
+ * @summary List registrations
  */
 export const listRegistrations = async (params?: ListRegistrationsParams, options?: Parameters<typeof customFetch>[1]): Promise<AdminRegistrationList> => {
 
@@ -434,7 +434,7 @@ export type ListRegistrationsQueryError = ErrorType<ApiError>
 
 
 /**
- * @summary List all waitlist registrations
+ * @summary List registrations
  */
 
 export function useListRegistrations<TData = Awaited<ReturnType<typeof listRegistrations>>, TError = ErrorType<ApiError>>(
@@ -464,8 +464,8 @@ export const getDeleteRegistrationUrl = (id: number,) => {
 }
 
 /**
- * Permanently delete one waitlist registration. Requires organizer authentication.
- * @summary Delete a waitlist registration
+ * Permanently delete one registration. Requires organizer authentication.
+ * @summary Delete a registration
  */
 export const deleteRegistration = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
 
@@ -514,7 +514,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type DeleteRegistrationMutationError = ErrorType<ApiError>
 
     /**
- * @summary Delete a waitlist registration
+ * @summary Delete a registration
  */
 export const useDeleteRegistration = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteRegistration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -536,7 +536,7 @@ export const getGetAdminStatsUrl = () => {
 }
 
 /**
- * Returns total count and breakdown by experience level. Requires authentication.
+ * Returns the total and breakdowns by experience level and team status. Requires authentication.
  * @summary Get registration statistics
  */
 export const getAdminStats = async ( options?: Parameters<typeof customFetch>[1]): Promise<AdminStats> => {

@@ -10,8 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
-  - name: waitlist
-    description: Waitlist registration operations
+  - name: registration
+    description: Participant registration
   - name: admin
     description: Admin operations (protected)
 paths:
@@ -29,63 +29,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
-  /waitlist:
+  /registrations:
     post:
-      operationId: submitWaitlist
-      tags: [waitlist]
-      summary: Submit waitlist registration
-      description: Register for the hackathon waitlist
+      operationId: submitRegistration
+      tags: [registration]
+      summary: Register for BuilderWars
+      description: Creates one registration with status "pending". The confirmation email is sent after the registration is saved; if it fails, the registration is kept and marked for a resend.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/WaitlistInput"
+              $ref: "#/components/schemas/RegistrationInput"
       responses:
         "201":
-          description: Successfully registered
+          description: Registered
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WaitlistRegistration"
-        "409":
-          description: Email already registered
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
+                $ref: "#/components/schemas/RegistrationConfirmation"
         "400":
           description: Validation error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-        "502":
-          description: Confirmation email could not be delivered
+        "409":
+          description: Email already registered
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
-  /waitlist/information-packet:
+  /registrations/check:
     get:
-      operationId: downloadWaitlistInformationPacket
-      tags: [waitlist]
-      summary: Download the BuilderFest information packet
-      responses:
-        "200":
-          description: BuilderFest information packet PDF
-          content:
-            application/pdf:
-              schema:
-                type: string
-                format: binary
-
-  /waitlist/check:
-    get:
-      operationId: checkWaitlist
-      tags: [waitlist]
-      summary: Check if email is already registered
+      operationId: checkRegistration
+      tags: [registration]
+      summary: Check if an email is already registered
       parameters:
         - name: email
           in: query
@@ -98,13 +78,27 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WaitlistCheckResult"
+                $ref: "#/components/schemas/RegistrationCheckResult"
+
+  /information-packet:
+    get:
+      operationId: downloadInformationPacket
+      tags: [registration]
+      summary: Download the BuilderWars information packet
+      responses:
+        "200":
+          description: Information packet PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
 
   /admin/registrations:
     get:
       operationId: listRegistrations
       tags: [admin]
-      summary: List all waitlist registrations
+      summary: List registrations
       description: Returns paginated registrations with optional search and filter. Requires authentication.
       parameters:
         - name: search
@@ -113,6 +107,11 @@ paths:
           schema:
             type: string
         - name: experience_level
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: team_status
           in: query
           required: false
           schema:
@@ -146,8 +145,8 @@ paths:
     delete:
       operationId: deleteRegistration
       tags: [admin]
-      summary: Delete a waitlist registration
-      description: Permanently delete one waitlist registration. Requires organizer authentication.
+      summary: Delete a registration
+      description: Permanently delete one registration. Requires organizer authentication.
       parameters:
         - name: id
           in: path
@@ -188,7 +187,7 @@ paths:
       operationId: getAdminStats
       tags: [admin]
       summary: Get registration statistics
-      description: Returns total count and breakdown by experience level. Requires authentication.
+      description: Returns the total and breakdowns by experience level and team status. Requires authentication.
       responses:
         "200":
           description: Registration stats
@@ -252,9 +251,9 @@ components:
       required:
         - status
 
-    WaitlistInput:
+    RegistrationInput:
       type: object
-      required: [name, email, school, experience_level]
+      required: [name, email, school, class_standing, experience_level, discord_username, team_status]
       properties:
         name:
           type: string
@@ -268,16 +267,41 @@ components:
           type: string
           minLength: 1
           maxLength: 255
-        discord_username:
-          type: ["string", "null"]
-          maxLength: 100
+        class_standing:
+          type: string
+          enum: [freshman, sophomore, junior, senior, graduate]
         experience_level:
           type: string
           enum: [beginner, intermediate, advanced, professional]
+        discord_username:
+          type: string
+          minLength: 2
+          maxLength: 37
+        team_status:
+          type: string
+          enum: [has_team, looking, solo]
+        team_name:
+          type: ["string", "null"]
+          maxLength: 100
 
-    WaitlistRegistration:
+    RegistrationConfirmation:
       type: object
-      required: [id, name, email, school, experience_level, created_at]
+      required: [id, name, email, status, confirmation_email_sent]
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        email:
+          type: string
+        status:
+          type: string
+        confirmation_email_sent:
+          type: boolean
+
+    Registration:
+      type: object
+      required: [id, name, email, school, class_standing, experience_level, status, source, created_at]
       properties:
         id:
           type: number
@@ -287,15 +311,28 @@ components:
           type: string
         school:
           type: string
-        discord_username:
-          type: ["string", "null"]
+        class_standing:
+          type: string
         experience_level:
           type: string
+        discord_username:
+          type: ["string", "null"]
+        team_status:
+          type: ["string", "null"]
+        team_name:
+          type: ["string", "null"]
+        status:
+          type: string
+        source:
+          type: string
+        confirmation_email_sent_at:
+          type: ["string", "null"]
+          format: date-time
         created_at:
           type: string
           format: date-time
 
-    WaitlistCheckResult:
+    RegistrationCheckResult:
       type: object
       required: [registered]
       properties:
@@ -309,17 +346,21 @@ components:
         registrations:
           type: array
           items:
-            $ref: "#/components/schemas/WaitlistRegistration"
+            $ref: "#/components/schemas/Registration"
         total:
           type: number
 
     AdminStats:
       type: object
-      required: [total, by_experience_level]
+      required: [total, by_experience_level, by_team_status]
       properties:
         total:
           type: number
         by_experience_level:
+          type: object
+          additionalProperties:
+            type: number
+        by_team_status:
           type: object
           additionalProperties:
             type: number

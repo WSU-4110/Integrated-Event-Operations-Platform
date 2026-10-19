@@ -123,7 +123,17 @@ Then on the container service: Custom domains → Create certificate for builder
 
 ### 6. Data
 
-Import the waitlist CSV (kept privately, never in this repo) into the registration table. How depends on the registration fields decided in #1.
+Import the waitlist CSV (kept privately, never in this repo) into `registrations`. From a machine with the repo, with public mode on:
+
+```bash
+curl -o rds-global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+```
+
+```bash
+DATABASE_URL='...' DATABASE_SSL_CA=rds-global-bundle.pem pnpm --filter @workspace/scripts run import-waitlist -- path/to/waitlist.csv
+```
+
+That is a dry run: it prints how many rows are ready and which were skipped. Add `--apply` to write. Running it again skips people already registered.
 
 ## The old domain: awsbuilderwars.dev
 
