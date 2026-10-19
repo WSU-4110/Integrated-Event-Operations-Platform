@@ -44,6 +44,16 @@ jobs:
               problems.append("leading or trailing whitespace or line break")
           if any(c in raw for c in " \t\r\n\"'"):
               problems.append("contains a space, tab, line break, or quote")
+          # Report stray brackets by part before parsing; the parser only says
+          # "Invalid IPv6 URL", which doesn't say where the problem is.
+          rest = raw.strip().split("://", 1)[-1]
+          userinfo, _, hostpart = rest.rpartition("@")
+          user_part, _, password_part = userinfo.partition(":")
+          for name, part in (("user name", user_part), ("password", password_part), ("host, port, or database", hostpart)):
+              if "[" in part or "]" in part:
+                  problems.append(f"the {name} contains [ or ]; encode the password, and don't wrap values in brackets")
+          if problems:
+              sys.exit("DATABASE_URL problems: " + "; ".join(problems))
           p = u.urlsplit(raw.strip())
           print("length:", len(raw))
           print("scheme:", p.scheme)
