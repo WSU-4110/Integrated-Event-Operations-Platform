@@ -1,4 +1,13 @@
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
+// Relative to the bundled server file (artifacts/api-server/dist/index.mjs).
+export const informationPacketPath = fileURLToPath(
+  new URL(
+    "../../../attached_assets/BuilderWars_Information_Packet.pdf",
+    import.meta.url,
+  ),
+);
 
 const RESEND_API_URL = "https://api.resend.com/emails";
 const EMAIL_FROM =
@@ -29,11 +38,9 @@ export function isEmailConfigured(): boolean {
 export async function sendRegistrationConfirmation({
   name,
   email,
-  packetPath,
 }: {
   name: string;
   email: string;
-  packetPath: string;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -42,7 +49,9 @@ export async function sendRegistrationConfirmation({
 
   const firstName = name.trim().split(/\s+/)[0] ?? name.trim();
   const safeFirstName = escapeHtml(firstName);
-  const packetContent = (await readFile(packetPath)).toString("base64");
+  const packetContent = (await readFile(informationPacketPath)).toString(
+    "base64",
+  );
 
   const text = `Hi ${firstName},
 

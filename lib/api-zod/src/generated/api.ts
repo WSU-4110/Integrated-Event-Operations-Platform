@@ -124,6 +124,19 @@ export const DeleteRegistrationResponse = zod.void()
 
 
 /**
+ * Sends the confirmation email again and records when it was sent. Requires organizer authentication.
+ * @summary Resend a registration's confirmation email
+ */
+export const ResendConfirmationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ResendConfirmationResponse = zod.object({
+  "confirmation_email_sent_at": zod.coerce.date()
+})
+
+
+/**
  * Returns the total and breakdowns by experience level and team status. Requires authentication.
  * @summary Get registration statistics
  */

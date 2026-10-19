@@ -52,7 +52,8 @@ Environment variables are listed in `.env.example`. Nothing loads a `.env` file 
 - Admin authorization is enforced on the server. Middleware on `/api/admin` looks up the signed-in user's email in the `users` table and checks it against the comma-separated `ADMIN_EMAILS` list: 401 when signed out, 403 for anyone else. The session's public user object does not include the email, so never authorize from client state or the session shape.
 - `GET /api/auth/user` returns `{ user: AuthUser | null }`, which is what `useAuth()` expects. Use `useAuth()` for auth state, not the generated API hooks.
 - Admin CSV export is a plain browser link to `/api/admin/export`, not a hook.
-- Registration requires a `.edu` email and rejects duplicates per event (409). New registrations start as `pending`. If the confirmation email fails, the registration is kept and `confirmation_email_sent_at` stays empty; the admin table shows "email not sent".
+- Registration requires a `.edu` email and rejects duplicates per event (409). New registrations start as `pending`. If the confirmation email fails, the registration is kept and `confirmation_email_sent_at` stays empty; the admin table shows "email not sent" with a resend button (`POST /api/admin/registrations/:id/resend-confirmation`).
+- People imported from the waitlist (`source = waitlist`, no Discord username) can submit the registration form with the same email: it completes their existing row, keeping their original sign-up date, instead of returning 409. The admin table labels them "waitlist · not completed" until then.
 
 ## Gotchas
 

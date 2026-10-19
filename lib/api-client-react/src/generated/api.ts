@@ -29,7 +29,8 @@ import type {
   ListRegistrationsParams,
   RegistrationCheckResult,
   RegistrationConfirmation,
-  RegistrationInput
+  RegistrationInput,
+  ResendConfirmationResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -525,6 +526,78 @@ export const useDeleteRegistration = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getDeleteRegistrationMutationOptions(options));
+    }
+
+export const getResendConfirmationUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/registrations/${id}/resend-confirmation`
+}
+
+/**
+ * Sends the confirmation email again and records when it was sent. Requires organizer authentication.
+ * @summary Resend a registration's confirmation email
+ */
+export const resendConfirmation = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<ResendConfirmationResult> => {
+
+  return customFetch<ResendConfirmationResult>(getResendConfirmationUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getResendConfirmationMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendConfirmation>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendConfirmation>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['resendConfirmation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendConfirmation>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  resendConfirmation(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendConfirmationMutationResult = NonNullable<Awaited<ReturnType<typeof resendConfirmation>>>
+
+    export type ResendConfirmationMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Resend a registration's confirmation email
+ */
+export const useResendConfirmation = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendConfirmation>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resendConfirmation>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getResendConfirmationMutationOptions(options));
     }
 
 export const getGetAdminStatsUrl = () => {

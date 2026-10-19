@@ -98,6 +98,10 @@ export interface Registration {
   created_at: string;
 }
 
+export interface ResendConfirmationResult {
+  confirmation_email_sent_at: string;
+}
+
 export interface RegistrationCheckResult {
   registered: boolean;
 }

@@ -8,6 +8,7 @@ import {
   type Registration,
 } from "@workspace/db";
 import { ListRegistrationsQueryParams } from "@workspace/api-zod";
+import { sendRegistrationConfirmation } from "../lib/registrationConfirmationEmail";
 
 const router: IRouter = Router();
 // Comma-separated list of organizer emails allowed into /api/admin.
@@ -32,7 +33,9 @@ router.use("/admin", async (req, res, next) => {
 
   const email = user?.email?.trim().toLowerCase();
   if (!email || !ADMIN_EMAILS.has(email)) {
-    res.status(403).json({ error: "Admin access is restricted to event organizers." });
+    res
+      .status(403)
+      .json({ error: "Admin access is restricted to event organizers." });
     return;
   }
 
@@ -130,6 +133,49 @@ router.delete("/admin/registrations/:id", async (req, res): Promise<void> => {
 
   res.status(204).send();
 });
+
+router.post(
+  "/admin/registrations/:id/resend-confirmation",
+  async (req, res): Promise<void> => {
+    const registrationId = Number(req.params.id);
+    if (!Number.isSafeInteger(registrationId) || registrationId < 1) {
+      res.status(400).json({ error: "A valid registration ID is required." });
+      return;
+    }
+
+    const [registration] = await db
+      .select()
+      .from(registrationsTable)
+      .where(and(eq(registrationsTable.id, registrationId), forThisEvent));
+    if (!registration) {
+      res.status(404).json({ error: "Registration not found." });
+      return;
+    }
+
+    try {
+      await sendRegistrationConfirmation({
+        name: registration.name,
+        email: registration.email,
+      });
+    } catch (err: unknown) {
+      req.log.error(
+        { err, registrationId },
+        "Resending the confirmation email failed",
+      );
+      res.status(502).json({
+        error: "The email provider rejected the email. Check the server logs.",
+      });
+      return;
+    }
+
+    const sentAt = new Date();
+    await db
+      .update(registrationsTable)
+      .set({ confirmationEmailSentAt: sentAt })
+      .where(eq(registrationsTable.id, registrationId));
+    res.json({ confirmation_email_sent_at: sentAt });
+  },
+);
 
 router.get("/admin/stats", async (_req, res): Promise<void> => {
   const [totalResult, byLevel, byTeam] = await Promise.all([

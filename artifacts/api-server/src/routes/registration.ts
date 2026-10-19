@@ -1,20 +1,16 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
-import { fileURLToPath } from "node:url";
+import { and, eq, isNull, not } from "drizzle-orm";
 import { db, EVENT_ID, registrationsTable } from "@workspace/db";
 import {
   SubmitRegistrationBody,
   CheckRegistrationQueryParams,
 } from "@workspace/api-zod";
-import { sendRegistrationConfirmation } from "../lib/registrationConfirmationEmail";
+import {
+  informationPacketPath,
+  sendRegistrationConfirmation,
+} from "../lib/registrationConfirmationEmail";
 
 const router: IRouter = Router();
-const informationPacketPath = fileURLToPath(
-  new URL(
-    "../../../attached_assets/BuilderWars_Information_Packet.pdf",
-    import.meta.url,
-  ),
-);
 
 const DUPLICATE_MESSAGE =
   "This email is already registered for BuilderWars. Check your inbox for the confirmation, or contact awssbg@wayne.edu.";
@@ -22,6 +18,14 @@ const DUPLICATE_MESSAGE =
 function normalizeEmail(email: string): string {
   return email.toLowerCase().trim();
 }
+
+// People imported from the old waitlist have no Discord username yet. When
+// they submit the form, their existing row is completed instead of being
+// refused as a duplicate; their original sign-up date is kept.
+const incompleteWaitlistEntry = and(
+  eq(registrationsTable.source, "waitlist"),
+  isNull(registrationsTable.discordUsername),
+);
 
 function isUniqueViolation(err: unknown): boolean {
   // node-postgres reports unique violations as SQLSTATE 23505, sometimes
@@ -53,28 +57,54 @@ router.post("/registrations", async (req, res): Promise<void> => {
   const teamName =
     input.team_status === "has_team" ? input.team_name?.trim() || null : null;
 
+  const details = {
+    name: input.name.trim(),
+    school: input.school.trim(),
+    classStanding: input.class_standing,
+    experienceLevel: input.experience_level,
+    discordUsername: input.discord_username.trim(),
+    teamStatus: input.team_status,
+    teamName,
+  };
+
   let registration;
   try {
     [registration] = await db
       .insert(registrationsTable)
-      .values({
-        name: input.name.trim(),
-        email,
-        school: input.school.trim(),
-        classStanding: input.class_standing,
-        experienceLevel: input.experience_level,
-        discordUsername: input.discord_username.trim(),
-        teamStatus: input.team_status,
-        teamName,
-      })
+      .values({ ...details, email })
       .returning();
   } catch (err: unknown) {
     if (isUniqueViolation(err)) {
-      res.status(409).json({ error: DUPLICATE_MESSAGE });
+      const [completed] = await db
+        .update(registrationsTable)
+        .set(details)
+        .where(
+          and(
+            eq(registrationsTable.eventId, EVENT_ID),
+            eq(registrationsTable.email, email),
+            incompleteWaitlistEntry,
+          ),
+        )
+        .returning();
+      if (!completed) {
+        res.status(409).json({ error: DUPLICATE_MESSAGE });
+        return;
+      }
+      registration = completed;
+    } else {
+      req.log.error({ err }, "Failed to save registration");
+      res
+        .status(500)
+        .json({
+          error: "We couldn't save your registration. Please try again.",
+        });
       return;
     }
-    req.log.error({ err }, "Failed to save registration");
-    res.status(500).json({ error: "We couldn't save your registration. Please try again." });
+  }
+  if (!registration) {
+    res
+      .status(500)
+      .json({ error: "We couldn't save your registration. Please try again." });
     return;
   }
 
@@ -86,7 +116,6 @@ router.post("/registrations", async (req, res): Promise<void> => {
     await sendRegistrationConfirmation({
       name: registration.name,
       email: registration.email,
-      packetPath: informationPacketPath,
     });
     await db
       .update(registrationsTable)
@@ -123,6 +152,8 @@ router.get("/registrations/check", async (req, res): Promise<void> => {
       and(
         eq(registrationsTable.eventId, EVENT_ID),
         eq(registrationsTable.email, normalizeEmail(parsed.data.email)),
+        // An incomplete waitlist entry can still submit the form.
+        not(incompleteWaitlistEntry!),
       ),
     );
 
@@ -135,7 +166,9 @@ router.get("/information-packet", (_req, res): void => {
     "BuilderWars-Information-Packet.pdf",
     (err) => {
       if (err && !res.headersSent) {
-        res.status(500).json({ error: "The information packet is unavailable." });
+        res
+          .status(500)
+          .json({ error: "The information packet is unavailable." });
       }
     },
   );
