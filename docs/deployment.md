@@ -31,7 +31,7 @@ Stored in GitHub (Settings → Secrets and variables → Actions) and passed to 
 | Name | Kind | Value |
 | --- | --- | --- |
 | `AWS_DEPLOY_ROLE_ARN` | Secret | ARN of the IAM role below |
-| `DATABASE_URL` | Secret | `postgresql://USER:PASSWORD@ENDPOINT:5432/DBNAME`. Don't add `sslmode`; it would override the certificate check. URL-encode special characters in the password. |
+| `DATABASE_URL` | Secret | `postgresql://USER:PASSWORD@ENDPOINT:5432/postgres`. USER is the user name on the database's Connect tab (here `builderwars`). The last part is a database *inside* the server, not the Lightsail resource name; `postgres` always exists. Don't add `sslmode`; it would override the certificate check. URL-encode special characters in the password. The deploy's "Check settings" step reports formatting problems. |
 | `ADMIN_EMAILS` | Secret | Comma-separated admin emails (#20) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Secrets | Google sign-in (#20) |
 | `RESEND_API_KEY` | Secret | Email sending (#1, #6) |
@@ -56,7 +56,7 @@ Lightsail → Databases → Create database:
 - Plan: standard (not high availability); smallest plan
 - Resource name: `builderwars-db`
 
-When it's available, note the endpoint. Leave **public mode off**. If the app's logs later show it can't reach the database, turn public mode on (the strong password and the verified SSL connection still protect it).
+When it's available, note the endpoint and turn **public mode on** (Networking tab). The container service can't reach the database privately; with public mode off, the app times out connecting. The strong password and the verified SSL connection protect it; keep `DATABASE_URL` private.
 
 ### 2. Container service
 
