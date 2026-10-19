@@ -158,10 +158,16 @@ A backup only counts once it has been restored successfully. Do this once now, a
    " ENDPOINT
    ```
 
-3. In **Snapshots & restore**, create a new database from the latest restore point. Name it `builderwars-db-restore-test`, smallest plan, same region, and turn **public mode** on once it's available. It uses the same user name and password.
+3. In **Snapshots & restore → Emergency restore**, keep the latest time and choose **Restore to new database**. Name it `builderwars-db-restore-test`, Standard, cheapest plan, and turn **public mode** on once it's available. It keeps the same user name but gets a **new password**, shown on its Connect tab.
 4. Run the command from step 2 again with the restored database's endpoint. The counts should match step 2, except for anything created after the snapshot's time.
 5. Write the result (date, snapshot time, counts, match or not) in the current sprint's notes.
 6. **Delete `builderwars-db-restore-test`.** It's billed for as long as it exists.
+
+### Restore test log
+
+| Date | Restore point | Result |
+| --- | --- | --- |
+| 2026-10-19 | 2026-10-19 16:45 EDT (Lightsail point-in-time restore) | Passed. Restored copy matched the live database: 18 registrations (pending: 18; waitlist: 16, website: 2), 0 status changes, latest registration Oct 19 1:08 PM EDT. Note: a restored database gets a new password (shown on its Connect tab); the user name stays the same. |
 
 ## The old domain: awsbuilderwars.dev
 
