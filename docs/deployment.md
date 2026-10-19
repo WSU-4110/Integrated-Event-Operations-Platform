@@ -11,7 +11,7 @@ The `Dockerfile` at the repo root builds a single image. The API server serves t
 | App | Container service, Nano or Micro, 1 node | Listens on port 8080. Health check path: `/api/healthz`. |
 | Database | Managed PostgreSQL, standard plan | Automatic daily snapshots cover the backup requirement in #23. Consider the high-availability plan for event weekend only. |
 | Domain | builderwars.dev | Registered 2026-10-18 through Route 53 in the club's AWS account (Lightsail's registration doesn't offer .dev). DNS will be a Lightsail DNS zone, which can point the bare domain at the container service. |
-| HTTPS | Container service custom domain certificate | Add builderwars.dev and www.builderwars.dev to the same certificate. |
+| HTTPS | Container service custom domain certificate | `Certificate-1` covers builderwars.dev and www.builderwars.dev; Lightsail renews it. DNS records: A (alias) for `@` and `www`, routed to the service's default domain. |
 | Email | Resend | Sender on builderwars.dev once the domain is verified. |
 
 Confirm prices on the official Lightsail pricing page before creating resources.
