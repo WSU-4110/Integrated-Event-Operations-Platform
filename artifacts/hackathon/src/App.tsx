@@ -5,6 +5,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import {
   useCheckRegistration,
   useDeleteRegistration,
+  useResendConfirmation,
   useGetAdminStats,
   useListRegistrations,
   useSubmitRegistration,
@@ -1042,6 +1043,36 @@ function AdminGate() {
   return <Admin />;
 }
 
+function ResendConfirmationButton({
+  id,
+  onSent,
+}: {
+  id: number;
+  onSent: () => void;
+}) {
+  const resend = useResendConfirmation();
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className="block text-xs text-[#a78bfa]">
+      {failed ? "email failed again" : "email not sent"} ·{" "}
+      <button
+        type="button"
+        className="underline disabled:opacity-50"
+        disabled={resend.isPending}
+        onClick={() => {
+          setFailed(false);
+          resend.mutate(
+            { id },
+            { onSuccess: onSent, onError: () => setFailed(true) },
+          );
+        }}
+        data-testid={`button-resend-${id}`}
+      >
+        {resend.isPending ? "sending…" : "resend"}
+      </button>
+    </span>
+  );
+}
 function DeleteRegistrationButton({
   id,
   name,
@@ -1321,14 +1352,17 @@ function Admin() {
                       <span className="capitalize">{r.status}</span>
                       {r.source === "waitlist" && (
                         <span className="block text-xs text-[#7d848e]">
-                          from waitlist
+                          {r.discord_username
+                            ? "from waitlist"
+                            : "waitlist · not completed"}
                         </span>
                       )}
-                      {r.source !== "waitlist" &&
+                      {(r.source !== "waitlist" || r.discord_username) &&
                         !r.confirmation_email_sent_at && (
-                          <span className="block text-xs text-[#a78bfa]">
-                            email not sent
-                          </span>
+                          <ResendConfirmationButton
+                            id={r.id}
+                            onSent={refreshAdminData}
+                          />
                         )}
                     </td>
                     <td className="p-4 text-[#9ca3af]">

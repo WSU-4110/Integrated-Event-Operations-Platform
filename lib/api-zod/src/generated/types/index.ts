@@ -22,3 +22,4 @@ export * from './registrationInput';
 export * from './registrationInputClassStanding';
 export * from './registrationInputExperienceLevel';
 export * from './registrationInputTeamStatus';
+export * from './resendConfirmationResult';
