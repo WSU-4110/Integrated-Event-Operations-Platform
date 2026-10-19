@@ -1,0 +1,80 @@
+name: Deploy
+
+# Builds the Docker image and deploys it to the Lightsail container service.
+# Runs on every push to main once the repository variable DEPLOY_ENABLED is
+# "true" (see docs/deployment.md for the one-time AWS and GitHub setup).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # lets GitHub sign in to AWS without stored access keys
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-2
+  SERVICE_NAME: builderwars
+
+jobs:
+  deploy:
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install the Lightsail container plugin
+        run: |
+          sudo curl -fsSL "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o /usr/local/bin/lightsailctl
+          sudo chmod +x /usr/local/bin/lightsailctl
+
+      - name: Build the image
+        run: docker build -t builderwars:${{ github.sha }} .
+
+      - name: Push the image to Lightsail
+        run: |
+          aws lightsail push-container-image \
+            --service-name "$SERVICE_NAME" \
+            --label app \
+            --image "builderwars:${{ github.sha }}"
+          IMAGE=$(aws lightsail get-container-images --service-name "$SERVICE_NAME" \
+            --query 'containerImages[0].image' --output text)
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM_EMAIL: ${{ vars.RESEND_FROM_EMAIL }}
+          CANONICAL_HOST: ${{ vars.CANONICAL_HOST }}
+        run: |
+          jq -n --arg image "$IMAGE" '{
+            app: {
+              image: $image,
+              ports: { "8080": "HTTP" },
+              environment: (env | with_entries(select(.key | IN(
+                "DATABASE_URL", "ADMIN_EMAILS", "GOOGLE_CLIENT_ID",
+                "GOOGLE_CLIENT_SECRET", "RESEND_API_KEY", "RESEND_FROM_EMAIL",
+                "CANONICAL_HOST"
+              )) | select(.value != "")))
+            }
+          }' > containers.json
+          aws lightsail create-container-service-deployment \
+            --service-name "$SERVICE_NAME" \
+            --containers file://containers.json \
+            --public-endpoint '{"containerName":"app","containerPort":8080,"healthCheck":{"path":"/api/healthz","successCodes":"200"}}' \
+            --query 'containerService.state' --output text
+          rm containers.json

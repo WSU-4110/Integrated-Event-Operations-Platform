@@ -14,7 +14,8 @@ Uses pnpm workspaces (npm and yarn are blocked by a preinstall check). Node 24, 
 - `pnpm --filter @workspace/hackathon run dev` — web app (Vite). Requires `PORT` and `BASE_PATH`.
 - `pnpm --filter @workspace/api-server run dev` — API server (builds, then starts). Requires `PORT`.
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push schema changes to the database (dev only)
+- `pnpm --filter @workspace/db run push` — push schema changes to a local database (dev only)
+- `pnpm --filter @workspace/db run generate` — after changing `lib/db/src/schema/`, generate the SQL migration in `lib/db/drizzle/` and commit it. Production applies migrations on start.
 - `docker build -t builderwars .` — production image (API plus built web app). Deployment steps are in `docs/deployment.md`.
 
 There are no automated tests yet.
