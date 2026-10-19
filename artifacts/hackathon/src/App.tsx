@@ -1278,6 +1278,8 @@ function Admin() {
   const stats = useGetAdminStats({
     query: { queryKey: getGetAdminStatsQueryKey() },
   });
+  // Show "—" rather than stale numbers if refreshing the stats fails.
+  const statsData = stats.isError ? undefined : stats.data;
   const rows = useListRegistrations(params, {
     query: {
       queryKey: getListRegistrationsQueryKey(params),
@@ -1343,18 +1345,18 @@ function Admin() {
       <main className="mx-auto max-w-6xl p-5 py-10">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ["Total registrations", stats.data?.total ?? "—"],
+            ["Total registrations", statsData?.total ?? "—"],
             [
               "Pending review",
-              stats.data ? (stats.data.by_status?.pending ?? 0) : "—",
+              statsData ? (statsData.by_status?.pending ?? 0) : "—",
             ],
             [
               "Approved",
-              stats.data ? (stats.data.by_status?.approved ?? 0) : "—",
+              statsData ? (statsData.by_status?.approved ?? 0) : "—",
             ],
             [
               "Looking for a team",
-              stats.data ? (stats.data.by_team_status?.looking ?? 0) : "—",
+              statsData ? (statsData.by_team_status?.looking ?? 0) : "—",
             ],
           ].map(([l, v], i) => (
             <div className="panel p-5" key={l as string}>
@@ -1463,6 +1465,27 @@ function Admin() {
                     <Loader2 className="mx-auto animate-spin text-[#a78bfa]" />
                   </td>
                 </tr>
+              ) : rows.isError ? (
+                // Show an error instead of stale rows if loading fails (FR-03).
+                <tr>
+                  <td
+                    colSpan={10}
+                    className="p-10 text-center text-[#a78bfa]"
+                    data-testid="status-admin-load-error"
+                  >
+                    {getApiErrorStatus(rows.error) === 401 ||
+                    getApiErrorStatus(rows.error) === 403
+                      ? "Your session has ended or you don't have admin access. Log in again."
+                      : "Registrations couldn't be loaded."}{" "}
+                    <button
+                      type="button"
+                      className="underline"
+                      onClick={() => void rows.refetch()}
+                    >
+                      Try again
+                    </button>
+                  </td>
+                </tr>
               ) : (
                 rows.data?.registrations?.map((r) => (
                   <tr className="border-b border-[#242a31]" key={r.id}>
@@ -1522,11 +1545,13 @@ function Admin() {
               )}
             </tbody>
           </table>
-          {!rows.isLoading && !rows.data?.registrations?.length && (
-            <p className="p-10 text-center text-[#9ca3af]">
-              No registrations match these filters.
-            </p>
-          )}
+          {!rows.isLoading &&
+            !rows.isError &&
+            !rows.data?.registrations?.length && (
+              <p className="p-10 text-center text-[#9ca3af]">
+                No registrations match these filters.
+              </p>
+            )}
         </div>
         <div className="mt-5 flex justify-end gap-3">
           <button
