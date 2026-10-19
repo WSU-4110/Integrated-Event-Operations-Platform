@@ -24,6 +24,7 @@ if (process.env["RUN_MIGRATIONS"] === "true") {
   const migrationsFolder =
     process.env["MIGRATIONS_DIR"] ??
     fileURLToPath(new URL("../../../lib/db/drizzle/", import.meta.url));
+  logger.info({ migrationsFolder }, "Applying database migrations");
   await runMigrations(migrationsFolder);
   logger.info({ migrationsFolder }, "Database migrations applied");
 }

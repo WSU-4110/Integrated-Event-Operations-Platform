@@ -20,6 +20,9 @@ const sslCaPath = process.env.DATABASE_SSL_CA;
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: sslCaPath ? { ca: readFileSync(sslCaPath, "utf8") } : undefined,
+  // Fail with an error instead of waiting forever when the database can't be
+  // reached (for example, a network or firewall problem).
+  connectionTimeoutMillis: 10_000,
 });
 export const db = drizzle(pool, { schema });
 
