@@ -1,21 +1,8 @@
-# Integrated Event Operations Platform
+# Development notes
 
-Event website and operations tooling for the BuilderWars Hackathon, run by the AWS Student Builder Group at Wayne State (AWS is a sponsor, not part of the event name). Today it is a public marketing site with a waitlist form, a confirmation email, and an organizer-only admin dashboard. The backlog lives in this repo's GitHub issues.
+How the project is built, laid out, and run. Setup steps for newcomers are in the README.
 
-The site is being rebranded and moved off Replit. Those updates are not separate issues; they are listed in `docs/agile/product-backlog.md` under the issue that delivers each one. When working on an issue, check that list for updates mapped to it, and tell the person running the session if anything in the code looks like it should have changed but isn't on the list.
-
-The code was first built on Replit and imported here. Some of it still depends on Replit services; see "Still tied to Replit" before running it anywhere else.
-
-## Commit and PR rules
-
-- Do not add AI attribution to commits or PR descriptions by default. Automatic attribution is turned off in `.claude/settings.json`.
-- Add a co-author line only when the person running the session asks for it on that commit. They ask when Claude wrote a substantial part of the change. Use exactly this as the last line of the commit message:
-  `Co-Authored-By: Claude <noreply@anthropic.com>`
-- When you finish a change you mostly wrote yourself, say so and ask whether to add the co-author line. Do not decide either way on your own.
-- Never add "Generated with" text, session links, or AI attribution in code comments.
-- AI use on this project is disclosed in the "AI assistance" section of `README.md`. If the way Claude is used changes, update that section in the same change.
-- Commits are authored by the human running the session. Do not change `user.name` or `user.email`.
-- Never commit `.env` files or secrets.
+The site is being rebranded and moved off Replit. Those updates are listed in `docs/agile/product-backlog.md` under the issue that delivers each one; check that list when working on an issue.
 
 ## Commands
 
@@ -50,9 +37,10 @@ Environment variables are listed in `.env.example`. Nothing loads a `.env` file 
 - `lib/api-zod/`, `lib/api-client-react/` — generated Zod schemas and React Query hooks. Do not edit `src/generated/` by hand.
 - `lib/db/` — Drizzle ORM schema and Postgres client. Tables: `waitlist_registrations`, `users`, `sessions`.
 - `lib/replit-auth-web/` — `useAuth()` hook used by the web app
-- `attached_assets/` — logo and PDF packets. The web app imports them through the `@assets` alias, and the API reads the information packet from here by path. Renaming a file breaks both.
+- `attached_assets/` — PDF packets, `brand/` (BuilderWars logo set), and `sponsors/` (sponsor logos). The web app imports them through the `@assets` alias, and the API reads the information packet from here by path. Renaming a file breaks both.
 - `screenshots/` — reference screenshots of wayneaws.dev, the design the site was based on. The rebrand moves away from it: purple accent instead of orange, pixel-style BuilderWars logo.
-- `docs/agile/` — Scrum records required by the course: product backlog, team, and one folder per sprint (planning, scrum meetings, review, retrospective, contributions). Record what the team said and decided; never invent meeting content. Peer reviews are written by students and are not stored here.
+- `docs/agile/` — Scrum records required by the course: product backlog, team, and one folder per sprint (planning, scrum meetings, review, retrospective, contributions). Peer reviews are written by students and are not stored here.
+- `docs/deployment.md` — Lightsail hosting setup
 
 ## Architecture decisions
 
@@ -71,7 +59,7 @@ Environment variables are listed in `.env.example`. Nothing loads a `.env` file 
 - The Google Fonts `@import url(...)` must be the first line of `index.css`.
 - `lib/replit-auth-web` uses `import.meta.env.BASE_URL`, so its tsconfig needs `vite/client` types.
 - The waitlist form's "Class standing" field is sent as `discord_username` and stored in the `discord_username` column. There is no class-standing column yet. The admin table shows it as "Class Standing", but the API field and the CSV header are `discord_username`.
-- `App.tsx` is about 40 very long unformatted lines. Run Prettier on it before making a reviewable change.
+- Keep `App.tsx` formatted with Prettier (`pnpm exec prettier --write artifacts/hackathon/src/App.tsx`) so diffs stay reviewable.
 
 ## Still tied to Replit
 

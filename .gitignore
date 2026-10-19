@@ -33,5 +33,3 @@ pnpm-debug.log
 .DS_Store
 Thumbs.db
 
-# personal Claude Code overrides (the shared .claude/settings.json is committed)
-.claude/settings.local.json
