@@ -85,6 +85,7 @@ export const ListRegistrationsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "experience_level": zod.coerce.string().optional(),
   "team_status": zod.coerce.string().optional(),
+  "status": zod.coerce.string().optional(),
   "limit": zod.coerce.number().int().default(listRegistrationsQueryLimitDefault),
   "offset": zod.coerce.number().int().default(listRegistrationsQueryOffsetDefault)
 })
@@ -101,6 +102,8 @@ export const ListRegistrationsResponse = zod.object({
   "team_status": zod.string().nullish(),
   "team_name": zod.string().nullish(),
   "status": zod.string(),
+  "status_updated_at": zod.coerce.date().nullish(),
+  "allowed_statuses": zod.array(zod.string()),
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
   "created_at": zod.coerce.date()
@@ -124,6 +127,55 @@ export const DeleteRegistrationResponse = zod.void()
 
 
 /**
+ * Changes the status if the change is allowed and the registration still has expected_status; records the change in its history. Requires organizer authentication.
+ * @summary Change a registration's status
+ */
+export const UpdateRegistrationStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateRegistrationStatusBody = zod.object({
+  "status": zod.enum(['approved', 'waitlisted', 'declined']),
+  "expected_status": zod.string()
+})
+
+export const UpdateRegistrationStatusResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "school": zod.string(),
+  "class_standing": zod.string(),
+  "experience_level": zod.string(),
+  "discord_username": zod.string().nullish(),
+  "team_status": zod.string().nullish(),
+  "team_name": zod.string().nullish(),
+  "status": zod.string(),
+  "status_updated_at": zod.coerce.date().nullish(),
+  "allowed_statuses": zod.array(zod.string()),
+  "source": zod.string(),
+  "confirmation_email_sent_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary Status change history for one registration
+ */
+export const GetRegistrationHistoryParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetRegistrationHistoryResponse = zod.object({
+  "changes": zod.array(zod.object({
+  "from_status": zod.string(),
+  "to_status": zod.string(),
+  "changed_by_email": zod.string(),
+  "changed_at": zod.coerce.date()
+}))
+})
+
+
+/**
  * Sends the confirmation email again and records when it was sent. Requires organizer authentication.
  * @summary Resend a registration's confirmation email
  */
@@ -143,7 +195,8 @@ export const ResendConfirmationResponse = zod.object({
 export const GetAdminStatsResponse = zod.object({
   "total": zod.number(),
   "by_experience_level": zod.record(zod.string(), zod.number()),
-  "by_team_status": zod.record(zod.string(), zod.number())
+  "by_team_status": zod.record(zod.string(), zod.number()),
+  "by_status": zod.record(zod.string(), zod.number())
 })
 
 

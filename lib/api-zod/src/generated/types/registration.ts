@@ -20,6 +20,9 @@ export interface Registration {
   /** @nullable */
   team_name?: string | null;
   status: string;
+  /** @nullable */
+  status_updated_at?: Date | null;
+  allowed_statuses: string[];
   source: string;
   /** @nullable */
   confirmation_email_sent_at?: Date | null;

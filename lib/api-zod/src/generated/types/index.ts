@@ -9,6 +9,7 @@
 export * from './adminRegistrationList';
 export * from './adminStats';
 export * from './adminStatsByExperienceLevel';
+export * from './adminStatsByStatus';
 export * from './adminStatsByTeamStatus';
 export * from './apiError';
 export * from './authUser';
@@ -23,3 +24,7 @@ export * from './registrationInputClassStanding';
 export * from './registrationInputExperienceLevel';
 export * from './registrationInputTeamStatus';
 export * from './resendConfirmationResult';
+export * from './statusChange';
+export * from './statusChangeInput';
+export * from './statusChangeInputStatus';
+export * from './statusHistory';

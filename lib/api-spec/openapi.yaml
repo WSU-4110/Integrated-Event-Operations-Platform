@@ -116,6 +116,11 @@ paths:
           required: false
           schema:
             type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
         - name: limit
           in: query
           required: false
@@ -175,6 +180,75 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Registration not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/registrations/{id}/status:
+    patch:
+      operationId: updateRegistrationStatus
+      tags: [admin]
+      summary: Change a registration's status
+      description: Changes the status if the change is allowed and the registration still has expected_status; records the change in its history. Requires organizer authentication.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusChangeInput"
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Registration"
+        "400":
+          description: Change not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Registration not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Someone else changed the status first; reload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/registrations/{id}/history:
+    get:
+      operationId: getRegistrationHistory
+      tags: [admin]
+      summary: Status change history for one registration
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Changes, oldest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusHistory"
         "404":
           description: Registration not found
           content:
@@ -333,7 +407,7 @@ components:
 
     Registration:
       type: object
-      required: [id, name, email, school, class_standing, experience_level, status, source, created_at]
+      required: [id, name, email, school, class_standing, experience_level, status, allowed_statuses, source, created_at]
       properties:
         id:
           type: number
@@ -355,6 +429,13 @@ components:
           type: ["string", "null"]
         status:
           type: string
+        status_updated_at:
+          type: ["string", "null"]
+          format: date-time
+        allowed_statuses:
+          type: array
+          items:
+            type: string
         source:
           type: string
         confirmation_email_sent_at:
@@ -363,6 +444,39 @@ components:
         created_at:
           type: string
           format: date-time
+
+    StatusChangeInput:
+      type: object
+      required: [status, expected_status]
+      properties:
+        status:
+          type: string
+          enum: [approved, waitlisted, declined]
+        expected_status:
+          type: string
+
+    StatusChange:
+      type: object
+      required: [from_status, to_status, changed_by_email, changed_at]
+      properties:
+        from_status:
+          type: string
+        to_status:
+          type: string
+        changed_by_email:
+          type: string
+        changed_at:
+          type: string
+          format: date-time
+
+    StatusHistory:
+      type: object
+      required: [changes]
+      properties:
+        changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusChange"
 
     ResendConfirmationResult:
       type: object
@@ -392,7 +506,7 @@ components:
 
     AdminStats:
       type: object
-      required: [total, by_experience_level, by_team_status]
+      required: [total, by_experience_level, by_team_status, by_status]
       properties:
         total:
           type: number
@@ -401,6 +515,10 @@ components:
           additionalProperties:
             type: number
         by_team_status:
+          type: object
+          additionalProperties:
+            type: number
+        by_status:
           type: object
           additionalProperties:
             type: number

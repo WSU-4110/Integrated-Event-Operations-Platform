@@ -1,4 +1,12 @@
-import { pgTable, serial, text, timestamp, unique } from "drizzle-orm/pg-core";
+import {
+  index,
+  integer,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  unique,
+} from "drizzle-orm/pg-core";
 
 export const EVENT_ID = "builderwars-2026";
 
@@ -22,6 +30,18 @@ export const REGISTRATION_STATUSES = [
   "waitlisted",
   "declined",
 ] as const;
+export type RegistrationStatus = (typeof REGISTRATION_STATUSES)[number];
+
+// Status changes organizers may make (FR-04). Nothing returns to "pending".
+export const STATUS_TRANSITIONS: Record<
+  RegistrationStatus,
+  RegistrationStatus[]
+> = {
+  pending: ["approved", "waitlisted", "declined"],
+  waitlisted: ["approved", "declined"],
+  approved: ["waitlisted", "declined"],
+  declined: ["approved", "waitlisted"],
+};
 
 // One row per person per event (FR-01). People imported from the old
 // waitlist have no Discord username or team status until they add them.
@@ -39,6 +59,7 @@ export const registrationsTable = pgTable(
     teamStatus: text("team_status"),
     teamName: text("team_name"),
     status: text("status").notNull().default("pending"),
+    statusUpdatedAt: timestamp("status_updated_at", { withTimezone: true }),
     source: text("source").notNull().default("website"),
     confirmationEmailSentAt: timestamp("confirmation_email_sent_at", {
       withTimezone: true,
@@ -53,3 +74,28 @@ export const registrationsTable = pgTable(
 );
 
 export type Registration = typeof registrationsTable.$inferSelect;
+
+// Every status change, who made it, and when (FR-04). Written in the same
+// transaction as the change itself.
+export const registrationStatusChangesTable = pgTable(
+  "registration_status_changes",
+  {
+    id: serial("id").primaryKey(),
+    registrationId: integer("registration_id")
+      .notNull()
+      .references(() => registrationsTable.id, { onDelete: "cascade" }),
+    fromStatus: text("from_status").notNull(),
+    toStatus: text("to_status").notNull(),
+    changedByUserId: text("changed_by_user_id").notNull(),
+    changedByEmail: text("changed_by_email").notNull(),
+    changedAt: timestamp("changed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("status_changes_registration_idx").on(table.registrationId),
+  ],
+);
+
+export type RegistrationStatusChange =
+  typeof registrationStatusChangesTable.$inferSelect;

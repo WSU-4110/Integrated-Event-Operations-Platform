@@ -92,10 +92,38 @@ export interface Registration {
   /** @nullable */
   team_name?: string | null;
   status: string;
+  /** @nullable */
+  status_updated_at?: string | null;
+  allowed_statuses: string[];
   source: string;
   /** @nullable */
   confirmation_email_sent_at?: string | null;
   created_at: string;
+}
+
+export type StatusChangeInputStatus = typeof StatusChangeInputStatus[keyof typeof StatusChangeInputStatus];
+
+
+export const StatusChangeInputStatus = {
+  approved: 'approved',
+  waitlisted: 'waitlisted',
+  declined: 'declined',
+} as const;
+
+export interface StatusChangeInput {
+  status: StatusChangeInputStatus;
+  expected_status: string;
+}
+
+export interface StatusChange {
+  from_status: string;
+  to_status: string;
+  changed_by_email: string;
+  changed_at: string;
+}
+
+export interface StatusHistory {
+  changes: StatusChange[];
 }
 
 export interface ResendConfirmationResult {
@@ -115,10 +143,13 @@ export type AdminStatsByExperienceLevel = {[key: string]: number};
 
 export type AdminStatsByTeamStatus = {[key: string]: number};
 
+export type AdminStatsByStatus = {[key: string]: number};
+
 export interface AdminStats {
   total: number;
   by_experience_level: AdminStatsByExperienceLevel;
   by_team_status: AdminStatsByTeamStatus;
+  by_status: AdminStatsByStatus;
 }
 
 export interface AuthUser {
@@ -142,6 +173,7 @@ export type ListRegistrationsParams = {
 search?: string;
 experience_level?: string;
 team_status?: string;
+status?: string;
 limit?: number;
 offset?: number;
 };
