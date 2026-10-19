@@ -40,6 +40,8 @@ jobs:
           problems = []
           if not raw:
               sys.exit("DATABASE_URL is empty")
+          if re.search(r"[\x00-\x1f\x7f]|%(1[Bb]|0[0-9A-Fa-f]|1[0-9A-Fa-f]|7[Ff])", raw.strip()):
+              problems.append("contains terminal control characters (often from pasting into a prompt); recreate it")
           if raw != raw.strip():
               problems.append("leading or trailing whitespace or line break")
           if any(c in raw for c in " \t\r\n\"'"):
