@@ -1,0 +1,62 @@
+{
+  "title": "BuilderWars Help",
+  "intro": "Everything you need for **BuilderWars**, {t:2026-11-14T10:00:00-05:00|D} – {t:2026-11-15T15:00:00-05:00|D} at Newlab Detroit. Pick a topic below.",
+  "unverifiedNotice": "**You're not verified yet.** Registered on the website? Press **✅ Verify** to link your Discord account. Haven't registered? Sign up at {registrationUrl} first.",
+  "footer": "BuilderWars Hackathon · Newlab Detroit",
+  "sections": {
+    "verify": {
+      "label": "Verify",
+      "emoji": "✅",
+      "title": "Verify your registration",
+      "body": "Registration happens on the website, not in Discord.\n\n1. Register at {registrationUrl} using your **current Discord username**.\n2. Run `/verify` here and enter the email you registered with.\n3. You'll get the **Participant** role, which unlocks workshops, teams and mentor help.\n\nChanged your username, or verification isn't working? Ask an organizer. They can link your account for you."
+    },
+    "schedule": {
+      "label": "Schedule",
+      "emoji": "📅",
+      "title": "Event schedule",
+      "body": "**Saturday, November 14**\n{t:2026-11-14T10:00:00-05:00|t} – {t:2026-11-14T11:30:00-05:00|t} · Check-in & Breakfast\n{t:2026-11-14T11:30:00-05:00|t} – {t:2026-11-14T12:00:00-05:00|t} · Opening Ceremony\n{t:2026-11-14T12:00:00-05:00|t} · **Hacking officially begins**\n{t:2026-11-14T12:00:00-05:00|t} – {t:2026-11-14T13:00:00-05:00|t} · Team Matchmaking\n{t:2026-11-14T13:00:00-05:00|t} – {t:2026-11-14T14:00:00-05:00|t} · Lunch\n{t:2026-11-14T14:00:00-05:00|t} – {t:2026-11-14T15:00:00-05:00|t} · Workshop/Speaker (TBD)\n{t:2026-11-14T16:00:00-05:00|t} – {t:2026-11-14T17:00:00-05:00|t} · Workshop/Speaker (TBD)\n{t:2026-11-14T18:00:00-05:00|t} – {t:2026-11-14T19:00:00-05:00|t} · Workshop/Speaker (TBD)\n{t:2026-11-14T19:30:00-05:00|t} · Dinner\n{t:2026-11-14T22:00:00-05:00|t} · Building entry closes\n\n**Sunday, November 15**\n{t:2026-11-15T07:00:00-05:00|t} · Doors reopen\n{t:2026-11-15T08:30:00-05:00|t} · Breakfast\n{t:2026-11-15T11:00:00-05:00|t} – {t:2026-11-15T12:00:00-05:00|t} · Last hour for hacking\n{t:2026-11-15T12:00:00-05:00|t} · **Hacking ends · Submission deadline**\n{t:2026-11-15T12:00:00-05:00|t} – {t:2026-11-15T12:30:00-05:00|t} · Lunch\n{t:2026-11-15T12:30:00-05:00|t} – {t:2026-11-15T14:30:00-05:00|t} · Presentations & Judging\n{t:2026-11-15T14:30:00-05:00|t} – {t:2026-11-15T15:00:00-05:00|t} · Closing Ceremony & Awards\n\nMeals are provided with dietary accommodations."
+    },
+    "workshops": {
+      "label": "Workshops",
+      "emoji": "🛠️",
+      "title": "Workshops",
+      "body": "Run `/workshops` to see upcoming workshops, register, or join a waitlist when one is full. You'll get a reminder DM before each workshop you sign up for.\n\n*Requires verification.*"
+    },
+    "teams": {
+      "label": "Teams",
+      "emoji": "👥",
+      "title": "Teams",
+      "body": "Teams have **1 to 4 members**.\n\n- `/team`: create a team, view yours, or leave\n- `/find-team`: browse teams with open spots and request to join\n\nNo team yet? Come to Team Matchmaking at {t:2026-11-14T12:00:00-05:00|t} on Saturday.\n\n*Requires verification.*"
+    },
+    "resources": {
+      "label": "Resources",
+      "emoji": "📚",
+      "title": "Resources",
+      "body": "Docs, tools and guides for building your project. Pick a category."
+    },
+    "faq": {
+      "label": "FAQ",
+      "emoji": "❓",
+      "title": "Frequently asked questions",
+      "body": "Pick a question to see the answer."
+    },
+    "mentor": {
+      "label": "Get Mentor Help",
+      "emoji": "🆘",
+      "title": "Get mentor help",
+      "body": "Stuck? Run `/mentor`, pick a category, and describe the problem. A mentor will claim your request, and you'll get a DM when they're on the way.\n\n*Requires verification.*"
+    },
+    "submission": {
+      "label": "Submission",
+      "emoji": "📤",
+      "title": "Submitting your project",
+      "body": "Submit on [Shipyard](https://shipyardhq.tech/) by **{t:2026-11-15T12:00:00-05:00|F}**. Late submissions can't be accepted.\n\nTo be eligible for judging:\n- Every team member checks in at the venue\n- Your project is fully uploaded to Shipyard\n- A demo video (5 minutes max) is linked in Shipyard **and** your GitHub repo\n- Any AI tools you used are listed in your submission\n\nUse `/submission` to share your team's links with the organizers."
+    },
+    "rules": {
+      "label": "Rules",
+      "emoji": "📜",
+      "title": "Official rules",
+      "body": "The official BuilderWars rules."
+    }
+  }
+}

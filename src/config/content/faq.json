@@ -1,0 +1,87 @@
+[
+  {
+    "id": "what-is-builderwars",
+    "question": "What is BuilderWars?",
+    "answer": "BuilderWars is the AWS Student Builder Group at Wayne State University's first annual hackathon: a 24-hour build sprint at **Newlab Detroit** ({t:2026-11-14T10:00:00-05:00|D} – {t:2026-11-15T15:00:00-05:00|D}). Teams identify a real-world problem, build a working prototype, and pitch it to a panel of judges. It's free, and meals are provided."
+  },
+  {
+    "id": "who-can-participate",
+    "question": "Who can participate?",
+    "answer": "BuilderWars is open to currently enrolled college or university students, at Wayne State or elsewhere, of any skill level. You do not need to be a computer science major."
+  },
+  {
+    "id": "coding-experience",
+    "question": "Do I need coding experience?",
+    "answer": "Some technical background is helpful, but beginners are welcome! Mentors will be on site throughout the event to help you get unstuck. Use `/mentor` to ask for help."
+  },
+  {
+    "id": "team-size",
+    "question": "How large can teams be?",
+    "answer": "Teams can have **1 to 4 members**. You can register solo and find teammates at the Team Matchmaking session ({t:2026-11-14T12:00:00-05:00|t} on Saturday) or with `/find-team`."
+  },
+  {
+    "id": "solo",
+    "question": "Can I participate alone?",
+    "answer": "Yes. A team of one is allowed. You can also look for teammates any time with `/find-team`."
+  },
+  {
+    "id": "cost",
+    "question": "Is the hackathon free?",
+    "answer": "Yes! Participation is completely free. Breakfast, lunch and dinner are provided with dietary accommodations, plus snacks and drinks."
+  },
+  {
+    "id": "what-to-bring",
+    "question": "What should I bring?",
+    "answer": "Bring your laptop, charger, and any hardware you plan to use. Bring a sleeping bag if you plan to stay overnight."
+  },
+  {
+    "id": "what-to-build",
+    "question": "What can I build?",
+    "answer": "Anything: a web app, mobile app, hardware project, AI tool, or any creative technical solution. Suggested themes include Generative AI, Cloud & DevOps, Cybersecurity, IoT, FinTech, HealthTech, EdTech, Sustainability, Accessibility, Game Development and Open Innovation. Company-specific tracks will be announced before the event, and the top 3 projects overall win prizes separate from the company tracks."
+  },
+  {
+    "id": "ai",
+    "question": "Can I use AI?",
+    "answer": "Yes. AI assistants for code completion, code generation and image generation are welcome. You **must** list every AI tool you used in your submission and be ready to discuss how you used it with organizers and judges."
+  },
+  {
+    "id": "technologies",
+    "question": "What technologies can I use?",
+    "answer": "Any frameworks, APIs, cloud services and tools that are free and open-source. All code and assets must be created during the hacking window ({t:2026-11-14T12:00:00-05:00|F} to {t:2026-11-15T12:00:00-05:00|F}); pre-written code from earlier projects isn't allowed."
+  },
+  {
+    "id": "judging",
+    "question": "When does judging begin?",
+    "answer": "Presentations and judging run {t:2026-11-15T12:30:00-05:00|F} – {t:2026-11-15T14:30:00-05:00|t}, followed by the Closing Ceremony & Awards at {t:2026-11-15T14:30:00-05:00|t}. Your pitch should cover your team, the problem, your solution, your process, and a live demo."
+  },
+  {
+    "id": "submit",
+    "question": "How do I submit?",
+    "answer": "Upload your project to [Shipyard](https://shipyardhq.tech/) by **{t:2026-11-15T12:00:00-05:00|F}**. Late submissions can't be accepted. Include a demo video (5 minutes max) link in both your Shipyard submission and your GitHub repository, and list any AI tools you used."
+  },
+  {
+    "id": "check-in",
+    "question": "Do I need to check in?",
+    "answer": "Yes. Every team member must check in at the venue to be eligible for judging. Check-in opens {t:2026-11-14T10:00:00-05:00|F}."
+  },
+  {
+    "id": "venue",
+    "question": "Where is the event, and where do I park?",
+    "answer": "**Newlab Detroit**, 2050 15th St, Detroit, MI 48216 (1st floor only). Street parking nearby is free unless signs say otherwise (some areas have time limits). There's also a parking structure within walking distance: LAZ Parking, Bagley Mobility Hub, 1501 Wabash St. Building entry closes at {t:2026-11-14T22:00:00-05:00|t} Saturday and reopens at {t:2026-11-15T07:00:00-05:00|t} Sunday; you can stay overnight if you're already inside."
+  },
+  {
+    "id": "registered-but-blocked",
+    "question": "I registered on the website. Why can't I use the bot?",
+    "answer": "You need to link your Discord account first. Run `/verify` and enter the email you registered with. If you haven't registered yet, sign up at {registrationUrl} using your current Discord username."
+  },
+  {
+    "id": "changed-username",
+    "question": "I changed my Discord username. What do I do?",
+    "answer": "If you've already verified, nothing; your link uses your Discord account, not your username. If you haven't verified yet and your username no longer matches the one you registered with, ask an organizer to link your account."
+  },
+  {
+    "id": "contact",
+    "question": "Who do I contact for help?",
+    "answer": "For technical help during the event, use `/mentor`. For anything else, message an organizer here on Discord or email awssbg@wayne.edu."
+  }
+]

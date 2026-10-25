@@ -1,0 +1,21 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.ppk
+certs/
+
+# Build / deps
+node_modules/
+dist/
+coverage/
+
+# Logs / OS
+*.log
+.DS_Store
+Thumbs.db
+
+# Internal notes (infrastructure details, not for the public repo)
+docs/

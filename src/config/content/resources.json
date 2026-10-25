@@ -1,0 +1,273 @@
+{
+  "categories": [
+    {
+      "id": "development",
+      "label": "Development",
+      "emoji": "💻",
+      "description": "Docs for languages and frameworks"
+    },
+    {
+      "id": "design",
+      "label": "Design",
+      "emoji": "🎨",
+      "description": "UI design, fonts and colors"
+    },
+    {
+      "id": "ai-ml",
+      "label": "AI/ML",
+      "emoji": "🤖",
+      "description": "Models, notebooks and ML libraries"
+    },
+    {
+      "id": "aws",
+      "label": "AWS",
+      "emoji": "☁️",
+      "description": "Free tier, guides and sample architectures"
+    },
+    { "id": "apis", "label": "APIs", "emoji": "🔌", "description": "Find and test APIs" },
+    {
+      "id": "learning",
+      "label": "Learning",
+      "emoji": "🎓",
+      "description": "Free courses to learn fast"
+    },
+    {
+      "id": "git",
+      "label": "Git/GitHub",
+      "emoji": "🐙",
+      "description": "Version control and collaboration"
+    },
+    {
+      "id": "deployment",
+      "label": "Deployment",
+      "emoji": "🚀",
+      "description": "Put your project online"
+    },
+    {
+      "id": "submission",
+      "label": "Submission",
+      "emoji": "📤",
+      "description": "Shipyard, rules and demo video"
+    }
+  ],
+  "resources": [
+    {
+      "category": "development",
+      "name": "MDN Web Docs",
+      "description": "The reference for HTML, CSS and JavaScript.",
+      "url": "https://developer.mozilla.org/"
+    },
+    {
+      "category": "development",
+      "name": "React",
+      "description": "Official React docs and tutorial.",
+      "url": "https://react.dev/"
+    },
+    {
+      "category": "development",
+      "name": "Node.js Docs",
+      "description": "Node.js API reference and guides.",
+      "url": "https://nodejs.org/en/docs"
+    },
+    {
+      "category": "development",
+      "name": "Python Docs",
+      "description": "Official Python 3 documentation.",
+      "url": "https://docs.python.org/3/"
+    },
+
+    {
+      "category": "design",
+      "name": "Figma",
+      "description": "Free collaborative UI design and prototyping.",
+      "url": "https://www.figma.com/"
+    },
+    {
+      "category": "design",
+      "name": "Material Design 3",
+      "description": "Google's design system: components and guidelines.",
+      "url": "https://m3.material.io/"
+    },
+    {
+      "category": "design",
+      "name": "Google Fonts",
+      "description": "Free, open-source fonts.",
+      "url": "https://fonts.google.com/"
+    },
+    {
+      "category": "design",
+      "name": "Coolors",
+      "description": "Generate color palettes quickly.",
+      "url": "https://coolors.co/"
+    },
+
+    {
+      "category": "ai-ml",
+      "name": "Amazon Bedrock",
+      "description": "Build with foundation models on AWS.",
+      "url": "https://aws.amazon.com/bedrock/"
+    },
+    {
+      "category": "ai-ml",
+      "name": "Hugging Face",
+      "description": "Open models, datasets and demos.",
+      "url": "https://huggingface.co/"
+    },
+    {
+      "category": "ai-ml",
+      "name": "Google Colab",
+      "description": "Free hosted Jupyter notebooks with GPUs.",
+      "url": "https://colab.research.google.com/"
+    },
+    {
+      "category": "ai-ml",
+      "name": "PyTorch Tutorials",
+      "description": "Learn deep learning with PyTorch.",
+      "url": "https://pytorch.org/tutorials/"
+    },
+    {
+      "category": "ai-ml",
+      "name": "scikit-learn",
+      "description": "Classic machine learning in Python.",
+      "url": "https://scikit-learn.org/stable/"
+    },
+
+    {
+      "category": "aws",
+      "name": "AWS Free Tier",
+      "description": "What you can use on AWS for free.",
+      "url": "https://aws.amazon.com/free/"
+    },
+    {
+      "category": "aws",
+      "name": "AWS Getting Started",
+      "description": "Hands-on tutorials for common projects.",
+      "url": "https://aws.amazon.com/getting-started/"
+    },
+    {
+      "category": "aws",
+      "name": "AWS Architecture Center",
+      "description": "Reference architectures and best practices.",
+      "url": "https://aws.amazon.com/architecture/"
+    },
+    {
+      "category": "aws",
+      "name": "AWS Skill Builder",
+      "description": "Free AWS training from AWS.",
+      "url": "https://skillbuilder.aws/"
+    },
+
+    {
+      "category": "apis",
+      "name": "Public APIs",
+      "description": "A huge list of free APIs by category.",
+      "url": "https://github.com/public-apis/public-apis"
+    },
+    {
+      "category": "apis",
+      "name": "Postman",
+      "description": "Explore and test APIs.",
+      "url": "https://www.postman.com/"
+    },
+
+    {
+      "category": "learning",
+      "name": "freeCodeCamp",
+      "description": "Free courses on web development and more.",
+      "url": "https://www.freecodecamp.org/"
+    },
+    {
+      "category": "learning",
+      "name": "The Odin Project",
+      "description": "Free full-stack web development curriculum.",
+      "url": "https://www.theodinproject.com/"
+    },
+    {
+      "category": "learning",
+      "name": "CS50x",
+      "description": "Harvard's free intro to computer science.",
+      "url": "https://cs50.harvard.edu/x/"
+    },
+
+    {
+      "category": "git",
+      "name": "GitHub Docs: Get started",
+      "description": "Repositories, branches and pull requests.",
+      "url": "https://docs.github.com/en/get-started"
+    },
+    {
+      "category": "git",
+      "name": "Pro Git",
+      "description": "The free Git book.",
+      "url": "https://git-scm.com/book/en/v2"
+    },
+    {
+      "category": "git",
+      "name": "GitHub Desktop",
+      "description": "Use Git without the command line.",
+      "url": "https://desktop.github.com/"
+    },
+    {
+      "category": "git",
+      "name": "GitHub Student Developer Pack",
+      "description": "Free tools and credits for students.",
+      "url": "https://education.github.com/pack"
+    },
+
+    {
+      "category": "deployment",
+      "name": "AWS Amplify",
+      "description": "Host web apps and connect a backend.",
+      "url": "https://aws.amazon.com/amplify/"
+    },
+    {
+      "category": "deployment",
+      "name": "Amazon Lightsail",
+      "description": "Simple virtual servers and containers.",
+      "url": "https://aws.amazon.com/lightsail/"
+    },
+    {
+      "category": "deployment",
+      "name": "Vercel",
+      "description": "Deploy frontends and Next.js apps.",
+      "url": "https://vercel.com/"
+    },
+    {
+      "category": "deployment",
+      "name": "Netlify",
+      "description": "Deploy static sites and serverless functions.",
+      "url": "https://www.netlify.com/"
+    },
+    {
+      "category": "deployment",
+      "name": "Render",
+      "description": "Host web services and databases.",
+      "url": "https://render.com/"
+    },
+
+    {
+      "category": "submission",
+      "name": "Shipyard",
+      "description": "Where you submit your project. Deadline: Sunday 12:00 PM.",
+      "url": "https://shipyardhq.tech/"
+    },
+    {
+      "category": "submission",
+      "name": "Event Information Packet",
+      "description": "Official rules, schedule and presentation guidelines.",
+      "url": "https://builderwars.dev/api/information-packet"
+    },
+    {
+      "category": "submission",
+      "name": "MLH Code of Conduct",
+      "description": "The code of conduct every participant agrees to.",
+      "url": "https://github.com/MLH/mlh-policies/blob/main/code-of-conduct.md"
+    },
+    {
+      "category": "submission",
+      "name": "OBS Studio",
+      "description": "Free screen recorder for your demo video (5 min max).",
+      "url": "https://obsproject.com/"
+    }
+  ]
+}

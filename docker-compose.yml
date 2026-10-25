@@ -1,0 +1,23 @@
+# Local Postgres for development, mirroring builderwars-db:
+# the website's registrations table, the discord_bot schema and the
+# discord_bot_app role with production grants.
+#
+#   docker compose up -d
+#   npm run db:migrate
+#
+# .env for local use:
+#   DATABASE_URL=postgres://discord_bot_app:discord_bot_app_local@localhost:5432/postgres
+#   DB_SSL_MODE=disable
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_PASSWORD: postgres_local
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+      - pgdata:/var/lib/postgresql
+
+volumes:
+  pgdata:
