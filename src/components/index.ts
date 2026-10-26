@@ -1,5 +1,6 @@
 import type { ComponentHandler } from '../interactions/types.js';
 import { helpButtons } from './buttons/helpButtons.js';
+import { workshopButtons } from './buttons/workshopButtons.js';
 import { verifyHandler } from './modals/verifyModal.js';
 import { faqSelect } from './selectMenus/faqSelect.js';
 import { resourceSelect } from './selectMenus/resourceSelect.js';
@@ -9,4 +10,5 @@ export const componentHandlers: readonly ComponentHandler[] = [
   faqSelect,
   resourceSelect,
   verifyHandler,
+  workshopButtons,
 ];

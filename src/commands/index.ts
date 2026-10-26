@@ -6,6 +6,7 @@ import { profileCommand } from './participant/profile.js';
 import { resourcesCommand } from './participant/resources.js';
 import { rulesCommand } from './participant/rules.js';
 import { verifyCommand } from './participant/verify.js';
+import { workshopsCommand } from './participant/workshops.js';
 
 export const commands: readonly SlashCommand[] = [
   helpCommand,
@@ -14,5 +15,6 @@ export const commands: readonly SlashCommand[] = [
   resourcesCommand,
   verifyCommand,
   profileCommand,
+  workshopsCommand,
   adminCommand,
 ];

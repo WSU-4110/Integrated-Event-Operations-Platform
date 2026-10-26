@@ -11,11 +11,21 @@ certs/
 node_modules/
 dist/
 coverage/
+*.tsbuildinfo
+# Deploy archives (tar -czf ... for the Lightsail instance)
+*.tgz
+*.tar.gz
 
-# Logs / OS
+# Logs / OS / editors
 *.log
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+.claude/settings.local.json
 
 # Internal notes (infrastructure details, not for the public repo)
 docs/
+README.md
+# Uses the real test-server Discord IDs
+tests/config/env.test.ts

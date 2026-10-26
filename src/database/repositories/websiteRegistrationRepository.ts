@@ -22,6 +22,7 @@ export interface WebsiteRegistrationRepository {
   /** Registrations with this email (case-insensitive). Never returns the email itself. */
   findByEmail(normalizedEmail: string): Promise<RegistrationMatchCandidate[]>;
   findById(id: number): Promise<RegistrationSummary | null>;
+  findSummaries(ids: readonly number[]): Promise<Map<number, RegistrationSummary>>;
   /** Registrations that have a Discord username, for username-only lookups. */
   listWithDiscordUsername(): Promise<RegistrationMatchCandidate[]>;
   /** Current status per registration ID. Missing IDs were deleted (or belong to another event). */
@@ -49,6 +50,15 @@ export function createWebsiteRegistrationRepository(
         .from(r)
         .where(and(inEvent, eq(r.id, id)));
       return row ?? null;
+    },
+
+    async findSummaries(ids) {
+      if (ids.length === 0) return new Map();
+      const rows = await db
+        .select({ id: r.id, name: r.name, status: r.status })
+        .from(r)
+        .where(and(inEvent, inArray(r.id, [...ids])));
+      return new Map(rows.map((row) => [row.id, row]));
     },
 
     async listWithDiscordUsername() {

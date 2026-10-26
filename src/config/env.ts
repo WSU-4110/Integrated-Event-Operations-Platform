@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isValidTimeZone } from '../utils/time.js';
 
 const snowflake = z
   .string()
@@ -40,6 +41,11 @@ const envSchema = z
     DB_SSL_CA_PATH: z.string().trim().optional(),
 
     EVENT_ID: z.string().trim().min(1).default('builderwars-2026'),
+    EVENT_TIMEZONE: z
+      .string()
+      .trim()
+      .default('America/Detroit')
+      .refine(isValidTimeZone, 'must be an IANA time zone, for example America/Detroit'),
     REGISTRATION_URL: z.url({ protocol: /^https$/, error: 'must be an https:// URL' }),
     SYNC_INTERVAL_MINUTES: z.coerce.number().int().min(1).max(59).default(15),
   })
@@ -73,6 +79,8 @@ export interface Config {
     ssl: { mode: 'verify-full'; caPath: string } | { mode: 'disable' };
   };
   eventId: string;
+  /** Times organizers type in commands are read in this zone. */
+  eventTimeZone: string;
   registrationUrl: string;
   syncIntervalMinutes: number;
 }
@@ -121,6 +129,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
           : { mode: 'disable' },
     },
     eventId: e.EVENT_ID,
+    eventTimeZone: e.EVENT_TIMEZONE,
     registrationUrl: e.REGISTRATION_URL,
     syncIntervalMinutes: e.SYNC_INTERVAL_MINUTES,
   };
