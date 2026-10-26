@@ -20,7 +20,6 @@ import type {
 } from '../../database/repositories/workshopRepository.js';
 import { UserFacingError } from '../../interactions/errors.js';
 import type { BotContext } from '../../interactions/types.js';
-import { isOrganizer } from '../../middleware/permissions.js';
 import { sendDirectMessage } from '../../services/directMessages.js';
 import {
   announcePromotions,
@@ -144,15 +143,11 @@ export function addWorkshopAdminCommands(
     );
 }
 
-/** Suggests workshops by name; the value is the workshop ID. */
+/** Suggests workshops by name; the value is the workshop ID. Organizer-checked by the caller. */
 export async function autocompleteWorkshop(
   interaction: AutocompleteInteraction,
   ctx: BotContext,
 ): Promise<void> {
-  if (!isOrganizer(interaction.member, ctx)) {
-    await interaction.respond([]);
-    return;
-  }
   const query = String(interaction.options.getFocused());
   const matches = await ctx.services.workshops.search(query, 25);
   await interaction.respond(
@@ -163,7 +158,8 @@ export async function autocompleteWorkshop(
   );
 }
 
-function parseStart(input: string, ctx: BotContext): Date {
+/** Reads a start time typed in the event's time zone, or explains the format. */
+export function parseStart(input: string, ctx: BotContext): Date {
   const date = parseEventTime(input, ctx.config.eventTimeZone);
   if (!date) {
     throw new UserFacingError(
@@ -173,7 +169,7 @@ function parseStart(input: string, ctx: BotContext): Date {
   return date;
 }
 
-const MINUTE = 60_000;
+export const MINUTE = 60_000;
 
 function saveError(outcome: Exclude<SaveOutcome, { kind: 'saved' }>): UserFacingError {
   switch (outcome.kind) {

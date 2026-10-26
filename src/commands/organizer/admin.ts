@@ -3,15 +3,28 @@ import {
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
+  type AutocompleteInteraction,
   type ChatInputCommandInteraction,
 } from 'discord.js';
 import { buildVerificationQueueView, statusLabel } from '../../components/embeds/verifyEmbeds.js';
 import { UserFacingError } from '../../interactions/errors.js';
 import type { BotContext, SlashCommand } from '../../interactions/types.js';
-import { requireOrganizer } from '../../middleware/permissions.js';
+import { isOrganizer, requireOrganizer } from '../../middleware/permissions.js';
 import { roleChangeSucceeded, setParticipantRole } from '../../services/participantRoles.js';
 import { postVerificationLog } from '../../services/verificationLog.js';
 import { announcePromotions, refreshWorkshopCard } from '../../services/workshopNotifications.js';
+import {
+  addAnnouncementAdminCommands,
+  ANNOUNCEMENT_OPTION,
+  autocompleteAnnouncement,
+  handleAnnouncementAdmin,
+} from './adminAnnouncement.js';
+import {
+  addEventAdminCommands,
+  autocompleteEvent,
+  EVENT_OPTION,
+  handleEventAdmin,
+} from './adminEvent.js';
 import {
   addWorkshopAdminCommands,
   autocompleteWorkshop,
@@ -168,16 +181,37 @@ const baseCommand = new SlashCommandBuilder()
       .setDescription('Failed or ambiguous verification attempts to review'),
   );
 
+/** Suggestions for whichever ID option is being typed in. */
+async function autocomplete(interaction: AutocompleteInteraction, ctx: BotContext): Promise<void> {
+  if (!isOrganizer(interaction.member, ctx)) {
+    await interaction.respond([]);
+    return;
+  }
+  switch (interaction.options.getFocused(true).name) {
+    case EVENT_OPTION:
+      return autocompleteEvent(interaction, ctx);
+    case ANNOUNCEMENT_OPTION:
+      return autocompleteAnnouncement(interaction, ctx);
+    default:
+      return autocompleteWorkshop(interaction, ctx);
+  }
+}
+
 export const adminCommand: SlashCommand = {
-  data: addWorkshopAdminCommands(baseCommand),
+  data: addAnnouncementAdminCommands(addEventAdminCommands(addWorkshopAdminCommands(baseCommand))),
 
   async execute(interaction, ctx) {
     if (!(await requireOrganizer(interaction, ctx))) return;
     if (!interaction.inCachedGuild()) throw new UserFacingError('Use this inside the server.');
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    if (interaction.options.getSubcommandGroup() === 'workshop') {
-      return handleWorkshopAdmin(interaction, ctx);
+    switch (interaction.options.getSubcommandGroup()) {
+      case 'workshop':
+        return handleWorkshopAdmin(interaction, ctx);
+      case 'event':
+        return handleEventAdmin(interaction, ctx);
+      case 'announcement':
+        return handleAnnouncementAdmin(interaction, ctx);
     }
     switch (interaction.options.getSubcommand()) {
       case 'link':
@@ -193,5 +227,5 @@ export const adminCommand: SlashCommand = {
     }
   },
 
-  autocomplete: autocompleteWorkshop,
+  autocomplete,
 };

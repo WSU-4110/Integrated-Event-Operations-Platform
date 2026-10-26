@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   discordTimestamp,
   isValidTimeZone,
+  formatEventTime,
   parseEventTime,
   renderTimePlaceholders,
 } from '../../src/utils/time.js';
@@ -73,6 +74,17 @@ describe('parseEventTime', () => {
   it('rejects anything else', () => {
     for (const input of ['saturday 2pm', '2026-02-30 10:00', '2026-11-14 25:00', '11/14 2pm', '']) {
       expect(parseEventTime(input, zone), input).toBeNull();
+    }
+  });
+});
+
+describe('formatEventTime', () => {
+  it('writes times the way organizers type them, and round-trips through parseEventTime', () => {
+    const zone = 'America/Detroit';
+    expect(formatEventTime(new Date('2026-11-14T19:00:00Z'), zone)).toBe('2026-11-14 14:00');
+    expect(formatEventTime(new Date('2026-07-04T16:30:00Z'), zone)).toBe('2026-07-04 12:30'); // EDT
+    for (const text of ['2026-11-14 00:05', '2026-11-01 01:30', '2026-03-08 03:00']) {
+      expect(formatEventTime(parseEventTime(text, zone)!, zone)).toBe(text);
     }
   });
 });

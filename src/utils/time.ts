@@ -94,3 +94,11 @@ export function isValidTimeZone(timeZone: string): boolean {
     return false;
   }
 }
+
+/** The inverse of parseEventTime: `2026-11-14 14:00` in `timeZone`. */
+export function formatEventTime(date: Date, timeZone: string): string {
+  const local = new Date(
+    Math.floor(date.getTime() / 60_000) * 60_000 + zoneOffsetMs(date, timeZone),
+  );
+  return local.toISOString().slice(0, 16).replace('T', ' ');
+}
