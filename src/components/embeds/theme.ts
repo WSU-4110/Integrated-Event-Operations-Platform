@@ -4,6 +4,8 @@ export const Colors = {
   faq: 0x38bdf8,
   resources: 0x34d399,
   rules: 0xf59e0b,
+  workshops: 0xf472b6,
+  muted: 0x99aab5,
   success: 0x57f287,
   warning: 0xfee75c,
   danger: 0xed4245,

@@ -11,6 +11,12 @@ import type { BotContext, SlashCommand } from '../../interactions/types.js';
 import { requireOrganizer } from '../../middleware/permissions.js';
 import { roleChangeSucceeded, setParticipantRole } from '../../services/participantRoles.js';
 import { postVerificationLog } from '../../services/verificationLog.js';
+import { announcePromotions, refreshWorkshopCard } from '../../services/workshopNotifications.js';
+import {
+  addWorkshopAdminCommands,
+  autocompleteWorkshop,
+  handleWorkshopAdmin,
+} from './adminWorkshop.js';
 
 type GuildCommand = ChatInputCommandInteraction<'cached'>;
 
@@ -110,6 +116,18 @@ async function unlink(interaction: GuildCommand, ctx: BotContext): Promise<void>
     ctx,
     `✂️ <@${interaction.user.id}> unlinked <@${user.id}> from registration #${removed.registrationId}.`,
   );
+
+  // Unlinking deletes their workshop signups, which may free spots. The
+  // unlink already succeeded, so a failure here is only logged.
+  try {
+    const promoted = await ctx.services.workshops.fillAllOpenSpots();
+    for (const workshopId of new Set(promoted.map((p) => p.workshopId))) {
+      await refreshWorkshopCard(interaction.client, ctx, workshopId);
+    }
+    await announcePromotions(interaction.client, ctx, promoted);
+  } catch (err) {
+    ctx.logger.error({ err, userId: user.id }, 'Could not refill workshop spots after unlink');
+  }
 }
 
 async function verificationQueue(interaction: GuildCommand, ctx: BotContext): Promise<void> {
@@ -117,45 +135,50 @@ async function verificationQueue(interaction: GuildCommand, ctx: BotContext): Pr
   await interaction.editReply(buildVerificationQueueView(attempts));
 }
 
+const baseCommand = new SlashCommandBuilder()
+  .setName('admin')
+  .setDescription('Organizer tools')
+  .setContexts(InteractionContextType.Guild)
+  // Hides the command from regular members; requireOrganizer is the real check.
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+  .addSubcommand((sub) =>
+    sub
+      .setName('link')
+      .setDescription('Link a member to a website registration (by email or registration ID)')
+      .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
+      .addStringOption((o) =>
+        o.setName('email').setDescription('Email on their website registration'),
+      )
+      .addIntegerOption((o) =>
+        o
+          .setName('registration')
+          .setDescription('Registration ID (from the dashboard CSV export)')
+          .setMinValue(1),
+      ),
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName('unlink')
+      .setDescription('Remove a member’s link and their Participant role')
+      .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)),
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName('verification-queue')
+      .setDescription('Failed or ambiguous verification attempts to review'),
+  );
+
 export const adminCommand: SlashCommand = {
-  data: new SlashCommandBuilder()
-    .setName('admin')
-    .setDescription('Organizer tools')
-    .setContexts(InteractionContextType.Guild)
-    // Hides the command from regular members; requireOrganizer is the real check.
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
-    .addSubcommand((sub) =>
-      sub
-        .setName('link')
-        .setDescription('Link a member to a website registration (by email or registration ID)')
-        .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
-        .addStringOption((o) =>
-          o.setName('email').setDescription('Email on their website registration'),
-        )
-        .addIntegerOption((o) =>
-          o
-            .setName('registration')
-            .setDescription('Registration ID (from the dashboard CSV export)')
-            .setMinValue(1),
-        ),
-    )
-    .addSubcommand((sub) =>
-      sub
-        .setName('unlink')
-        .setDescription('Remove a member’s link and their Participant role')
-        .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true)),
-    )
-    .addSubcommand((sub) =>
-      sub
-        .setName('verification-queue')
-        .setDescription('Failed or ambiguous verification attempts to review'),
-    ),
+  data: addWorkshopAdminCommands(baseCommand),
 
   async execute(interaction, ctx) {
     if (!(await requireOrganizer(interaction, ctx))) return;
     if (!interaction.inCachedGuild()) throw new UserFacingError('Use this inside the server.');
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
+    if (interaction.options.getSubcommandGroup() === 'workshop') {
+      return handleWorkshopAdmin(interaction, ctx);
+    }
     switch (interaction.options.getSubcommand()) {
       case 'link':
         return link(interaction, ctx);
@@ -163,8 +186,12 @@ export const adminCommand: SlashCommand = {
         return unlink(interaction, ctx);
       case 'verification-queue':
         return verificationQueue(interaction, ctx);
+      case 'workshop-roster':
+        return handleWorkshopAdmin(interaction, ctx);
       default:
         throw new Error(`Unknown /admin subcommand: ${interaction.options.getSubcommand()}`);
     }
   },
+
+  autocomplete: autocompleteWorkshop,
 };

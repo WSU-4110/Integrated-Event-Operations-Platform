@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { discordTimestamp, renderTimePlaceholders } from '../../src/utils/time.js';
+import {
+  discordTimestamp,
+  isValidTimeZone,
+  parseEventTime,
+  renderTimePlaceholders,
+} from '../../src/utils/time.js';
 
 // Hacking starts at noon Detroit time (EST, UTC-5) = 17:00 UTC.
 const HACKING_STARTS = Date.UTC(2026, 10, 14, 17, 0, 0) / 1000;
@@ -36,5 +41,45 @@ describe('renderTimePlaceholders', () => {
 
   it('rejects invalid times', () => {
     expect(() => renderTimePlaceholders('{t:2026-13-45T99:00:00Z}')).toThrow(/Invalid/);
+  });
+});
+
+describe('parseEventTime', () => {
+  const zone = 'America/Detroit';
+  const iso = (input: string, tz = zone) => parseEventTime(input, tz)?.toISOString();
+
+  it('reads wall-clock times in the event time zone', () => {
+    expect(iso('2026-11-14 12:00')).toBe('2026-11-14T17:00:00.000Z'); // EST
+    expect(iso('2026-07-04T09:30')).toBe('2026-07-04T13:30:00.000Z'); // EDT
+    expect(iso(' 2026-11-15 7:05 ')).toBe('2026-11-15T12:05:00.000Z');
+    expect(iso('2026-11-14 12:00', 'UTC')).toBe('2026-11-14T12:00:00.000Z');
+  });
+
+  it('handles the DST change around the event', () => {
+    // Clocks fall back on Nov 1, 2026: 01:30 happens twice; either is acceptable.
+    expect(['2026-11-01T05:30:00.000Z', '2026-11-01T06:30:00.000Z']).toContain(
+      iso('2026-11-01 01:30'),
+    );
+    expect(iso('2026-11-01 03:00')).toBe('2026-11-01T08:00:00.000Z');
+    // Clocks spring forward on Mar 8, 2026: 02:30 never happens.
+    expect(iso('2026-03-08 02:30')).toBeUndefined();
+  });
+
+  it('accepts ISO times with an explicit offset as-is', () => {
+    expect(iso('2026-11-14T12:00:00-05:00')).toBe('2026-11-14T17:00:00.000Z');
+    expect(iso('2026-11-14T17:00:00Z')).toBe('2026-11-14T17:00:00.000Z');
+  });
+
+  it('rejects anything else', () => {
+    for (const input of ['saturday 2pm', '2026-02-30 10:00', '2026-11-14 25:00', '11/14 2pm', '']) {
+      expect(parseEventTime(input, zone), input).toBeNull();
+    }
+  });
+});
+
+describe('isValidTimeZone', () => {
+  it('accepts IANA zones only', () => {
+    expect(isValidTimeZone('America/Detroit')).toBe(true);
+    expect(isValidTimeZone('Mars/Olympus')).toBe(false);
   });
 });

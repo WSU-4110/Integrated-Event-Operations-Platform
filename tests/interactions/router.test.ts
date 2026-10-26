@@ -222,6 +222,7 @@ describe('registered commands and components', () => {
       'resources',
       'rules',
       'verify',
+      'workshops',
     ]);
   });
 

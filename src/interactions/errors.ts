@@ -34,9 +34,12 @@ export function describeInteraction(interaction: RepliableInteraction) {
 }
 
 async function sendEphemeral(interaction: RepliableInteraction, content: string): Promise<void> {
-  if (interaction.deferred && !interaction.replied) {
+  // After deferUpdate() (ephemeral stays null), editReply would overwrite the
+  // message the button is on, such as a public workshop card.
+  const deferredUpdate = interaction.deferred && interaction.ephemeral === null;
+  if (interaction.deferred && !interaction.replied && !deferredUpdate) {
     await interaction.editReply({ content, embeds: [], components: [] });
-  } else if (interaction.replied) {
+  } else if (interaction.replied || deferredUpdate) {
     await interaction.followUp({ content, flags: MessageFlags.Ephemeral });
   } else {
     await interaction.reply({ content, flags: MessageFlags.Ephemeral });

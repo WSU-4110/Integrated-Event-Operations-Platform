@@ -1,5 +1,6 @@
 import {
   MessageFlags,
+  type AutocompleteInteraction,
   type ChatInputCommandInteraction,
   type Interaction,
   type RepliableInteraction,
@@ -47,8 +48,25 @@ export class InteractionRouter {
       interaction.isModalSubmit()
     ) {
       await this.run(interaction, () => this.handleComponent(interaction));
+    } else if (interaction.isAutocomplete()) {
+      await this.handleAutocomplete(interaction);
     }
-    // Autocomplete and context menus aren't used yet.
+    // Context menus aren't used yet.
+  }
+
+  // Autocomplete can't show an error message, so failures just suggest nothing.
+  private async handleAutocomplete(interaction: AutocompleteInteraction): Promise<void> {
+    const command = this.commands.get(interaction.commandName);
+    try {
+      if (command?.autocomplete) await command.autocomplete(interaction, this.ctx);
+      else await interaction.respond([]);
+    } catch (err) {
+      this.ctx.logger.error(
+        { err, command: interaction.commandName, userId: interaction.user.id },
+        'Autocomplete failed',
+      );
+      if (!interaction.responded) await interaction.respond([]).catch(() => {});
+    }
   }
 
   private async handleCommand(interaction: ChatInputCommandInteraction): Promise<void> {

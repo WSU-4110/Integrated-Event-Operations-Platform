@@ -19,6 +19,8 @@ describe('migrations', () => {
       '__drizzle_migrations',
       'participant_links',
       'verification_attempts',
+      'workshop_registrations',
+      'workshops',
     ]);
   });
 
@@ -27,7 +29,7 @@ describe('migrations', () => {
     const history = await t.pg.query<{ n: number }>(
       'SELECT count(*)::int AS n FROM discord_bot.__drizzle_migrations',
     );
-    expect(history.rows[0]?.n).toBe(1);
+    expect(history.rows[0]?.n).toBe(2);
   });
 
   it('only create objects owned by the bot role inside discord_bot', async () => {

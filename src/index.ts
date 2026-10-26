@@ -13,6 +13,7 @@ import { InteractionRouter } from './interactions/router.js';
 import type { BotContext } from './interactions/types.js';
 import { ContentError, loadContent } from './services/contentService.js';
 import { createVerificationService } from './services/verificationService.js';
+import { createWorkshopService } from './services/workshopService.js';
 import { createLogger } from './utils/logger.js';
 
 dotenv.config({ quiet: true });
@@ -30,7 +31,10 @@ async function main(): Promise<void> {
     config,
     logger,
     content,
-    services: { verification: createVerificationService(repos) },
+    services: {
+      verification: createVerificationService(repos),
+      workshops: createWorkshopService(repos),
+    },
   };
   const router = new InteractionRouter(ctx, commands, componentHandlers);
 

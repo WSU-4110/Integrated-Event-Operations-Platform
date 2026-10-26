@@ -4,6 +4,11 @@ import { buildFaqView, FAQ_SELECT_ID } from '../../src/components/embeds/faqEmbe
 import { buildHelpMenu, buildHelpSection } from '../../src/components/embeds/helpEmbeds.js';
 import { buildResourcesView } from '../../src/components/embeds/resourceEmbeds.js';
 import { buildRulesView, splitForEmbeds } from '../../src/components/embeds/rulesEmbeds.js';
+import {
+  buildWorkshopCard,
+  buildWorkshopList,
+} from '../../src/components/embeds/workshopEmbeds.js';
+import type { WorkshopWithCounts } from '../../src/database/repositories/workshopRepository.js';
 import { HELP_SECTIONS, loadContent, type Content } from '../../src/services/contentService.js';
 
 let content: Content;
@@ -114,5 +119,65 @@ describe('rules view', () => {
   it('hard-splits a single line longer than the limit', () => {
     const chunks = splitForEmbeds('x'.repeat(250), 100);
     expect(chunks.map((c) => c.length)).toEqual([100, 100, 50]);
+  });
+});
+
+describe('workshop views', () => {
+  const workshop: WorkshopWithCounts = {
+    id: 12345,
+    name: 'AI Fundamentals',
+    description: 'Neural nets from scratch',
+    speaker: 'Grace Hopper',
+    startTime: new Date('2026-11-14T19:00:00Z'),
+    endTime: new Date('2026-11-14T20:00:00Z'),
+    location: 'Room 204',
+    capacity: 30,
+    channelId: null,
+    messageId: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    registered: 18,
+    waitlisted: 0,
+  };
+  const spotsField = (view: ReturnType<typeof buildWorkshopCard>) =>
+    view.embeds[0]?.toJSON().fields?.find((f) => f.name.includes('Spots'))?.value;
+
+  it('shows counts, remaining spots and persistent button IDs', () => {
+    const view = buildWorkshopCard(workshop, { started: false });
+    expect(spotsField(view)).toBe('18 / 30 registered\n12 spots remaining');
+    const buttons = buttonsOf(view);
+    expect(buttons.map((b) => ('custom_id' in b ? b.custom_id : ''))).toEqual([
+      'workshop:register:12345',
+      'workshop:cancel:12345',
+    ]);
+    // Times are Discord timestamps, so everyone sees their own time zone.
+    expect(JSON.stringify(view.embeds[0]?.toJSON().fields)).toContain('<t:1794682800:F>');
+  });
+
+  it('shows the waitlist when full and disables buttons once started', () => {
+    const full = { ...workshop, registered: 30, waitlisted: 4 };
+    expect(spotsField(buildWorkshopCard(full, { started: false }))).toContain('4 on the waitlist');
+    const started = buildWorkshopCard(full, { started: true });
+    expect(buttonsOf(started).every((b) => 'disabled' in b && b.disabled)).toBe(true);
+  });
+
+  it('adds a back button only on the private card', () => {
+    const ids = (withBack: boolean) =>
+      buttonsOf(buildWorkshopCard(workshop, { started: false, withBack })).map((b) =>
+        'custom_id' in b ? b.custom_id : '',
+      );
+    expect(ids(true)).toContain('workshop:list');
+    expect(ids(false)).not.toContain('workshop:list');
+  });
+
+  it('caps the list menu at 25 workshops', () => {
+    const many = Array.from({ length: 30 }, (_, i) => ({ ...workshop, id: i + 1 }));
+    const view = buildWorkshopList(many, {
+      statuses: new Map(),
+      verified: true,
+      timeZone: 'America/Detroit',
+    });
+    const menu = view.components[0]?.toJSON().components[0];
+    expect(menu && 'options' in menu && menu.options).toHaveLength(25);
   });
 });

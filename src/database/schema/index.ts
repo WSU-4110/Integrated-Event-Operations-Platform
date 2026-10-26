@@ -3,3 +3,4 @@
 export { discordBot } from './discordBot.js';
 export * from './participantLinks.js';
 export * from './verificationAttempts.js';
+export * from './workshops.js';
