@@ -1,5 +1,10 @@
 import type { Database } from '../types.js';
 import {
+  createAnnouncementRepository,
+  type AnnouncementRepository,
+} from './announcementRepository.js';
+import { createEventRepository, type EventRepository } from './eventRepository.js';
+import {
   createParticipantLinkRepository,
   type ParticipantLinkRepository,
 } from './participantLinkRepository.js';
@@ -18,6 +23,8 @@ export interface Repositories {
   links: ParticipantLinkRepository;
   attempts: VerificationAttemptRepository;
   workshops: WorkshopRepository;
+  events: EventRepository;
+  announcements: AnnouncementRepository;
 }
 
 export function createRepositories(db: Database, eventId: string): Repositories {
@@ -26,5 +33,7 @@ export function createRepositories(db: Database, eventId: string): Repositories 
     links: createParticipantLinkRepository(db),
     attempts: createVerificationAttemptRepository(db),
     workshops: createWorkshopRepository(db),
+    events: createEventRepository(db),
+    announcements: createAnnouncementRepository(db),
   };
 }

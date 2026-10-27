@@ -17,6 +17,8 @@ describe('migrations', () => {
     );
     expect(tables.rows.map((r) => r.table_name)).toEqual([
       '__drizzle_migrations',
+      'announcements',
+      'events',
       'participant_links',
       'verification_attempts',
       'workshop_registrations',
@@ -29,7 +31,7 @@ describe('migrations', () => {
     const history = await t.pg.query<{ n: number }>(
       'SELECT count(*)::int AS n FROM discord_bot.__drizzle_migrations',
     );
-    expect(history.rows[0]?.n).toBe(2);
+    expect(history.rows[0]?.n).toBe(3);
   });
 
   it('only create objects owned by the bot role inside discord_bot', async () => {

@@ -4,11 +4,13 @@ import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runMigrations } from '../../src/database/migrate.js';
 import { createRepositories } from '../../src/database/repositories/index.js';
+import { createAnnouncementService } from '../../src/services/announcementService.js';
 import { createWorkshopService } from '../../src/services/workshopService.js';
 
 // PGlite (used by the other tests) has one connection, so its transactions
 // never overlap. This runs real overlapping transactions on separate
-// connections to prove the row lock works. It needs a THROWAWAY Postgres
+// connections to prove the row lock (workshops) and the conditional
+// status updates (announcements) hold up. It needs a THROWAWAY Postgres
 // where it may create the website table and the bot role:
 //
 //   TEST_DATABASE_URL=postgres://postgres:postgres_local@localhost:5432/postgres npm test
@@ -18,7 +20,7 @@ import { createWorkshopService } from '../../src/services/workshopService.js';
 const url = process.env.TEST_DATABASE_URL;
 const EVENT_ID = 'builderwars-2026';
 
-describe.skipIf(!url)('workshop capacity on real Postgres (separate connections)', () => {
+describe.skipIf(!url)('concurrency on real Postgres (separate connections)', () => {
   let admin: pg.Pool;
   let bot: pg.Pool;
 
@@ -94,5 +96,37 @@ describe.skipIf(!url)('workshop capacity on real Postgres (separate connections)
     const promoted = cancels.flatMap((c) => (c.kind === 'cancelled' ? c.promoted : []));
     expect(new Set(promoted.map((p) => p.discordUserId)).size).toBe(5);
     expect(await service.get(workshopId)).toMatchObject({ registered: 5, waitlisted: 30 });
+  });
+
+  it('sends each announcement once when job runs and Send clicks overlap', async () => {
+    const service = createAnnouncementService(createRepositories(drizzle(bot), EVENT_ID));
+    const draft = (scheduledFor: Date | null) =>
+      service.createDraft({
+        title: 'Race',
+        body: 'Race',
+        type: 'GENERAL',
+        pingParticipants: false,
+        scheduledFor,
+        createdBy: '400000000000000001',
+      });
+
+    const due: number[] = [];
+    for (let i = 0; i < 20; i++) {
+      const a = await draft(new Date(Date.now() - 1000));
+      await service.confirm(a.id);
+      due.push(a.id);
+    }
+    // Ten overlapping job runs: every due announcement is claimed by exactly one.
+    const claims = await Promise.all(Array.from({ length: 10 }, () => service.claimDue()));
+    const claimed = claims
+      .flat()
+      .map((a) => a.id)
+      .filter((id) => due.includes(id));
+    expect(claimed.sort((a, b) => a - b)).toEqual(due);
+
+    // Ten simultaneous presses of Send now: one of them sends.
+    const now = await draft(null);
+    const outcomes = await Promise.all(Array.from({ length: 10 }, () => service.confirm(now.id)));
+    expect(outcomes.filter((o) => o.kind === 'send_now')).toHaveLength(1);
   });
 });

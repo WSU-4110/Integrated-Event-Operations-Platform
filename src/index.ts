@@ -11,7 +11,9 @@ import { registerInteractionCreate } from './events/interactionCreate.js';
 import { registerReady } from './events/ready.js';
 import { InteractionRouter } from './interactions/router.js';
 import type { BotContext } from './interactions/types.js';
+import { createAnnouncementService } from './services/announcementService.js';
 import { ContentError, loadContent } from './services/contentService.js';
+import { createScheduleService } from './services/scheduleService.js';
 import { createVerificationService } from './services/verificationService.js';
 import { createWorkshopService } from './services/workshopService.js';
 import { createLogger } from './utils/logger.js';
@@ -34,6 +36,8 @@ async function main(): Promise<void> {
     services: {
       verification: createVerificationService(repos),
       workshops: createWorkshopService(repos),
+      schedule: createScheduleService(repos),
+      announcements: createAnnouncementService(repos),
     },
   };
   const router = new InteractionRouter(ctx, commands, componentHandlers);

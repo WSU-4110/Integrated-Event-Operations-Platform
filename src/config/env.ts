@@ -6,6 +6,12 @@ const snowflake = z
   .trim()
   .regex(/^\d{17,20}$/, 'must be a Discord ID (17–20 digits)');
 
+// An empty value in .env (`NAME=`) counts as not set.
+const optionalSnowflake = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  snowflake.optional(),
+);
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -28,6 +34,7 @@ const envSchema = z
       .pipe(z.array(snowflake).min(1, 'needs at least one role ID')),
     PARTICIPANT_ROLE_ID: snowflake,
     VERIFICATION_LOG_CHANNEL_ID: snowflake,
+    ANNOUNCEMENT_CHANNEL_ID: optionalSnowflake,
 
     DATABASE_URL: z
       .string()
@@ -73,6 +80,8 @@ export interface Config {
   };
   channels: {
     verificationLogId: string;
+    /** Where /announce posts; null disables /announce. */
+    announcementId: string | null;
   };
   database: {
     url: string;
@@ -120,6 +129,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     },
     channels: {
       verificationLogId: e.VERIFICATION_LOG_CHANNEL_ID,
+      announcementId: e.ANNOUNCEMENT_CHANNEL_ID ?? null,
     },
     database: {
       url: e.DATABASE_URL,

@@ -1,14 +1,21 @@
 import { ButtonStyle, ComponentType } from 'discord.js';
 import { beforeAll, describe, expect, it } from 'vitest';
+import {
+  buildAnnouncementMessage,
+  buildAnnouncementModal,
+} from '../../src/components/embeds/announcementEmbeds.js';
 import { buildFaqView, FAQ_SELECT_ID } from '../../src/components/embeds/faqEmbeds.js';
 import { buildHelpMenu, buildHelpSection } from '../../src/components/embeds/helpEmbeds.js';
 import { buildResourcesView } from '../../src/components/embeds/resourceEmbeds.js';
 import { buildRulesView, splitForEmbeds } from '../../src/components/embeds/rulesEmbeds.js';
+import { buildScheduleView } from '../../src/components/embeds/scheduleEmbeds.js';
 import {
   buildWorkshopCard,
   buildWorkshopList,
 } from '../../src/components/embeds/workshopEmbeds.js';
+import type { ScheduleItem } from '../../src/database/repositories/eventRepository.js';
 import type { WorkshopWithCounts } from '../../src/database/repositories/workshopRepository.js';
+import type { Announcement } from '../../src/database/schema/index.js';
 import { HELP_SECTIONS, loadContent, type Content } from '../../src/services/contentService.js';
 
 let content: Content;
@@ -179,5 +186,86 @@ describe('workshop views', () => {
     });
     const menu = view.components[0]?.toJSON().components[0];
     expect(menu && 'options' in menu && menu.options).toHaveLength(25);
+  });
+});
+
+describe('schedule view', () => {
+  const now = new Date('2026-11-14T15:00:00Z');
+  const item = (i: number, overrides: Partial<ScheduleItem> = {}): ScheduleItem => ({
+    source: 'event',
+    id: i,
+    name: `Event number ${i} with a reasonably long name`,
+    description: '',
+    type: 'GENERAL',
+    startTime: new Date(now.getTime() + i * 600_000),
+    endTime: new Date(now.getTime() + i * 600_000 + 300_000),
+    location: 'The main hall on the second floor',
+    ...overrides,
+  });
+  const totalText = (view: ReturnType<typeof buildScheduleView>) =>
+    view.embeds
+      .map((e) => e.toJSON())
+      .reduce(
+        (n, e) =>
+          n + (e.title?.length ?? 0) + (e.description?.length ?? 0) + (e.footer?.text.length ?? 0),
+        0,
+      );
+
+  it('marks what is happening now', () => {
+    const view = buildScheduleView([item(0, { startTime: new Date(now.getTime() - 60_000) })], {
+      now,
+      timeZone: 'America/Detroit',
+    });
+    expect(view.embeds[0]?.toJSON().description).toContain('🔴 **Now**');
+  });
+
+  it('stays within Discord limits however long the schedule is', () => {
+    const view = buildScheduleView(
+      Array.from({ length: 300 }, (_, i) => item(i)),
+      { now, timeZone: 'America/Detroit' },
+    );
+    expect(totalText(view)).toBeLessThanOrEqual(6000);
+    for (const embed of view.embeds) {
+      expect(embed.toJSON().description?.length ?? 0).toBeLessThanOrEqual(4096);
+    }
+    expect(view.embeds.at(-1)?.toJSON().description).toMatch(/…and \d+ more/);
+  });
+});
+
+describe('announcement views', () => {
+  const announcement: Announcement = {
+    id: 7,
+    title: 'Dinner',
+    body: 'Tacos! @everyone',
+    type: 'FOOD',
+    pingParticipants: false,
+    scheduledFor: new Date('2026-11-14T23:30:00Z'),
+    status: 'DRAFT',
+    createdBy: '400000000000000001',
+    channelId: null,
+    messageId: null,
+    sentAt: null,
+    failureReason: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  it('styles each type and never lets the body ping', () => {
+    const message = buildAnnouncementMessage(announcement, '100000000000000002');
+    const embed = (
+      message.embeds?.[0] as { toJSON(): { title?: string; footer?: { text: string } } }
+    ).toJSON();
+    expect(embed.title).toBe('🍕 Dinner');
+    expect(embed.footer?.text).toBe('BuilderWars · Food');
+    expect(message.allowedMentions).toEqual({ parse: [], roles: [] });
+  });
+
+  it('pre-fills the form from a draft, with the time in the event zone', () => {
+    const modal = JSON.stringify(
+      buildAnnouncementModal({ timeZone: 'America/Detroit', draft: announcement }).toJSON(),
+    );
+    expect(modal).toContain('"custom_id":"announce:submit:7"');
+    expect(modal).toContain('"value":"2026-11-14 18:30"');
+    expect(modal).toMatch(/"value":"FOOD","default":true/);
   });
 });

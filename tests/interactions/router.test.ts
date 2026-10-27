@@ -216,19 +216,44 @@ describe('registered commands and components', () => {
   it('registers every command', () => {
     expect(commands.map((c) => c.data.name).sort()).toEqual([
       'admin',
+      'announce',
       'faq',
       'help',
+      'next',
       'profile',
       'resources',
       'rules',
+      'schedule',
       'verify',
       'workshops',
     ]);
   });
 
-  it('hides /admin from members without Manage Server in the Discord UI', () => {
-    const admin = commands.find((c) => c.data.name === 'admin')!.data.toJSON();
-    expect(admin.default_member_permissions).toBe('32'); // ManageGuild
+  it.each(['admin', 'announce'])(
+    'hides /%s from members without Manage Server in the Discord UI',
+    (name) => {
+      const command = commands.find((c) => c.data.name === name)!.data.toJSON();
+      expect(command.default_member_permissions).toBe('32'); // ManageGuild
+    },
+  );
+
+  // Discord rejects a command whose names, descriptions and choices add up to more.
+  it("keeps every command under Discord's 8000-character limit", () => {
+    type Node = {
+      name?: string;
+      description?: string;
+      value?: unknown;
+      options?: Node[];
+      choices?: Node[];
+    };
+    const size = (n: Node): number =>
+      (n.name?.length ?? 0) +
+      (n.description?.length ?? 0) +
+      (typeof n.value === 'string' ? n.value.length : 0) +
+      [...(n.options ?? []), ...(n.choices ?? [])].reduce((sum, child) => sum + size(child), 0);
+    for (const command of commands) {
+      expect(size(command.data.toJSON() as Node), command.data.name).toBeLessThan(8000);
+    }
   });
 
   it('/help defers, then shows the menu privately', async () => {

@@ -5,6 +5,7 @@ import { buildFaqView } from '../embeds/faqEmbeds.js';
 import { buildHelpMenu, buildHelpSection, HELP_NAMESPACE } from '../embeds/helpEmbeds.js';
 import { buildResourcesView } from '../embeds/resourceEmbeds.js';
 import { buildRulesView } from '../embeds/rulesEmbeds.js';
+import { buildScheduleFor } from './scheduleButtons.js';
 
 function isHelpSection(value: string | undefined): value is HelpSectionId {
   return (HELP_SECTIONS as readonly (string | undefined)[]).includes(value);
@@ -39,6 +40,9 @@ export const helpButtons: ComponentHandler = {
         break;
       case 'rules':
         view = buildRulesView(content.rules);
+        break;
+      case 'schedule':
+        view = await buildScheduleFor(ctx);
         break;
       default:
         view = buildHelpSection(content.help, section);

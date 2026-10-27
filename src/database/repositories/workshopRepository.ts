@@ -1,5 +1,6 @@
 import { and, asc, count, eq, getTableColumns, gt, ilike, sql } from 'drizzle-orm';
 import { isUniqueViolation } from '../errors.js';
+import { containsPattern } from '../like.js';
 import {
   participantLinks,
   WORKSHOP_NAME_UNIQUE,
@@ -77,10 +78,6 @@ const countsColumns = {
   registered: sql<number>`count(${r.id}) filter (where ${r.status} = 'REGISTERED')`.mapWith(Number),
   waitlisted: sql<number>`count(${r.id}) filter (where ${r.status} = 'WAITLISTED')`.mapWith(Number),
 };
-
-function escapeLike(text: string): string {
-  return text.replace(/[\\%_]/g, (c) => `\\${c}`);
-}
 
 async function saving(fn: () => Promise<Workshop | undefined>): Promise<SaveWorkshopResult | null> {
   try {
@@ -202,7 +199,7 @@ export function createWorkshopRepository(db: Database): WorkshopRepository {
       return db
         .select()
         .from(w)
-        .where(ilike(w.name, `%${escapeLike(query.trim())}%`))
+        .where(ilike(w.name, containsPattern(query)))
         .orderBy(asc(w.startTime), asc(w.id))
         .limit(limit);
     },

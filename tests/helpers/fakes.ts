@@ -2,7 +2,9 @@ import { MessageFlags, type Interaction } from 'discord.js';
 import { vi } from 'vitest';
 import type { Config } from '../../src/config/env.js';
 import type { BotContext, Services } from '../../src/interactions/types.js';
+import type { AnnouncementService } from '../../src/services/announcementService.js';
 import { loadContent } from '../../src/services/contentService.js';
+import type { ScheduleService } from '../../src/services/scheduleService.js';
 import type { VerificationService } from '../../src/services/verificationService.js';
 import type { WorkshopService } from '../../src/services/workshopService.js';
 import type { Logger } from '../../src/utils/logger.js';
@@ -10,6 +12,7 @@ import type { Logger } from '../../src/utils/logger.js';
 export const ORGANIZER_ROLE = '100000000000000001';
 export const PARTICIPANT_ROLE = '100000000000000002';
 export const LOG_CHANNEL = '100000000000000003';
+export const ANNOUNCEMENT_CHANNEL = '100000000000000004';
 export const USER_ID = '400000000000000001';
 export const CHANNEL_ID = '500000000000000001';
 export const MESSAGE_ID = '600000000000000001';
@@ -24,7 +27,7 @@ export function fakeConfig(overrides: Partial<Config> = {}): Config {
       guildId: '300000000000000001',
     },
     roles: { organizerRoleIds: [ORGANIZER_ROLE], participantRoleId: PARTICIPANT_ROLE },
-    channels: { verificationLogId: LOG_CHANNEL },
+    channels: { verificationLogId: LOG_CHANNEL, announcementId: ANNOUNCEMENT_CHANNEL },
     database: { url: 'postgres://localhost/test', ssl: { mode: 'disable' } },
     eventId: 'builderwars-2026',
     eventTimeZone: 'America/Detroit',
@@ -68,6 +71,28 @@ export function stubWorkshopService(overrides: Partial<WorkshopService> = {}): W
   } as unknown as WorkshopService;
 }
 
+/** A schedule with no events, for tests that don't need a database. */
+export function stubScheduleService(overrides: Partial<ScheduleService> = {}): ScheduleService {
+  return {
+    now: () => new Date(),
+    snapshot: vi.fn(async () => ({ upcoming: [], hasEvents: false })),
+    next: vi.fn(async () => ({ next: null, happening: [] })),
+    ...overrides,
+  } as unknown as ScheduleService;
+}
+
+/** An announcement service that never has anything due. */
+export function stubAnnouncementService(
+  overrides: Partial<AnnouncementService> = {},
+): AnnouncementService {
+  return {
+    now: () => new Date(),
+    claimDue: vi.fn(async () => []),
+    deleteStaleDrafts: vi.fn(async () => 0),
+    ...overrides,
+  } as unknown as AnnouncementService;
+}
+
 export async function fakeContext(services: Partial<Services> = {}) {
   const logger = fakeLogger();
   const content = await loadContent({
@@ -80,6 +105,8 @@ export async function fakeContext(services: Partial<Services> = {}) {
     services: {
       verification: stubVerificationService(),
       workshops: stubWorkshopService(),
+      schedule: stubScheduleService(),
+      announcements: stubAnnouncementService(),
       ...services,
     },
   };
@@ -93,15 +120,20 @@ interface FakeOptions {
   values?: string[];
   roles?: string[];
   fields?: Record<string, string>;
+  /** Modal select menus: the chosen values, by custom ID. */
+  selects?: Record<string, string[]>;
   username?: string;
   userId?: string;
   subcommand?: string;
   subcommandGroup?: string;
   options?: Record<string, unknown>;
-  /** Autocomplete: what the user has typed so far. */
+  /** Autocomplete: what the user has typed so far, and in which option. */
   focused?: string;
-  /** Component interactions: the message the component is on. */
+  focusedOption?: string;
+  /** Component interactions (and modals opened from a button): the message it's on. */
   message?: { id?: string; ephemeral?: boolean };
+  /** Whether the bot can ping the Participant role. */
+  canPing?: boolean;
 }
 
 /** A duck-typed interaction with just what the router and handlers touch. */
@@ -109,6 +141,7 @@ export function fakeInteraction(options: FakeOptions) {
   // `ephemeral` mirrors discord.js: null until deferReply/reply, and deferUpdate leaves it null.
   const state = { deferred: false, replied: false, ephemeral: null as boolean | null };
   const sent: unknown[] = [];
+  const channelSends: { channelId: string; message: unknown }[] = [];
   const cardEdits: { messageId: string; view: unknown }[] = [];
   const dms: { userId: string; message: unknown }[] = [];
   const isEphemeral = (payload: unknown) =>
@@ -139,7 +172,10 @@ export function fakeInteraction(options: FakeOptions) {
       getInteger: (name: string) => options.options?.[name] ?? null,
       getBoolean: (name: string) => options.options?.[name] ?? null,
       getChannel: (name: string) => options.options?.[name] ?? null,
-      getFocused: () => options.focused ?? '',
+      getFocused: (full?: boolean) =>
+        full
+          ? { name: options.focusedOption ?? 'workshop', value: options.focused ?? '' }
+          : (options.focused ?? ''),
     },
     message: {
       id: options.message?.id ?? MESSAGE_ID,
@@ -153,7 +189,9 @@ export function fakeInteraction(options: FakeOptions) {
     member: { roles: options.roles ?? [] },
     guild: {
       id: '300000000000000001',
+      roles: { cache: new Map([[PARTICIPANT_ROLE, { mentionable: !!options.canPing }]]) },
       members: {
+        me: { permissions: { has: () => false } },
         // fetch(id) returns the member; fetch({ user: ids }) returns a map of them.
         fetch: vi.fn(async (arg?: unknown) =>
           arg && typeof arg === 'object' && 'user' in arg
@@ -169,10 +207,19 @@ export function fakeInteraction(options: FakeOptions) {
     },
     client: {
       channels: {
-        fetch: vi.fn(async () => ({
+        fetch: vi.fn(async (channelId: string) => ({
+          id: channelId,
           isSendable: () => true,
           isTextBased: () => true,
-          send: vi.fn(async (m: unknown) => sent.push(m)),
+          send: vi.fn(async (m: unknown) => {
+            sent.push(m);
+            channelSends.push({ channelId, message: m });
+            const id = String(700000000000000000n + BigInt(channelSends.length));
+            return {
+              id,
+              url: `https://discord.com/channels/300000000000000001/${channelId}/${id}`,
+            };
+          }),
           messages: {
             edit: vi.fn(async (messageId: string, view: unknown) => {
               cardEdits.push({ messageId, view });
@@ -186,9 +233,14 @@ export function fakeInteraction(options: FakeOptions) {
         })),
       },
     },
-    fields: { getTextInputValue: (id: string) => options.fields?.[id] ?? '' },
-    /** Messages posted to the verification log channel. */
+    fields: {
+      getTextInputValue: (id: string) => options.fields?.[id] ?? '',
+      getStringSelectValues: (id: string) => options.selects?.[id] ?? [],
+    },
+    /** Messages posted to any channel (the verification log in most tests). */
     logMessages: sent,
+    /** Messages posted, with the channel each went to. */
+    channelSends,
     /** Edits to posted messages (workshop cards). */
     cardEdits,
     /** Direct messages sent, by recipient. */
@@ -214,6 +266,7 @@ export function fakeInteraction(options: FakeOptions) {
     isAnySelectMenu: () => options.kind === 'select',
     isStringSelectMenu: () => options.kind === 'select',
     isModalSubmit: () => options.kind === 'modal',
+    isFromMessage: () => options.kind === 'modal' && !!options.message,
     isAutocomplete: () => options.kind === 'autocomplete',
     isMessageComponent: () => options.kind === 'button' || options.kind === 'select',
     reply: vi.fn(async (payload?: unknown) => {
