@@ -303,6 +303,7 @@ router.post(
       await sendRegistrationConfirmation({
         name: registration.name,
         email: registration.email,
+        discordUsername: registration.discordUsername,
       });
     } catch (err: unknown) {
       req.log.error(

@@ -116,6 +116,7 @@ router.post("/registrations", async (req, res): Promise<void> => {
     await sendRegistrationConfirmation({
       name: registration.name,
       email: registration.email,
+      discordUsername: registration.discordUsername,
     });
     await db
       .update(registrationsTable)

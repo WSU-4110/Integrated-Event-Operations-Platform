@@ -715,7 +715,7 @@ function Registration() {
         <SectionHeading
           label="07 / YOUR MOVE"
           title="Register for BuilderWars."
-          copy="Free for currently enrolled college and university students. Organizers review every registration."
+          copy="Free for currently enrolled college and university students. After you register, join our Discord to get event updates and team channels."
           icon={<Mail size={17} />}
         />
         <div className="panel mx-auto max-w-2xl p-6 sm:p-9">
@@ -725,16 +725,26 @@ function Registration() {
                 <Check size={26} />
               </div>
               <h3 className="display mt-6 text-3xl text-[#f7f4ed]">
-                You're registered.
+                Thanks for registering!
               </h3>
               <p className="mx-auto mt-3 max-w-md text-[#9ca3af]">
-                Your registration is pending. We'll email you once an organizer
-                approves it, with how to get access to the participant Discord
-                channels.
+                Next, join the BuilderWars Discord. Event updates, resources,
+                and team channels are there. Verify in #how-to-verify, then use{" "}
+                <span className="font-mono text-[#e7e5df]">/verify</span> with
+                the email you just registered with.
               </p>
-              <p className="mx-auto mt-3 max-w-md text-sm text-[#7d848e]">
+              <a
+                href={EVENT_CONFIG.discordInviteUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-primary mt-6"
+                data-testid="link-registered-discord"
+              >
+                Join the Discord <ExternalLink size={14} />
+              </a>
+              <p className="mx-auto mt-5 max-w-md text-sm text-[#7d848e]">
                 {result.emailSent
-                  ? "A confirmation with the information packet is on its way. If it isn't in your school inbox within a few minutes, check your junk or spam folder, and mark it as not junk so our next emails reach you. Questions? Email awssbg@wayne.edu."
+                  ? "We also emailed you these steps. If the email isn't in your school inbox within a few minutes, check your junk or spam folder, and mark it as not junk so our next emails reach you. Questions? Email awssbg@wayne.edu."
                   : "We couldn't send your confirmation email right away, but your registration is saved. If no email arrives, contact awssbg@wayne.edu."}
               </p>
             </div>
@@ -819,6 +829,10 @@ function Registration() {
                   className="field"
                   data-testid="input-discord"
                 />
+                <span className="mt-1 block text-[11px] leading-4 text-[#7d848e]">
+                  Your username, not your display name. You'll verify with it in
+                  our Discord.
+                </span>
               </label>
               <label>
                 <span className="eyebrow !text-[10px]">Team *</span>
@@ -857,10 +871,10 @@ function Registration() {
                 data-testid="text-data-use-notice"
               >
                 We use this information only to run BuilderWars: reviewing
-                registrations, giving approved participants Discord access,
-                check-in, and event planning. Organizers can see it; sponsors
-                only receive totals, never your details. Questions or removal
-                requests: awssbg@wayne.edu.
+                registrations, verifying you in our Discord server, check-in,
+                and event planning. Organizers can see it; sponsors only receive
+                totals, never your details. Questions or removal requests:
+                awssbg@wayne.edu.
               </p>
               {error && (
                 <p
@@ -928,7 +942,18 @@ function Footer() {
             >
               {EVENT_CONFIG.contactEmail}
             </a>
-            <a href={EVENT_CONFIG.discordUrl} className="hover:text-[#a78bfa]">
+            <a
+              href={EVENT_CONFIG.discordInviteUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-[#a78bfa]"
+            >
+              BuilderWars Discord
+            </a>
+            <a
+              href={EVENT_CONFIG.mainWebsiteUrl}
+              className="hover:text-[#a78bfa]"
+            >
               Our Main Website
             </a>
             <button
