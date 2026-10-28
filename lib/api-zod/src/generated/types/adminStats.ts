@@ -14,4 +14,9 @@ export interface AdminStats {
   by_experience_level: AdminStatsByExperienceLevel;
   by_team_status: AdminStatsByTeamStatus;
   by_status: AdminStatsByStatus;
+  /**
+     * Active registrations verified on Discord; null if the bot's records can't be read.
+     * @nullable
+     */
+  discord_verified: number | null;
 }

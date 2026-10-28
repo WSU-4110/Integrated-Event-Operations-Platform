@@ -5,6 +5,7 @@
  * Hackathon website API
  * OpenAPI spec version: 0.1.0
  */
+import type { RegistrationDiscordStatus } from './registrationDiscordStatus';
 
 export interface Registration {
   id: number;
@@ -23,6 +24,10 @@ export interface Registration {
   /** @nullable */
   status_updated_at?: Date | null;
   allowed_statuses: string[];
+  /** From the Discord bot's records. unknown = the website can't read them. */
+  discord_status: RegistrationDiscordStatus;
+  /** @nullable */
+  discord_verified_at?: Date | null;
   source: string;
   /** @nullable */
   confirmation_email_sent_at?: Date | null;

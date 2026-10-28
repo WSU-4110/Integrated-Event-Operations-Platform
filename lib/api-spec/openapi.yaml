@@ -116,11 +116,13 @@ paths:
           required: false
           schema:
             type: string
-        - name: status
+        - name: access
           in: query
           required: false
+          description: "active (pending or approved) or removed (declined or waitlisted)"
           schema:
             type: string
+            enum: [active, removed]
         - name: limit
           in: query
           required: false
@@ -191,8 +193,8 @@ paths:
     patch:
       operationId: updateRegistrationStatus
       tags: [admin]
-      summary: Change a registration's status
-      description: Changes the status if the change is allowed and the registration still has expected_status; records the change in its history. Requires organizer authentication.
+      summary: Remove a registration from the event, or restore it
+      description: Sets status to "declined" (remove; the Discord bot then removes the participant role) or "pending" (restore), if allowed and the registration still has expected_status. Records the change in its history. Requires organizer authentication.
       parameters:
         - name: id
           in: path
@@ -407,7 +409,7 @@ components:
 
     Registration:
       type: object
-      required: [id, name, email, school, class_standing, experience_level, status, allowed_statuses, source, created_at]
+      required: [id, name, email, school, class_standing, experience_level, status, allowed_statuses, discord_status, source, created_at]
       properties:
         id:
           type: number
@@ -436,6 +438,13 @@ components:
           type: array
           items:
             type: string
+        discord_status:
+          type: string
+          enum: [verified, removed, not_verified, unknown]
+          description: "From the Discord bot's records. unknown = the website can't read them."
+        discord_verified_at:
+          type: ["string", "null"]
+          format: date-time
         source:
           type: string
         confirmation_email_sent_at:
@@ -451,7 +460,7 @@ components:
       properties:
         status:
           type: string
-          enum: [approved, waitlisted, declined]
+          enum: [pending, declined]
         expected_status:
           type: string
 
@@ -506,7 +515,7 @@ components:
 
     AdminStats:
       type: object
-      required: [total, by_experience_level, by_team_status, by_status]
+      required: [total, by_experience_level, by_team_status, by_status, discord_verified]
       properties:
         total:
           type: number
@@ -522,6 +531,9 @@ components:
           type: object
           additionalProperties:
             type: number
+        discord_verified:
+          type: ["number", "null"]
+          description: "Active registrations verified on Discord; null if the bot's records can't be read."
 
     AuthUser:
       type: object

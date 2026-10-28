@@ -10,7 +10,6 @@ export type StatusChangeInputStatus = typeof StatusChangeInputStatus[keyof typeo
 
 
 export const StatusChangeInputStatus = {
-  approved: 'approved',
-  waitlisted: 'waitlisted',
+  pending: 'pending',
   declined: 'declined',
 } as const;

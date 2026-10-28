@@ -1,8 +1,11 @@
 import { Router, type IRouter } from "express";
-import { and, count, eq, ilike, or, type SQL } from "drizzle-orm";
+import { and, count, eq, ilike, inArray, or, type SQL } from "drizzle-orm";
 import {
+  ACTIVE_STATUSES,
   db,
+  discordParticipantLinksTable,
   EVENT_ID,
+  REMOVED_STATUSES,
   registrationStatusChangesTable,
   registrationsTable,
   STATUS_TRANSITIONS,
@@ -56,7 +59,55 @@ router.use("/admin", async (req, res, next) => {
   next();
 });
 
-function toApi(r: Registration) {
+type DiscordLinkInfo = { active: boolean; linkedAt: Date };
+type DiscordLinks = Map<number, DiscordLinkInfo> | null;
+
+// Errors meaning the website can't see the Discord bot's table: no permission
+// yet (42501), or the bot hasn't created it (42P01, 3F000).
+function isDiscordUnavailable(err: unknown): boolean {
+  const code =
+    (err as { code?: string })?.code ??
+    (err as { cause?: { code?: string } })?.cause?.code;
+  return code === "42501" || code === "42P01" || code === "3F000";
+}
+
+// The bot's verification records for these registrations, keyed by
+// registration ID; null if the website can't read them.
+async function loadDiscordLinks(ids: number[]): Promise<DiscordLinks> {
+  if (ids.length === 0) return new Map();
+  try {
+    const rows = await db
+      .select({
+        registrationId: discordParticipantLinksTable.registrationId,
+        active: discordParticipantLinksTable.active,
+        linkedAt: discordParticipantLinksTable.linkedAt,
+      })
+      .from(discordParticipantLinksTable)
+      .where(inArray(discordParticipantLinksTable.registrationId, ids));
+    return new Map(
+      rows.map((row) => [
+        row.registrationId,
+        { active: row.active, linkedAt: row.linkedAt },
+      ]),
+    );
+  } catch (err) {
+    if (isDiscordUnavailable(err)) return null;
+    throw err;
+  }
+}
+
+function discordStatus(id: number, links: DiscordLinks) {
+  if (links === null) return { status: "unknown" as const, verifiedAt: null };
+  const link = links.get(id);
+  if (!link) return { status: "not_verified" as const, verifiedAt: null };
+  return {
+    status: link.active ? ("verified" as const) : ("removed" as const),
+    verifiedAt: link.linkedAt,
+  };
+}
+
+function toApi(r: Registration, links: DiscordLinks) {
+  const discord = discordStatus(r.id, links);
   return {
     id: r.id,
     name: r.name,
@@ -70,6 +121,8 @@ function toApi(r: Registration) {
     status: r.status,
     status_updated_at: r.statusUpdatedAt,
     allowed_statuses: STATUS_TRANSITIONS[r.status as RegistrationStatus] ?? [],
+    discord_status: discord.status,
+    discord_verified_at: discord.verifiedAt,
     source: r.source,
     confirmation_email_sent_at: r.confirmationEmailSentAt,
     created_at: r.createdAt,
@@ -85,7 +138,7 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
     return;
   }
 
-  const { search, experience_level, team_status, status, limit, offset } =
+  const { search, experience_level, team_status, access, limit, offset } =
     parsed.data;
 
   const conditions: SQL[] = [forThisEvent];
@@ -106,8 +159,13 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
   if (team_status) {
     conditions.push(eq(registrationsTable.teamStatus, team_status));
   }
-  if (status) {
-    conditions.push(eq(registrationsTable.status, status));
+  if (access) {
+    conditions.push(
+      inArray(
+        registrationsTable.status,
+        access === "active" ? ACTIVE_STATUSES : REMOVED_STATUSES,
+      ),
+    );
   }
   const whereClause = and(...conditions);
 
@@ -122,8 +180,9 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
     db.select({ count: count() }).from(registrationsTable).where(whereClause),
   ]);
 
+  const links = await loadDiscordLinks(registrations.map((r) => r.id));
   res.json({
-    registrations: registrations.map(toApi),
+    registrations: registrations.map((r) => toApi(r, links)),
     total: Number(totalResult[0]?.count ?? 0),
   });
 });
@@ -229,7 +288,7 @@ router.patch(
 
       // #6 (FR-05) will send the approval notice and verification code here,
       // after the change is saved; a failed notification must not undo it.
-      res.json(toApi(updated));
+      res.json(toApi(updated, await loadDiscordLinks([updated.id])));
     } catch (err: unknown) {
       if (err instanceof StatusChangeError) {
         res.status(err.httpStatus).json({ error: err.message });
@@ -345,6 +404,29 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
       .groupBy(registrationsTable.status),
   ]);
 
+  // Active registrations with an active Discord verification.
+  let discordVerified: number | null;
+  try {
+    const [row] = await db
+      .select({ count: count() })
+      .from(discordParticipantLinksTable)
+      .innerJoin(
+        registrationsTable,
+        eq(registrationsTable.id, discordParticipantLinksTable.registrationId),
+      )
+      .where(
+        and(
+          forThisEvent,
+          eq(discordParticipantLinksTable.active, true),
+          inArray(registrationsTable.status, ACTIVE_STATUSES),
+        ),
+      );
+    discordVerified = Number(row?.count ?? 0);
+  } catch (err) {
+    if (!isDiscordUnavailable(err)) throw err;
+    discordVerified = null;
+  }
+
   const tally = (rows: { key: string | null; count: number }[]) =>
     Object.fromEntries(
       rows.map((row) => [row.key ?? "unknown", Number(row.count)]),
@@ -355,6 +437,7 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
     by_experience_level: tally(byLevel),
     by_team_status: tally(byTeam),
     by_status: tally(byStatus),
+    discord_verified: discordVerified,
   });
 });
 
@@ -390,12 +473,15 @@ router.get("/admin/export", async (_req, res): Promise<void> => {
     "team_status",
     "team_name",
     "status",
+    "discord_status",
+    "discord_verified_at",
     "source",
     "confirmation_email_sent_at",
     "created_at",
   ] as const;
+  const links = await loadDiscordLinks(registrations.map((r) => r.id));
   const rows = registrations.map((r) => {
-    const api = toApi(r);
+    const api = toApi(r, links);
     return columns.map((column) => csvCell(api[column])).join(",");
   });
 

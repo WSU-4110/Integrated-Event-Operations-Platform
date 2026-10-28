@@ -1071,12 +1071,23 @@ function AdminGate() {
   return <Admin />;
 }
 
-const STATUS_ACTIONS: Record<string, string> = {
-  approved: "Approve",
-  waitlisted: "Waitlist",
-  declined: "Decline",
+// Access (FR-04, simplified): pending/approved = active, declined/waitlisted
+// = removed. Removing someone makes the Discord bot take away their
+// participant role on its next sync.
+const isActiveStatus = (status: string) =>
+  status === "pending" || status === "approved";
+const ACCESS_ACTIONS: Record<string, { label: string; confirm: string }> = {
+  declined: {
+    label: "Remove from event",
+    confirm:
+      "Remove {name} from the event? The Discord bot will remove their participant role within about 15 minutes.",
+  },
+  pending: {
+    label: "Restore",
+    confirm: "Restore {name}? They'll be able to verify on Discord again.",
+  },
 };
-function StatusControl({
+function AccessControl({
   id,
   name,
   status,
@@ -1098,15 +1109,17 @@ function StatusControl({
       enabled: showHistory,
     },
   });
-  const change = (next: string) => {
+  const next = allowed.find((s) => ACCESS_ACTIONS[s]);
+  const change = () => {
     if (!next) return;
-    if (!window.confirm(`${STATUS_ACTIONS[next]} ${name}?`)) return;
+    const action = ACCESS_ACTIONS[next];
+    if (!window.confirm(action.confirm.replace("{name}", name))) return;
     setError("");
     update.mutate(
       {
         id,
         data: {
-          status: next as "approved" | "waitlisted" | "declined",
+          status: next as "pending" | "declined",
           expected_status: status,
         },
       },
@@ -1124,40 +1137,33 @@ function StatusControl({
               ? "Someone else changed this first. The list has been refreshed."
               : code === 400
                 ? "That change isn't allowed."
-                : "The status couldn't be changed. Try again.",
+                : "Access couldn't be changed. Try again.",
           );
           onChanged();
         },
       },
     );
   };
+  const active = isActiveStatus(status);
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-2">
-        <span
-          className={`capitalize ${status === "approved" ? "text-[#a78bfa]" : status === "declined" ? "text-[#7d848e]" : ""}`}
-          data-testid={`text-status-${id}`}
+      <span
+        className={active ? "text-[#e7e5df]" : "text-[#7d848e]"}
+        data-testid={`text-access-${id}`}
+      >
+        {active ? "Active" : "Removed"}
+      </span>
+      {next && (
+        <button
+          type="button"
+          onClick={change}
+          disabled={update.isPending}
+          className="block text-xs text-[#a78bfa] underline disabled:opacity-50"
+          data-testid={`button-access-${id}`}
         >
-          {status}
-        </span>
-        {allowed.length > 0 && (
-          <select
-            value=""
-            onChange={(e) => change(e.target.value)}
-            disabled={update.isPending}
-            className="rounded border border-[#343b45] bg-[#111418] px-1 py-0.5 text-xs text-[#9ca3af]"
-            aria-label={`Change status for ${name}`}
-            data-testid={`select-status-${id}`}
-          >
-            <option value="">Change…</option>
-            {allowed.map((next) => (
-              <option key={next} value={next}>
-                {STATUS_ACTIONS[next] ?? next}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+          {update.isPending ? "Saving…" : ACCESS_ACTIONS[next].label}
+        </button>
+      )}
       {error && <p className="text-xs text-[#a78bfa]">{error}</p>}
       <button
         type="button"
@@ -1176,11 +1182,46 @@ function StatusControl({
           {history.data?.changes.length === 0 && <li>No changes yet.</li>}
           {history.data?.changes.map((c, i) => (
             <li key={i}>
-              {c.from_status} → {c.to_status} by {c.changed_by_email},{" "}
-              {new Date(c.changed_at).toLocaleString()}
+              {isActiveStatus(c.to_status) ? "Restored" : "Removed"} by{" "}
+              {c.changed_by_email}, {new Date(c.changed_at).toLocaleString()}
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  );
+}
+const DISCORD_LABELS: Record<string, string> = {
+  verified: "Verified",
+  not_verified: "Not verified yet",
+  removed: "Role removed",
+};
+function DiscordCell({
+  username,
+  status,
+  verifiedAt,
+}: {
+  username: string | null | undefined;
+  status: string;
+  verifiedAt: string | null | undefined;
+}) {
+  return (
+    <div>
+      <span className="text-[#9ca3af]">{username || "—"}</span>
+      {status !== "unknown" && (
+        <span
+          className={`block text-xs ${status === "verified" ? "text-[#a78bfa]" : "text-[#7d848e]"}`}
+          title={
+            verifiedAt
+              ? `Verified ${new Date(verifiedAt).toLocaleString()}`
+              : undefined
+          }
+        >
+          {DISCORD_LABELS[status] ?? status}
+          {status === "verified" && verifiedAt
+            ? ` · ${new Date(verifiedAt).toLocaleDateString()}`
+            : ""}
+        </span>
       )}
     </div>
   );
@@ -1287,18 +1328,18 @@ function Admin() {
   const [search, setSearch] = useState("");
   const [level, setLevel] = useState("");
   const [team, setTeam] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [accessFilter, setAccessFilter] = useState("");
   const [offset, setOffset] = useState(0);
   const params = useMemo(
     () => ({
       search: search || undefined,
       experience_level: level || undefined,
       team_status: team || undefined,
-      status: statusFilter || undefined,
+      access: (accessFilter || undefined) as "active" | "removed" | undefined,
       limit: 50,
       offset,
     }),
-    [search, level, team, statusFilter, offset],
+    [search, level, team, accessFilter, offset],
   );
   const stats = useGetAdminStats({
     query: { queryKey: getGetAdminStatsQueryKey() },
@@ -1371,13 +1412,13 @@ function Admin() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Total registrations", statsData?.total ?? "—"],
+            ["Verified on Discord", statsData?.discord_verified ?? "—"],
             [
-              "Pending review",
-              statsData ? (statsData.by_status?.pending ?? 0) : "—",
-            ],
-            [
-              "Approved",
-              statsData ? (statsData.by_status?.approved ?? 0) : "—",
+              "Removed",
+              statsData
+                ? (statsData.by_status?.declined ?? 0) +
+                  (statsData.by_status?.waitlisted ?? 0)
+                : "—",
             ],
             [
               "Looking for a team",
@@ -1437,19 +1478,17 @@ function Admin() {
               <option value="solo">Solo</option>
             </select>
             <select
-              value={statusFilter}
+              value={accessFilter}
               onChange={(e) => {
-                setStatusFilter(e.target.value);
+                setAccessFilter(e.target.value);
                 setOffset(0);
               }}
               className="field max-w-[170px]"
-              data-testid="select-admin-status"
+              data-testid="select-admin-access"
             >
-              <option value="">All statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="waitlisted">Waitlisted</option>
-              <option value="declined">Declined</option>
+              <option value="">Active and removed</option>
+              <option value="active">Active</option>
+              <option value="removed">Removed</option>
             </select>
           </div>
           <a
@@ -1473,7 +1512,7 @@ function Admin() {
                   "Experience",
                   "Discord",
                   "Team",
-                  "Status",
+                  "Access",
                   "Registered",
                   "Actions",
                 ].map((x) => (
@@ -1523,8 +1562,12 @@ function Admin() {
                     <td className="p-4 capitalize text-[#a78bfa]">
                       {r.experience_level}
                     </td>
-                    <td className="p-4 text-[#9ca3af]">
-                      {r.discord_username || "—"}
+                    <td className="p-4">
+                      <DiscordCell
+                        username={r.discord_username}
+                        status={r.discord_status}
+                        verifiedAt={r.discord_verified_at}
+                      />
                     </td>
                     <td className="p-4 text-[#9ca3af]">
                       {r.team_status
@@ -1533,7 +1576,7 @@ function Admin() {
                       {r.team_name ? ` · ${r.team_name}` : ""}
                     </td>
                     <td className="p-4">
-                      <StatusControl
+                      <AccessControl
                         id={r.id}
                         name={r.name}
                         status={r.status}

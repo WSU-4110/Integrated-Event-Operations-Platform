@@ -78,6 +78,19 @@ export interface RegistrationConfirmation {
   confirmation_email_sent: boolean;
 }
 
+/**
+ * From the Discord bot's records. unknown = the website can't read them.
+ */
+export type RegistrationDiscordStatus = typeof RegistrationDiscordStatus[keyof typeof RegistrationDiscordStatus];
+
+
+export const RegistrationDiscordStatus = {
+  verified: 'verified',
+  removed: 'removed',
+  not_verified: 'not_verified',
+  unknown: 'unknown',
+} as const;
+
 export interface Registration {
   id: number;
   name: string;
@@ -95,6 +108,10 @@ export interface Registration {
   /** @nullable */
   status_updated_at?: string | null;
   allowed_statuses: string[];
+  /** From the Discord bot's records. unknown = the website can't read them. */
+  discord_status: RegistrationDiscordStatus;
+  /** @nullable */
+  discord_verified_at?: string | null;
   source: string;
   /** @nullable */
   confirmation_email_sent_at?: string | null;
@@ -105,8 +122,7 @@ export type StatusChangeInputStatus = typeof StatusChangeInputStatus[keyof typeo
 
 
 export const StatusChangeInputStatus = {
-  approved: 'approved',
-  waitlisted: 'waitlisted',
+  pending: 'pending',
   declined: 'declined',
 } as const;
 
@@ -150,6 +166,11 @@ export interface AdminStats {
   by_experience_level: AdminStatsByExperienceLevel;
   by_team_status: AdminStatsByTeamStatus;
   by_status: AdminStatsByStatus;
+  /**
+     * Active registrations verified on Discord; null if the bot's records can't be read.
+     * @nullable
+     */
+  discord_verified: number | null;
 }
 
 export interface AuthUser {
@@ -173,8 +194,19 @@ export type ListRegistrationsParams = {
 search?: string;
 experience_level?: string;
 team_status?: string;
-status?: string;
+/**
+ * active (pending or approved) or removed (declined or waitlisted)
+ */
+access?: ListRegistrationsAccess;
 limit?: number;
 offset?: number;
 };
+
+export type ListRegistrationsAccess = typeof ListRegistrationsAccess[keyof typeof ListRegistrationsAccess];
+
+
+export const ListRegistrationsAccess = {
+  active: 'active',
+  removed: 'removed',
+} as const;
 
