@@ -11,7 +11,8 @@ export const EVENT_CONFIG = {
   // so the event falls in Eastern Standard Time (UTC-5).
   targetDate: new Date("2026-11-14T12:00:00-05:00"),
   contactEmail: "awssbg@wayne.edu",
-  discordUrl: "https://www.wayneaws.dev/",
+  mainWebsiteUrl: "https://www.wayneaws.dev/",
+  discordInviteUrl: "https://discord.com/invite/mrYkakzvUj",
   socialLinks: {
     meetup: "https://www.meetup.com/aws-sbg-at-wayne-state-university/?eventOrigin=home_groups_you_organize",
     instagram: "https://www.instagram.com/builderwars.hack/",
