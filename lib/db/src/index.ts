@@ -39,3 +39,5 @@ export async function runMigrations(migrationsFolder: string) {
 }
 
 export * from "./schema";
+
+export * from "./external/discordBot";

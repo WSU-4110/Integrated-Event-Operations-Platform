@@ -32,15 +32,24 @@ export const REGISTRATION_STATUSES = [
 ] as const;
 export type RegistrationStatus = (typeof REGISTRATION_STATUSES)[number];
 
-// Status changes organizers may make (FR-04). Nothing returns to "pending".
+// Access (FR-04, simplified 2026-10-28): organizers no longer approve people.
+// "pending" and "approved" are active: the Discord bot lets them verify and
+// keeps their participant role. "declined" and "waitlisted" are removed: the
+// bot takes the role away on its next sync. Organizers can remove someone
+// (-> declined) or restore them (-> pending); every change is recorded.
+export const ACTIVE_STATUSES: RegistrationStatus[] = ["pending", "approved"];
+export const REMOVED_STATUSES: RegistrationStatus[] = [
+  "declined",
+  "waitlisted",
+];
 export const STATUS_TRANSITIONS: Record<
   RegistrationStatus,
   RegistrationStatus[]
 > = {
-  pending: ["approved", "waitlisted", "declined"],
-  waitlisted: ["approved", "declined"],
-  approved: ["waitlisted", "declined"],
-  declined: ["approved", "waitlisted"],
+  pending: ["declined"],
+  approved: ["declined"],
+  waitlisted: ["pending"],
+  declined: ["pending"],
 };
 
 // One row per person per event (FR-01). People imported from the old

@@ -135,6 +135,18 @@ DATABASE_URL='...' DATABASE_SSL_CA=rds-global-bundle.pem pnpm --filter @workspac
 
 That is a dry run: it prints how many rows are ready and which were skipped. Add `--apply` to write. Running it again skips people already registered.
 
+## Discord bot
+
+The bot runs separately (its code is on the `Discord-Bot` branch) and connects to `builderwars-db` as its own `discord_bot_app` role, which can only read `public.registrations` and write in the `discord_bot` schema.
+
+For the admin dashboard's Discord column, the website's database user needs to read the bot's verification table. The bot owns that table, so the grant has to run as the bot's role (for example in a bot migration):
+
+```sql
+GRANT SELECT ON discord_bot.participant_links TO builderwars;
+```
+
+`builderwars` is the website's database user (the user in `DATABASE_URL`). Until this runs, the dashboard shows Discord status as "—"; nothing else is affected.
+
 ## Backups and the restore test (#23)
 
 Lightsail takes an automatic snapshot of `builderwars-db` every day and keeps 7 days of them (Lightsail → Databases → builderwars-db → **Snapshots & restore**). Before a risky change, such as a migration that rewrites data, also take a **manual snapshot** there.

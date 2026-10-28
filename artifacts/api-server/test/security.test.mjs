@@ -261,3 +261,112 @@ describe("browser protections", () => {
     assert.equal(res.headers.get("access-control-allow-credentials"), null);
   });
 });
+
+describe("access and Discord verification status", () => {
+  const admin = cookie(SESSIONS.admin);
+  const findParticipant = async () => {
+    const res = await call(
+      base,
+      "GET",
+      `/admin/registrations?search=${encodeURIComponent(PARTICIPANT_EMAIL)}`,
+      null,
+      admin,
+    );
+    return JSON.parse(res.text).registrations[0];
+  };
+
+  test("without the bot's table, Discord status is unknown", async () => {
+    const r = await findParticipant();
+    assert.equal(r.discord_status, "unknown");
+    const stats = JSON.parse(
+      (await call(base, "GET", "/admin/stats", null, admin)).text,
+    );
+    assert.equal(stats.discord_verified, null);
+  });
+
+  test("a bot verification shows as verified and is counted", async () => {
+    const r = await findParticipant();
+    const client = new pg.Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    // Same shape as the bot's migration (Discord-Bot branch).
+    await client.query("create schema if not exists discord_bot");
+    await client.query(`create table if not exists discord_bot.participant_links (
+      id serial primary key, discord_user_id text not null unique,
+      registration_id integer not null unique,
+      linked_at timestamp with time zone not null default now(), linked_by text,
+      active boolean not null default true, checked_in boolean not null default false,
+      checked_in_at timestamp with time zone,
+      updated_at timestamp with time zone not null default now())`);
+    await client.query(
+      "insert into discord_bot.participant_links (discord_user_id, registration_id) values ($1, $2)",
+      [`discord-${run}`, r.id],
+    );
+    await client.end();
+
+    const after = await findParticipant();
+    assert.equal(after.discord_status, "verified");
+    assert.ok(after.discord_verified_at);
+    const stats = JSON.parse(
+      (await call(base, "GET", "/admin/stats", null, admin)).text,
+    );
+    assert.ok(stats.discord_verified >= 1);
+  });
+
+  test("an organizer can remove someone and restore them", async () => {
+    const r = await findParticipant();
+    assert.deepEqual(r.allowed_statuses, ["declined"]);
+    const removed = await call(
+      base,
+      "PATCH",
+      `/admin/registrations/${r.id}/status`,
+      { status: "declined", expected_status: r.status },
+      admin,
+    );
+    assert.equal(removed.status, 200);
+    assert.deepEqual(JSON.parse(removed.text).allowed_statuses, ["pending"]);
+
+    const removedList = JSON.parse(
+      (
+        await call(
+          base,
+          "GET",
+          `/admin/registrations?access=removed&search=${encodeURIComponent(PARTICIPANT_EMAIL)}`,
+          null,
+          admin,
+        )
+      ).text,
+    );
+    assert.equal(removedList.total, 1);
+    const activeList = JSON.parse(
+      (
+        await call(
+          base,
+          "GET",
+          `/admin/registrations?access=active&search=${encodeURIComponent(PARTICIPANT_EMAIL)}`,
+          null,
+          admin,
+        )
+      ).text,
+    );
+    assert.equal(activeList.total, 0);
+
+    const approve = await call(
+      base,
+      "PATCH",
+      `/admin/registrations/${r.id}/status`,
+      { status: "approved", expected_status: "declined" },
+      admin,
+    );
+    assert.equal(approve.status, 400, "approving is no longer an option");
+
+    const restored = await call(
+      base,
+      "PATCH",
+      `/admin/registrations/${r.id}/status`,
+      { status: "pending", expected_status: "declined" },
+      admin,
+    );
+    assert.equal(restored.status, 200);
+    assert.equal(JSON.parse(restored.text).status, "pending");
+  });
+});

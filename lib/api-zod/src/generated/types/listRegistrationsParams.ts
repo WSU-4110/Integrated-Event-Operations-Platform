@@ -5,12 +5,16 @@
  * Hackathon website API
  * OpenAPI spec version: 0.1.0
  */
+import type { ListRegistrationsAccess } from './listRegistrationsAccess';
 
 export type ListRegistrationsParams = {
 search?: string;
 experience_level?: string;
 team_status?: string;
-status?: string;
+/**
+ * active (pending or approved) or removed (declined or waitlisted)
+ */
+access?: ListRegistrationsAccess;
 limit?: number;
 offset?: number;
 };

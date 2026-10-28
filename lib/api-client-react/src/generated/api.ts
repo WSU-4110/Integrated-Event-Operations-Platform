@@ -540,8 +540,8 @@ export const getUpdateRegistrationStatusUrl = (id: number,) => {
 }
 
 /**
- * Changes the status if the change is allowed and the registration still has expected_status; records the change in its history. Requires organizer authentication.
- * @summary Change a registration's status
+ * Sets status to "declined" (remove; the Discord bot then removes the participant role) or "pending" (restore), if allowed and the registration still has expected_status. Records the change in its history. Requires organizer authentication.
+ * @summary Remove a registration from the event, or restore it
  */
 export const updateRegistrationStatus = async (id: number,
     statusChangeInput: StatusChangeInput, options?: Parameters<typeof customFetch>[1]): Promise<Registration> => {
@@ -591,7 +591,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UpdateRegistrationStatusMutationError = ErrorType<ApiError>
 
     /**
- * @summary Change a registration's status
+ * @summary Remove a registration from the event, or restore it
  */
 export const useUpdateRegistrationStatus = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRegistrationStatus>>, TError,{id: number;data: BodyType<StatusChangeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}

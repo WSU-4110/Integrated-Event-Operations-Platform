@@ -85,7 +85,7 @@ export const ListRegistrationsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "experience_level": zod.coerce.string().optional(),
   "team_status": zod.coerce.string().optional(),
-  "status": zod.coerce.string().optional(),
+  "access": zod.enum(['active', 'removed']).optional().describe('active (pending or approved) or removed (declined or waitlisted)'),
   "limit": zod.coerce.number().int().default(listRegistrationsQueryLimitDefault),
   "offset": zod.coerce.number().int().default(listRegistrationsQueryOffsetDefault)
 })
@@ -104,6 +104,8 @@ export const ListRegistrationsResponse = zod.object({
   "status": zod.string(),
   "status_updated_at": zod.coerce.date().nullish(),
   "allowed_statuses": zod.array(zod.string()),
+  "discord_status": zod.enum(['verified', 'removed', 'not_verified', 'unknown']).describe('From the Discord bot\'s records. unknown = the website can\'t read them.'),
+  "discord_verified_at": zod.coerce.date().nullish(),
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
   "created_at": zod.coerce.date()
@@ -127,15 +129,15 @@ export const DeleteRegistrationResponse = zod.void()
 
 
 /**
- * Changes the status if the change is allowed and the registration still has expected_status; records the change in its history. Requires organizer authentication.
- * @summary Change a registration's status
+ * Sets status to "declined" (remove; the Discord bot then removes the participant role) or "pending" (restore), if allowed and the registration still has expected_status. Records the change in its history. Requires organizer authentication.
+ * @summary Remove a registration from the event, or restore it
  */
 export const UpdateRegistrationStatusParams = zod.object({
   "id": zod.coerce.number()
 })
 
 export const UpdateRegistrationStatusBody = zod.object({
-  "status": zod.enum(['approved', 'waitlisted', 'declined']),
+  "status": zod.enum(['pending', 'declined']),
   "expected_status": zod.string()
 })
 
@@ -152,6 +154,8 @@ export const UpdateRegistrationStatusResponse = zod.object({
   "status": zod.string(),
   "status_updated_at": zod.coerce.date().nullish(),
   "allowed_statuses": zod.array(zod.string()),
+  "discord_status": zod.enum(['verified', 'removed', 'not_verified', 'unknown']).describe('From the Discord bot\'s records. unknown = the website can\'t read them.'),
+  "discord_verified_at": zod.coerce.date().nullish(),
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
   "created_at": zod.coerce.date()
@@ -196,7 +200,8 @@ export const GetAdminStatsResponse = zod.object({
   "total": zod.number(),
   "by_experience_level": zod.record(zod.string(), zod.number()),
   "by_team_status": zod.record(zod.string(), zod.number()),
-  "by_status": zod.record(zod.string(), zod.number())
+  "by_status": zod.record(zod.string(), zod.number()),
+  "discord_verified": zod.number().nullable().describe('Active registrations verified on Discord; null if the bot\'s records can\'t be read.')
 })
 
 
