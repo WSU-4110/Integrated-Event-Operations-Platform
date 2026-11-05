@@ -52,6 +52,11 @@ import sponsorshipPacket from "@assets/BuilderWars_Sponsorship_Packet.pdf";
 import awsLogo from "@assets/sponsors/aws.png";
 import freeWiliLogo from "@assets/sponsors/free-wili.webp";
 import essLogo from "@assets/sponsors/wsu-engineering-student-senate.png";
+import newlabLogo from "@assets/sponsors/newlab.webp";
+import fordLogo from "@assets/sponsors/ford.png";
+import redBullLogo from "@assets/sponsors/red-bull.webp";
+import mochiCoLogo from "@assets/sponsors/mochi-co.png";
+import districtDetroitLogo from "@assets/sponsors/district-detroit-opportunity-center.png";
 import { Switch, Route } from "wouter";
 import { EVENT_CONFIG, FAQ, SCHEDULE } from "@/config/event";
 import NotFound from "@/pages/not-found";
@@ -476,7 +481,15 @@ function Prizes() {
     </section>
   );
 }
-const SPONSORS = [
+type Sponsor = {
+  id: string;
+  name: string;
+  url?: string;
+  logo: string;
+  logoClassName: string;
+  note?: string;
+};
+const GOLD_SPONSORS: Sponsor[] = [
   {
     id: "aws",
     name: "Amazon Web Services",
@@ -498,7 +511,116 @@ const SPONSORS = [
     logo: essLogo,
     logoClassName: "h-20 w-20 rounded-full object-cover",
   },
+  {
+    id: "newlab",
+    name: "Newlab",
+    url: "https://www.newlab.com/",
+    logo: newlabLogo,
+    logoClassName: "h-10 w-auto object-contain",
+  },
 ];
+const BRONZE_SPONSORS: Sponsor[] = [
+  {
+    id: "ford",
+    name: "Ford",
+    url: "https://www.ford.com/",
+    logo: fordLogo,
+    logoClassName: "h-14 w-auto object-contain",
+  },
+];
+const FUEL_SPONSORS: Sponsor[] = [
+  {
+    id: "red-bull",
+    name: "Red Bull",
+    url: "https://www.redbull.com/",
+    logo: redBullLogo,
+    logoClassName: "h-16 w-auto object-contain",
+  },
+  {
+    id: "mochi-co",
+    name: "Mochi Co",
+    url: "https://www.instagram.com/mochicodearborn/",
+    logo: mochiCoLogo,
+    logoClassName: "h-14 w-auto max-w-full object-contain",
+  },
+  {
+    id: "district-detroit-opportunity-center",
+    name: "The District Detroit Opportunity Center",
+    logo: districtDetroitLogo,
+    logoClassName: "h-20 w-20 object-contain",
+    note: "Little Caesars Pizza donation compliments of The District Detroit Opportunity Center",
+  },
+];
+function SponsorCard({ sponsor }: { sponsor: Sponsor }) {
+  const content = (
+    <>
+      <div className="flex h-20 items-center justify-center">
+        <img
+          src={sponsor.logo}
+          alt={`${sponsor.name} logo`}
+          className={sponsor.logoClassName}
+        />
+      </div>
+      <p className="mt-4 text-sm font-semibold text-[#f7f4ed]">
+        {sponsor.name}
+        {sponsor.url && (
+          <ExternalLink size={12} className="ml-1.5 inline text-[#a78bfa]" />
+        )}
+      </p>
+      {sponsor.note && (
+        <p className="mt-2 text-xs leading-5 text-[#9ca3af]">{sponsor.note}</p>
+      )}
+    </>
+  );
+  const className =
+    "panel flex min-h-[170px] flex-col items-center justify-center p-6 text-center";
+  return sponsor.url ? (
+    <a
+      href={sponsor.url}
+      target="_blank"
+      rel="noreferrer"
+      className={`${className} transition hover:border-[#a78bfa]/50`}
+      data-testid={`link-sponsor-${sponsor.id}`}
+    >
+      {content}
+    </a>
+  ) : (
+    <div className={className} data-testid={`card-sponsor-${sponsor.id}`}>
+      {content}
+    </div>
+  );
+}
+function SponsorGroup({
+  label,
+  labelClassName,
+  copy,
+  sponsors,
+  gridClassName,
+}: {
+  label: string;
+  labelClassName: string;
+  copy?: string;
+  sponsors: Sponsor[];
+  gridClassName: string;
+}) {
+  return (
+    <div className="mx-auto mt-10 max-w-3xl">
+      <h3
+        className={`text-center text-sm font-bold uppercase tracking-[.2em] ${labelClassName}`}
+      >
+        {label}
+      </h3>
+      {copy && (
+        <p className="mt-2 text-center text-sm text-[#9ca3af]">{copy}</p>
+      )}
+      <div className={`mt-5 grid gap-4 ${gridClassName}`}>
+        {sponsors.map((sponsor) => (
+          <SponsorCard key={sponsor.id} sponsor={sponsor} />
+        ))}
+      </div>
+    </div>
+  );
+}
 function Sponsors() {
   return (
     <section id="sponsors" className="section">
@@ -509,58 +631,25 @@ function Sponsors() {
           copy="These partners help make the build possible. More sponsors will be announced soon."
           icon={<Network size={17} />}
         />
-        <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2">
-          {SPONSORS.map((sponsor) => {
-            const content = (
-              <>
-                <div className="flex h-20 items-center justify-center">
-                  <img
-                    src={sponsor.logo}
-                    alt={`${sponsor.name} logo`}
-                    className={sponsor.logoClassName}
-                  />
-                </div>
-                <p className="mt-4 text-sm font-semibold text-[#f7f4ed]">
-                  {sponsor.name}
-                  {sponsor.url && (
-                    <ExternalLink
-                      size={12}
-                      className="ml-1.5 inline text-[#a78bfa]"
-                    />
-                  )}
-                </p>
-              </>
-            );
-            const className =
-              "panel flex min-h-[170px] flex-col items-center justify-center p-6 text-center";
-            return sponsor.url ? (
-              <a
-                key={sponsor.name}
-                href={sponsor.url}
-                target="_blank"
-                rel="noreferrer"
-                className={`${className} transition hover:border-[#a78bfa]/50`}
-                data-testid={`link-sponsor-${sponsor.id}`}
-              >
-                {content}
-              </a>
-            ) : (
-              <div
-                key={sponsor.name}
-                className={className}
-                data-testid={`card-sponsor-${sponsor.id}`}
-              >
-                {content}
-              </div>
-            );
-          })}
-          <div className="panel flex min-h-[170px] items-center justify-center p-6 text-center">
-            <div>
-              <p className="eyebrow">More sponsors</p>
-              <p className="mt-3 text-sm text-[#9ca3af]">To be announced</p>
-            </div>
-          </div>
-        </div>
+        <SponsorGroup
+          label="Gold"
+          labelClassName="text-[#fbbf24]"
+          sponsors={GOLD_SPONSORS}
+          gridClassName="sm:grid-cols-2"
+        />
+        <SponsorGroup
+          label="Bronze"
+          labelClassName="text-[#d08b5b]"
+          sponsors={BRONZE_SPONSORS}
+          gridClassName="mx-auto max-w-sm"
+        />
+        <SponsorGroup
+          label="Fuel"
+          labelClassName="text-[#a78bfa]"
+          copy="Keeping builders fed and caffeinated for all 24 hours."
+          sponsors={FUEL_SPONSORS}
+          gridClassName="sm:grid-cols-3"
+        />
         <div className="panel mx-auto mt-10 flex max-w-3xl flex-col items-start justify-between gap-5 p-6 sm:flex-row sm:items-center">
           <div>
             <p className="eyebrow">Interested in partnering?</p>
