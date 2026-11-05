@@ -18,6 +18,7 @@ ENV RUN_MIGRATIONS=true
 # AWS's certificate bundle for verifying the Lightsail PostgreSQL connection.
 ENV DATABASE_SSL_CA=/app/certs/rds-global-bundle.pem
 ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-global-bundle.pem
+RUN chmod 755 /app/certs
 # The server is a single bundled file, so no node_modules are needed. Keep the
 # repo's folder layout: the server finds the web build and the information
 # packet by paths relative to its own file.
