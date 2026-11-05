@@ -26,7 +26,7 @@
       "label": "Teams",
       "emoji": "👥",
       "title": "Teams",
-      "body": "Teams have **1 to 4 members**.\n\n- `/team`: create a team, view yours, or leave\n- `/find-team`: browse teams with open spots and request to join\n\nNo team yet? Come to Team Matchmaking at {t:2026-11-14T12:00:00-05:00|t} on Saturday.\n\n*Requires verification.*"
+      "body": "Teams have **1 to 4 members**.\n\n- `/team`: create a team, view yours, or leave\n- `/find-team`: browse teams with open spots, request to join, or list yourself as looking for a team\n\nNo team yet? Come to Team Matchmaking at {t:2026-11-14T12:00:00-05:00|t} on Saturday.\n\n*Requires verification.*"
     },
     "resources": {
       "label": "Resources",

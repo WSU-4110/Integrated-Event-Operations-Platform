@@ -185,7 +185,7 @@ describe('/profile', () => {
 
     const text = editedText(interaction);
     expect(text).toContain('Ada Lovelace');
-    expect(text).toContain('Pending review');
+    expect(text).toContain('Registered');
   });
 
   it('offers verification to unverified members', async () => {

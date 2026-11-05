@@ -1,6 +1,7 @@
 import type { ComponentHandler } from '../interactions/types.js';
 import { helpButtons } from './buttons/helpButtons.js';
 import { scheduleButtons } from './buttons/scheduleButtons.js';
+import { joinRequestHandler, lftHandler, teamHandler } from './buttons/teamButtons.js';
 import { workshopButtons } from './buttons/workshopButtons.js';
 import { announceHandler } from './modals/announceModal.js';
 import { verifyHandler } from './modals/verifyModal.js';
@@ -15,4 +16,7 @@ export const componentHandlers: readonly ComponentHandler[] = [
   workshopButtons,
   scheduleButtons,
   announceHandler,
+  teamHandler,
+  joinRequestHandler,
+  lftHandler,
 ];

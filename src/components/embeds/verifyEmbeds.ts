@@ -24,22 +24,24 @@ export const Messages = {
   noMatch: (registrationUrl: string) =>
     `We couldn't find a registration matching your Discord username and email. Make sure you registered at ${registrationUrl} using your current Discord username. If you changed your username, contact an organizer.`,
   ineligible: (status: string) =>
-    `Your registration is currently **${status}**, so it can't be verified yet. If you think this is a mistake, contact an organizer.`,
+    `Your registration is currently **${status}**, so it can't be verified. If you think this is a mistake, contact an organizer.`,
   needsOrganizer:
     "We couldn't verify you automatically. An organizer has been notified and will sort it out. You don't need to do anything else.",
   rateLimited:
     'Too many verification attempts. Please wait an hour and try again, or ask an organizer for help.',
   invalidEmail: "That doesn't look like an email address. Run `/verify` again and check for typos.",
   inactive:
-    'Your registration is no longer active on the website (for example, it was waitlisted or declined), so your Participant access is paused. Contact an organizer if this looks wrong.',
+    'Your registration is no longer active on the website (an organizer removed it from the event), so your Participant access is paused. Contact an organizer if this looks wrong.',
   notVerified: 'You need to verify your registration first. Run `/verify`.',
 } as const;
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: '🕓 Pending review',
-  approved: '✅ Approved',
-  waitlisted: '⏳ Waitlisted',
-  declined: '❌ Declined',
+  // The website has no approval step anymore: these two both mean active...
+  pending: '✅ Registered',
+  approved: '✅ Registered',
+  // ...and these two both mean an organizer removed them (Remove from event).
+  waitlisted: '🚫 Removed from the event',
+  declined: '🚫 Removed from the event',
 };
 
 export function statusLabel(status: string): string {

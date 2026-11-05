@@ -3,6 +3,7 @@ import cron, { type ScheduledTask } from 'node-cron';
 import type { BotContext } from '../interactions/types.js';
 import { runParticipantSync } from './participantSync.js';
 import { isIdleAnnouncementRun, runScheduledAnnouncements } from './scheduledAnnouncements.js';
+import { isIdleTeamSync, runTeamSync } from './teamSync.js';
 
 /**
  * Runs `task`, skipping a run if the previous one hasn't finished. Runs
@@ -45,11 +46,22 @@ export function startJobs(client: Client, ctx: BotContext): ScheduledTask[] {
     { isIdle: isIdleAnnouncementRun },
   );
 
+  const teams = guarded('team-sync', ctx, () => runTeamSync(client, ctx), {
+    isIdle: isIdleTeamSync,
+  });
+
+  // In this order: the participant sync takes removed people off their teams and
+  // fills the member cache that the team sync reads. `guarded` never rejects.
+  const syncAll = async () => {
+    await sync();
+    await teams();
+  };
+
   // Catch up right away after a restart.
-  void sync();
+  void syncAll();
   void announcements();
   return [
-    cron.schedule(`*/${ctx.config.syncIntervalMinutes} * * * *`, sync),
+    cron.schedule(`*/${ctx.config.syncIntervalMinutes} * * * *`, syncAll),
     cron.schedule('* * * * *', announcements),
   ];
 }

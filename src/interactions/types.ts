@@ -13,6 +13,7 @@ import type { Config } from '../config/env.js';
 import type { AnnouncementService } from '../services/announcementService.js';
 import type { Content } from '../services/contentService.js';
 import type { ScheduleService } from '../services/scheduleService.js';
+import type { TeamService } from '../services/teamService.js';
 import type { VerificationService } from '../services/verificationService.js';
 import type { WorkshopService } from '../services/workshopService.js';
 import type { ParsedCustomId } from '../utils/customId.js';
@@ -23,6 +24,7 @@ export interface Services {
   workshops: WorkshopService;
   schedule: ScheduleService;
   announcements: AnnouncementService;
+  teams: TeamService;
 }
 
 /** Everything a handler needs, passed in so handlers stay testable. */

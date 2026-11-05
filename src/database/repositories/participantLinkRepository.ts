@@ -12,6 +12,7 @@ export type CreateLinkResult =
   { ok: true; link: ParticipantLink } | { ok: false; conflict: 'discord_user' | 'registration' };
 
 export interface ParticipantLinkRepository {
+  findById(id: number): Promise<ParticipantLink | null>;
   findByDiscordUserId(discordUserId: string): Promise<ParticipantLink | null>;
   findByRegistrationId(registrationId: number): Promise<ParticipantLink | null>;
   /** Unique constraints are the final guard against double-linking. */
@@ -27,6 +28,11 @@ export interface ParticipantLinkRepository {
 
 export function createParticipantLinkRepository(db: Database): ParticipantLinkRepository {
   return {
+    async findById(id) {
+      const [link] = await db.select().from(participantLinks).where(eq(participantLinks.id, id));
+      return link ?? null;
+    },
+
     async findByDiscordUserId(discordUserId) {
       const [link] = await db
         .select()

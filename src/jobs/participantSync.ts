@@ -2,6 +2,7 @@ import type { Client } from 'discord.js';
 import type { BotContext } from '../interactions/types.js';
 import { statusLabel } from '../components/embeds/verifyEmbeds.js';
 import { applyParticipantRole } from '../services/participantRoles.js';
+import { announceDeparture } from '../services/teamNotifications.js';
 import { postVerificationLog } from '../services/verificationLog.js';
 
 export interface ParticipantSyncSummary {
@@ -15,6 +16,7 @@ export interface ParticipantSyncSummary {
 /**
  * Keeps Discord in step with the website:
  * - registrations that became waitlisted/declined/deleted lose the Participant role
+ *   and their place on a team (a restored registration can ask to rejoin)
  * - every active link has the Participant role (restores it if removed by mistake)
  */
 export async function runParticipantSync(
@@ -22,6 +24,8 @@ export async function runParticipantSync(
   ctx: BotContext,
 ): Promise<ParticipantSyncSummary> {
   const result = await ctx.services.verification.syncLinkStatuses();
+  const departures = await ctx.services.teams.removeInactiveMembers();
+  const leftTeam = new Map(departures.map((d) => [d.discordUserId, d.outcome.team.name]));
   const guild = await client.guilds.fetch(ctx.config.discord.guildId);
   const members = await guild.members.fetch(); // needs the GuildMembers intent
 
@@ -40,11 +44,26 @@ export async function runParticipantSync(
       : 'not_in_guild';
     if (change === 'changed') summary.rolesRemoved++;
     if (change === 'failed') summary.roleFailures++;
+    await ctx.services.teams.clearOpenings(link.id);
+    const teamName = leftTeam.get(link.discordUserId);
+    leftTeam.delete(link.discordUserId);
     await postVerificationLog(
       client,
       ctx,
-      `🔻 <@${link.discordUserId}>'s registration #${link.registrationId} is now ${link.status === 'deleted' ? 'deleted' : statusLabel(link.status)}. Participant access paused${change === 'failed' ? ", but I couldn't remove the role; please remove it by hand" : ''}.`,
+      `🔻 <@${link.discordUserId}>'s registration #${link.registrationId} is now ${link.status === 'deleted' ? 'deleted' : statusLabel(link.status)}. Participant access paused${change === 'failed' ? ", but I couldn't remove the role; please remove it by hand" : ''}.${teamName ? ` They were also removed from team **${teamName}**.` : ''}`,
     );
+  }
+
+  // Anyone an earlier failed run missed: their deactivation was already logged.
+  for (const [userId, teamName] of leftTeam) {
+    await postVerificationLog(
+      client,
+      ctx,
+      `🔻 <@${userId}> was removed from team **${teamName}** because their registration isn't active.`,
+    );
+  }
+  for (const { discordUserId, outcome } of departures) {
+    await announceDeparture(client, ctx, outcome, discordUserId);
   }
 
   for (const link of result.active) {
