@@ -16,6 +16,7 @@ import {
   createWebsiteRegistrationRepository,
   type WebsiteRegistrationRepository,
 } from './websiteRegistrationRepository.js';
+import { createTeamRepository, type TeamRepository } from './teamRepository.js';
 import { createWorkshopRepository, type WorkshopRepository } from './workshopRepository.js';
 
 export interface Repositories {
@@ -25,6 +26,7 @@ export interface Repositories {
   workshops: WorkshopRepository;
   events: EventRepository;
   announcements: AnnouncementRepository;
+  teams: TeamRepository;
 }
 
 export function createRepositories(db: Database, eventId: string): Repositories {
@@ -35,5 +37,6 @@ export function createRepositories(db: Database, eventId: string): Repositories 
     workshops: createWorkshopRepository(db),
     events: createEventRepository(db),
     announcements: createAnnouncementRepository(db),
+    teams: createTeamRepository(db),
   };
 }

@@ -14,6 +14,7 @@ import type { BotContext } from './interactions/types.js';
 import { createAnnouncementService } from './services/announcementService.js';
 import { ContentError, loadContent } from './services/contentService.js';
 import { createScheduleService } from './services/scheduleService.js';
+import { createTeamService } from './services/teamService.js';
 import { createVerificationService } from './services/verificationService.js';
 import { createWorkshopService } from './services/workshopService.js';
 import { createLogger } from './utils/logger.js';
@@ -38,6 +39,7 @@ async function main(): Promise<void> {
       workshops: createWorkshopService(repos),
       schedule: createScheduleService(repos),
       announcements: createAnnouncementService(repos),
+      teams: createTeamService(repos, { maxSize: config.teams.maxSize }),
     },
   };
   const router = new InteractionRouter(ctx, commands, componentHandlers);

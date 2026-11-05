@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runMigrations } from '../../src/database/migrate.js';
 import { createRepositories } from '../../src/database/repositories/index.js';
 import { createAnnouncementService } from '../../src/services/announcementService.js';
+import { createTeamService } from '../../src/services/teamService.js';
 import { createWorkshopService } from '../../src/services/workshopService.js';
 
 // PGlite (used by the other tests) has one connection, so its transactions
@@ -128,5 +129,96 @@ describe.skipIf(!url)('concurrency on real Postgres (separate connections)', () 
     const now = await draft(null);
     const outcomes = await Promise.all(Array.from({ length: 10 }, () => service.confirm(now.id)));
     expect(outcomes.filter((o) => o.kind === 'send_now')).toHaveLength(1);
+  });
+
+  it('never overfills a team, or puts anyone on two teams, under overlapping presses', async () => {
+    const repos = createRepositories(drizzle(bot), EVENT_ID);
+    const teams = createTeamService(repos, { maxSize: 4 });
+    const tag = Date.now();
+    let counter = 0;
+    const participant = async () => {
+      const n = ++counter;
+      const reg = await admin.query<{ id: number }>(
+        `INSERT INTO public.registrations
+           (event_id, name, email, school, class_standing, experience_level, status)
+         VALUES ($1, 'Racer', $2, 'Wayne State', 'junior', 'beginner', 'approved') RETURNING id`,
+        [EVENT_ID, `team${tag}-${n}@wayne.edu`],
+      );
+      const link = await repos.links.create({
+        discordUserId: `${tag}${String(n).padStart(3, '0')}`,
+        registrationId: reg.rows[0]!.id,
+        linkedBy: null,
+      });
+      if (!link.ok) throw new Error('link failed');
+      return link.link;
+    };
+    const newTeam = async (name: string) => {
+      const owner = await participant();
+      const outcome = await teams.create(owner, { name, description: '', skills: '' });
+      if (outcome.kind !== 'created') throw new Error(outcome.kind);
+      return { owner, team: outcome.team };
+    };
+
+    // The last spots: an owner accepts 10 requests at once on a team with 3 left.
+    const crowded = await newTeam(`Crowded ${tag}`);
+    const askers = await Promise.all(Array.from({ length: 10 }, () => participant()));
+    const requests = [];
+    for (const asker of askers) {
+      const outcome = await teams.requestToJoin(asker, crowded.team.id);
+      if (outcome.kind !== 'requested') throw new Error(outcome.kind);
+      requests.push(outcome.request);
+    }
+    const answers = await Promise.all(
+      requests.map((r) => teams.respond(crowded.owner, r.id, true)),
+    );
+    expect(answers.filter((a) => a.kind === 'accepted')).toHaveLength(3);
+    expect(answers.filter((a) => a.kind === 'full')).toHaveLength(7);
+    expect((await teams.get(crowded.team.id))?.memberCount).toBe(4);
+
+    // One person, accepted by two teams at the same moment: different locks, so
+    // only the unique constraint can stop this.
+    for (let round = 0; round < 5; round++) {
+      const a = await newTeam(`Rival A ${tag} ${round}`);
+      const b = await newTeam(`Rival B ${tag} ${round}`);
+      const wanted = await participant();
+      const toA = await teams.requestToJoin(wanted, a.team.id);
+      const toB = await teams.requestToJoin(wanted, b.team.id);
+      if (toA.kind !== 'requested' || toB.kind !== 'requested') throw new Error('request failed');
+      const [first, second] = await Promise.all([
+        teams.respond(a.owner, toA.request.id, true),
+        teams.respond(b.owner, toB.request.id, true),
+      ]);
+      const kinds = [first.kind, second.kind].sort();
+      expect(kinds[0]).toBe('accepted');
+      expect(['joiner_on_team', 'not_pending']).toContain(kinds[1]);
+      const onA = (await teams.get(a.team.id))?.memberCount ?? 0;
+      const onB = (await teams.get(b.team.id))?.memberCount ?? 0;
+      expect(onA + onB).toBe(3);
+    }
+
+    // Twelve people grabbing one name, in differing case: exactly one gets it.
+    const founders = await Promise.all(Array.from({ length: 12 }, () => participant()));
+    const creations = await Promise.all(
+      founders.map((founder, i) =>
+        teams.create(founder, {
+          name: i % 2 ? `Same Name ${tag}` : `SAME NAME ${tag}`,
+          description: '',
+          skills: '',
+        }),
+      ),
+    );
+    expect(creations.filter((c) => c.kind === 'created')).toHaveLength(1);
+    expect(creations.filter((c) => c.kind === 'name_taken')).toHaveLength(11);
+
+    // Everyone leaves at once: the team dissolves exactly once.
+    const leaving = await newTeam(`Leaving ${tag}`);
+    const stayers = await Promise.all(Array.from({ length: 3 }, () => participant()));
+    for (const member of stayers) await teams.addMember(leaving.team.id, member);
+    const leaves = await Promise.all(
+      [leaving.owner, ...stayers].map((member) => teams.leave(member)),
+    );
+    expect(leaves.filter((l) => l.kind === 'left')).toHaveLength(4);
+    expect(leaves.filter((l) => l.kind === 'left' && l.dissolved)).toHaveLength(1);
+    expect(await teams.get(leaving.team.id)).toBeNull();
   });
 });

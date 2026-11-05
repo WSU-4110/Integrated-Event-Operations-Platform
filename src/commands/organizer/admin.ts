@@ -11,6 +11,7 @@ import { UserFacingError } from '../../interactions/errors.js';
 import type { BotContext, SlashCommand } from '../../interactions/types.js';
 import { isOrganizer, requireOrganizer } from '../../middleware/permissions.js';
 import { roleChangeSucceeded, setParticipantRole } from '../../services/participantRoles.js';
+import { announceDeparture } from '../../services/teamNotifications.js';
 import { postVerificationLog } from '../../services/verificationLog.js';
 import { announcePromotions, refreshWorkshopCard } from '../../services/workshopNotifications.js';
 import {
@@ -25,6 +26,12 @@ import {
   EVENT_OPTION,
   handleEventAdmin,
 } from './adminEvent.js';
+import {
+  addTeamAdminCommands,
+  autocompleteTeam,
+  handleTeamAdmin,
+  TEAM_OPTION,
+} from './adminTeam.js';
 import {
   addWorkshopAdminCommands,
   autocompleteWorkshop,
@@ -59,7 +66,7 @@ async function link(interaction: GuildCommand, ctx: BotContext): Promise<void> {
       );
     case 'ineligible':
       throw new UserFacingError(
-        `That registration is ${statusLabel(outcome.status)}. Only pending or approved registrations can be linked.`,
+        `That registration is ${statusLabel(outcome.status)}. Only active registrations can be linked.`,
       );
     case 'user_already_linked':
       throw new UserFacingError(
@@ -103,8 +110,16 @@ async function link(interaction: GuildCommand, ctx: BotContext): Promise<void> {
 
 async function unlink(interaction: GuildCommand, ctx: BotContext): Promise<void> {
   const user = interaction.options.getUser('user', true);
+  const existing = await ctx.services.verification.getLink(user.id);
+  if (!existing) throw new UserFacingError(`<@${user.id}> isn't linked to a registration.`);
+
+  // Before the link goes: teams point at it, and an owner must hand over first.
+  const departure = await ctx.services.teams.removeParticipant(existing.id);
   const removed = await ctx.services.verification.unlink(user.id);
   if (!removed) throw new UserFacingError(`<@${user.id}> isn't linked to a registration.`);
+  if (departure.kind === 'left') {
+    await announceDeparture(interaction.client, ctx, departure, user.id);
+  }
 
   ctx.logger.info(
     { organizerId: interaction.user.id, userId: user.id, registrationId: removed.registrationId },
@@ -192,13 +207,17 @@ async function autocomplete(interaction: AutocompleteInteraction, ctx: BotContex
       return autocompleteEvent(interaction, ctx);
     case ANNOUNCEMENT_OPTION:
       return autocompleteAnnouncement(interaction, ctx);
+    case TEAM_OPTION:
+      return autocompleteTeam(interaction, ctx);
     default:
       return autocompleteWorkshop(interaction, ctx);
   }
 }
 
 export const adminCommand: SlashCommand = {
-  data: addAnnouncementAdminCommands(addEventAdminCommands(addWorkshopAdminCommands(baseCommand))),
+  data: addTeamAdminCommands(
+    addAnnouncementAdminCommands(addEventAdminCommands(addWorkshopAdminCommands(baseCommand))),
+  ),
 
   async execute(interaction, ctx) {
     if (!(await requireOrganizer(interaction, ctx))) return;
@@ -212,6 +231,8 @@ export const adminCommand: SlashCommand = {
         return handleEventAdmin(interaction, ctx);
       case 'announcement':
         return handleAnnouncementAdmin(interaction, ctx);
+      case 'team':
+        return handleTeamAdmin(interaction, ctx);
     }
     switch (interaction.options.getSubcommand()) {
       case 'link':

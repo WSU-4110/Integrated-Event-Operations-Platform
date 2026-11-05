@@ -6,3 +6,4 @@ export * from './verificationAttempts.js';
 export * from './workshops.js';
 export * from './events.js';
 export * from './announcements.js';
+export * from './teams.js';

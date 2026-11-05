@@ -35,6 +35,17 @@ const envSchema = z
     PARTICIPANT_ROLE_ID: snowflake,
     VERIFICATION_LOG_CHANNEL_ID: snowflake,
     ANNOUNCEMENT_CHANNEL_ID: optionalSnowflake,
+    MENTOR_ROLE_ID: optionalSnowflake,
+
+    // The website's rule is 1 to 4 members.
+    MAX_TEAM_SIZE: z.coerce.number().int().min(1).max(25).default(4),
+    TEAM_CHANNELS_ENABLED: z
+      .preprocess(
+        (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+        z.enum(['true', 'false']).default('false'),
+      )
+      .transform((value) => value === 'true'),
+    TEAM_CATEGORY_ID: optionalSnowflake,
 
     DATABASE_URL: z
       .string()
@@ -64,6 +75,13 @@ const envSchema = z
         message: 'is required when DB_SSL_MODE is verify-full',
       });
     }
+    if (env.TEAM_CHANNELS_ENABLED && !env.TEAM_CATEGORY_ID) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['TEAM_CATEGORY_ID'],
+        message: 'is required when TEAM_CHANNELS_ENABLED is true',
+      });
+    }
   });
 
 export interface Config {
@@ -77,11 +95,19 @@ export interface Config {
   roles: {
     organizerRoleIds: string[];
     participantRoleId: string;
+    /** Can see team channels too. Null if the server has no mentor role. */
+    mentorRoleId: string | null;
   };
   channels: {
     verificationLogId: string;
     /** Where /announce posts; null disables /announce. */
     announcementId: string | null;
+  };
+  teams: {
+    maxSize: number;
+    /** Whether each team gets a Discord role and private channel. */
+    channelsEnabled: boolean;
+    categoryId: string | null;
   };
   database: {
     url: string;
@@ -126,10 +152,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     roles: {
       organizerRoleIds: e.ORGANIZER_ROLE_IDS,
       participantRoleId: e.PARTICIPANT_ROLE_ID,
+      mentorRoleId: e.MENTOR_ROLE_ID ?? null,
     },
     channels: {
       verificationLogId: e.VERIFICATION_LOG_CHANNEL_ID,
       announcementId: e.ANNOUNCEMENT_CHANNEL_ID ?? null,
+    },
+    teams: {
+      maxSize: e.MAX_TEAM_SIZE,
+      channelsEnabled: e.TEAM_CHANNELS_ENABLED,
+      categoryId: e.TEAM_CATEGORY_ID ?? null,
     },
     database: {
       url: e.DATABASE_URL,
