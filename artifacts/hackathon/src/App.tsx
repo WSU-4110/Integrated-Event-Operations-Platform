@@ -541,7 +541,7 @@ const FUEL_SPONSORS: Sponsor[] = [
     name: "Mochi Co",
     url: "https://www.instagram.com/mochicodearborn/",
     logo: mochiCoLogo,
-    logoClassName: "h-20 w-20 rounded-lg object-cover",
+    logoClassName: "h-14 w-auto max-w-full object-contain",
   },
   {
     id: "district-detroit-opportunity-center",
