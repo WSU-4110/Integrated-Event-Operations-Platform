@@ -546,6 +546,7 @@ const FUEL_SPONSORS: Sponsor[] = [
   {
     id: "district-detroit-opportunity-center",
     name: "The District Detroit Opportunity Center",
+    url: "https://thedistrictdetroitoc.com/",
     logo: districtDetroitLogo,
     logoClassName: "h-20 w-20 object-contain",
     note: "Little Caesars Pizza donation compliments of The District Detroit Opportunity Center",
