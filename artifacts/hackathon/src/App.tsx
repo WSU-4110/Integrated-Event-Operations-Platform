@@ -57,6 +57,7 @@ import fordLogo from "@assets/sponsors/ford.png";
 import redBullLogo from "@assets/sponsors/red-bull.webp";
 import mochiCoLogo from "@assets/sponsors/mochi-co.png";
 import districtDetroitLogo from "@assets/sponsors/district-detroit-opportunity-center.png";
+import wingSnobLogo from "@assets/sponsors/wing-snob-dearborn.jpg";
 import { Switch, Route } from "wouter";
 import { EVENT_CONFIG, FAQ, SCHEDULE } from "@/config/event";
 import NotFound from "@/pages/not-found";
@@ -551,6 +552,13 @@ const FUEL_SPONSORS: Sponsor[] = [
     logoClassName: "h-20 w-20 object-contain",
     note: "Little Caesars Pizza donation compliments of The District Detroit Opportunity Center",
   },
+  {
+    id: "wing-snob-dearborn",
+    name: "Wing Snob Dearborn",
+    url: "https://www.instagram.com/wingsnobdearborn/",
+    logo: wingSnobLogo,
+    logoClassName: "h-20 w-20 rounded-lg object-cover",
+  },
 ];
 function SponsorCard({ sponsor }: { sponsor: Sponsor }) {
   const content = (
@@ -649,7 +657,7 @@ function Sponsors() {
           labelClassName="text-[#a78bfa]"
           copy="Keeping builders fed and caffeinated for all 24 hours."
           sponsors={FUEL_SPONSORS}
-          gridClassName="sm:grid-cols-3"
+          gridClassName="sm:grid-cols-2"
         />
         <div className="panel mx-auto mt-10 flex max-w-3xl flex-col items-start justify-between gap-5 p-6 sm:flex-row sm:items-center">
           <div>
