@@ -70,6 +70,74 @@ export interface RegistrationInput {
   team_name?: string | null;
 }
 
+export type RegistrationUpdateInputClassStanding = typeof RegistrationUpdateInputClassStanding[keyof typeof RegistrationUpdateInputClassStanding];
+
+
+export const RegistrationUpdateInputClassStanding = {
+  freshman: 'freshman',
+  sophomore: 'sophomore',
+  junior: 'junior',
+  senior: 'senior',
+  graduate: 'graduate',
+} as const;
+
+export type RegistrationUpdateInputExperienceLevel = typeof RegistrationUpdateInputExperienceLevel[keyof typeof RegistrationUpdateInputExperienceLevel];
+
+
+export const RegistrationUpdateInputExperienceLevel = {
+  beginner: 'beginner',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+  professional: 'professional',
+} as const;
+
+/**
+ * @nullable
+ */
+export type RegistrationUpdateInputTeamStatus = typeof RegistrationUpdateInputTeamStatus[keyof typeof RegistrationUpdateInputTeamStatus] | null;
+
+
+export const RegistrationUpdateInputTeamStatus = {
+  has_team: 'has_team',
+  looking: 'looking',
+  solo: 'solo',
+} as const;
+
+/**
+ * Same fields as RegistrationInput. Discord username and team status can be empty, for waitlist sign-ups that haven't completed their registration.
+ */
+export interface RegistrationUpdateInput {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  name: string;
+  /**
+     * @maxLength 255
+     * @pattern ^[^\s@]+@[^\s@]+\.[Ee][Dd][Uu]$
+     */
+  email: string;
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  school: string;
+  class_standing: RegistrationUpdateInputClassStanding;
+  experience_level: RegistrationUpdateInputExperienceLevel;
+  /**
+     * @maxLength 37
+     * @nullable
+     */
+  discord_username: string | null;
+  /** @nullable */
+  team_status: RegistrationUpdateInputTeamStatus;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  team_name: string | null;
+}
+
 export interface RegistrationConfirmation {
   id: number;
   name: string;

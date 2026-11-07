@@ -95,6 +95,20 @@ const ADMIN_REQUESTS = [
     "/admin/registrations/1/status",
     { status: "approved", expected_status: "pending" },
   ],
+  [
+    "PATCH",
+    "/admin/registrations/1",
+    {
+      name: "Edited",
+      email: "edited@wayne.edu",
+      school: "Wayne State",
+      class_standing: "junior",
+      experience_level: "beginner",
+      discord_username: "edited",
+      team_status: "solo",
+      team_name: null,
+    },
+  ],
   ["POST", "/admin/registrations/1/resend-confirmation"],
   ["DELETE", "/admin/registrations/1"],
 ];
@@ -368,5 +382,117 @@ describe("access and Discord verification status", () => {
     );
     assert.equal(restored.status, 200);
     assert.equal(JSON.parse(restored.text).status, "pending");
+  });
+});
+
+describe("organizers can edit a registration", () => {
+  const admin = cookie(SESSIONS.admin);
+  const EDIT_EMAIL = `edit-${run}@wayne.edu`;
+  const OTHER_EMAIL = `edit-other-${run}@wayne.edu`;
+  const base_ = {
+    school: "Wayne State",
+    class_standing: "sophomore",
+    experience_level: "beginner",
+    team_status: "looking",
+  };
+  let id;
+  const details = (overrides = {}) => ({
+    name: "Edit Me",
+    email: EDIT_EMAIL,
+    ...base_,
+    discord_username: "edit.me",
+    team_name: null,
+    ...overrides,
+  });
+
+  before(async () => {
+    for (const [email, discord] of [
+      [EDIT_EMAIL, "Edit Me Display Name"],
+      [OTHER_EMAIL, "someoneelse"],
+    ]) {
+      const res = await call(base, "POST", "/registrations", {
+        name: "Edit Me",
+        email,
+        ...base_,
+        discord_username: discord,
+      });
+      assert.equal(res.status, 201);
+      if (email === EDIT_EMAIL) id = JSON.parse(res.text).id;
+    }
+  });
+
+  test("a wrong Discord username can be fixed, and is normalized", async () => {
+    const res = await call(
+      base,
+      "PATCH",
+      `/admin/registrations/${id}`,
+      details({ discord_username: "  @Edit.Me  ", name: " Edit Me Fixed " }),
+      admin,
+    );
+    assert.equal(res.status, 200);
+    const body = JSON.parse(res.text);
+    assert.equal(body.discord_username, "edit.me");
+    assert.equal(body.name, "Edit Me Fixed");
+    assert.equal(body.status, "pending", "editing doesn't change access");
+  });
+
+  test("a display name that can't be a username is refused", async () => {
+    const res = await call(
+      base,
+      "PATCH",
+      `/admin/registrations/${id}`,
+      details({ discord_username: "Edit Me Display Name" }),
+      admin,
+    );
+    assert.equal(res.status, 400);
+  });
+
+  test("the email must stay .edu and unique", async () => {
+    const gmail = await call(
+      base,
+      "PATCH",
+      `/admin/registrations/${id}`,
+      details({ email: `edit-${run}@gmail.com` }),
+      admin,
+    );
+    assert.equal(gmail.status, 400);
+    const taken = await call(
+      base,
+      "PATCH",
+      `/admin/registrations/${id}`,
+      details({ email: OTHER_EMAIL.toUpperCase() }),
+      admin,
+    );
+    assert.equal(taken.status, 409);
+  });
+
+  test("the team name is kept only for people with a team", async () => {
+    const withTeam = await call(
+      base,
+      "PATCH",
+      `/admin/registrations/${id}`,
+      details({ team_status: "has_team", team_name: "Night Owls" }),
+      admin,
+    );
+    assert.equal(JSON.parse(withTeam.text).team_name, "Night Owls");
+    const solo = await call(
+      base,
+      "PATCH",
+      `/admin/registrations/${id}`,
+      details({ team_status: "solo", team_name: "Night Owls" }),
+      admin,
+    );
+    assert.equal(JSON.parse(solo.text).team_name, null);
+  });
+
+  test("an unknown registration is a 404", async () => {
+    const res = await call(
+      base,
+      "PATCH",
+      "/admin/registrations/999999999",
+      details({ email: `nobody-${run}@wayne.edu` }),
+      admin,
+    );
+    assert.equal(res.status, 404);
   });
 });

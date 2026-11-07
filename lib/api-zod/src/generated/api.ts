@@ -129,6 +129,63 @@ export const DeleteRegistrationResponse = zod.void()
 
 
 /**
+ * Replaces the registration's details, for example to fix a Discord username so the person can verify. Access (status) is changed separately. Requires organizer authentication.
+ * @summary Edit a registration's details
+ */
+
+
+
+export const UpdateRegistrationParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const updateRegistrationBodyNameMax = 255;
+
+export const updateRegistrationBodyEmailMax = 255;
+
+
+export const updateRegistrationBodyEmailRegExp = new RegExp('^[^\\s@]+@[^\\s@]+\\.[Ee][Dd][Uu]$');
+export const updateRegistrationBodySchoolMax = 255;
+
+export const updateRegistrationBodyDiscordUsernameMax = 37;
+
+export const updateRegistrationBodyTeamNameMax = 100;
+
+
+
+export const UpdateRegistrationBody = zod.object({
+  "name": zod.string().min(1).max(updateRegistrationBodyNameMax),
+  "email": zod.string().max(updateRegistrationBodyEmailMax).regex(updateRegistrationBodyEmailRegExp),
+  "school": zod.string().min(1).max(updateRegistrationBodySchoolMax),
+  "class_standing": zod.enum(['freshman', 'sophomore', 'junior', 'senior', 'graduate']),
+  "experience_level": zod.enum(['beginner', 'intermediate', 'advanced', 'professional']),
+  "discord_username": zod.string().max(updateRegistrationBodyDiscordUsernameMax).nullable(),
+  "team_status": zod.union([zod.literal('has_team'),zod.literal('looking'),zod.literal('solo'),zod.literal(null)]).nullable(),
+  "team_name": zod.string().max(updateRegistrationBodyTeamNameMax).nullable()
+}).describe('Same fields as RegistrationInput. Discord username and team status can be empty, for waitlist sign-ups that haven\'t completed their registration.')
+
+export const UpdateRegistrationResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "school": zod.string(),
+  "class_standing": zod.string(),
+  "experience_level": zod.string(),
+  "discord_username": zod.string().nullish(),
+  "team_status": zod.string().nullish(),
+  "team_name": zod.string().nullish(),
+  "status": zod.string(),
+  "status_updated_at": zod.coerce.date().nullish(),
+  "allowed_statuses": zod.array(zod.string()),
+  "discord_status": zod.enum(['verified', 'removed', 'not_verified', 'unknown']).describe('From the Discord bot\'s records. unknown = the website can\'t read them.'),
+  "discord_verified_at": zod.coerce.date().nullish(),
+  "source": zod.string(),
+  "confirmation_email_sent_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date()
+})
+
+
+/**
  * Sets status to "declined" (remove; the Discord bot then removes the participant role) or "pending" (restore), if allowed and the registration still has expected_status. Records the change in its history. Requires organizer authentication.
  * @summary Remove a registration from the event, or restore it
  */
