@@ -15,6 +15,7 @@ import {
 } from "@workspace/db";
 import {
   ListRegistrationsQueryParams,
+  UpdateRegistrationBody,
   UpdateRegistrationStatusBody,
 } from "@workspace/api-zod";
 import { sendRegistrationConfirmation } from "../lib/registrationConfirmationEmail";
@@ -226,6 +227,116 @@ class StatusChangeError extends Error {
     super(message);
   }
 }
+
+// Discord usernames are 2–32 characters of a-z, 0-9, "_" and "." with no two
+// periods in a row. Normalized the same way the bot does before /verify
+// compares them, so a fixed username is one the bot will match.
+const DISCORD_USERNAME = /^(?!.*\.\.)[a-z0-9_.]{2,32}$/;
+function normalizeDiscordUsername(input: string): string | null {
+  const normalized = input
+    .trim()
+    .toLowerCase()
+    .replace(/^@/, "")
+    .replace(/#\d{1,4}$/, "");
+  return DISCORD_USERNAME.test(normalized) ? normalized : null;
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  const code =
+    (err as { code?: string })?.code ??
+    (err as { cause?: { code?: string } })?.cause?.code;
+  return code === "23505";
+}
+
+// Lets organizers fix a registration's details, most often a Discord username
+// entered wrong (or a display name), so the person can run /verify again.
+// Access is changed through the status endpoint instead, which records history.
+router.patch("/admin/registrations/:id", async (req, res): Promise<void> => {
+  const registrationId = parseId(req.params.id);
+  const parsed = UpdateRegistrationBody.safeParse(req.body);
+  if (!registrationId || !parsed.success) {
+    res
+      .status(400)
+      .json({ error: "Some fields are missing or invalid. Please check them." });
+    return;
+  }
+  const input = parsed.data;
+
+  const name = input.name.trim();
+  const school = input.school.trim();
+  const email = input.email.trim().toLowerCase();
+  if (!name || !school) {
+    res.status(400).json({ error: "Name and school can't be empty." });
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.edu$/.test(email)) {
+    res.status(400).json({ error: "A .edu email address is required." });
+    return;
+  }
+  let discordUsername: string | null = null;
+  if (input.discord_username?.trim()) {
+    discordUsername = normalizeDiscordUsername(input.discord_username);
+    if (!discordUsername) {
+      res.status(400).json({
+        error:
+          "That isn't a valid Discord username. Usernames are 2–32 lowercase letters, numbers, underscores or periods (not a display name).",
+      });
+      return;
+    }
+  }
+  const teamStatus = input.team_status ?? null;
+  const teamName =
+    teamStatus === "has_team" ? input.team_name?.trim() || null : null;
+
+  try {
+    const [before] = await db
+      .select()
+      .from(registrationsTable)
+      .where(and(eq(registrationsTable.id, registrationId), forThisEvent));
+    if (!before) {
+      res.status(404).json({ error: "Registration not found." });
+      return;
+    }
+    const changes = {
+      name,
+      email,
+      school,
+      classStanding: input.class_standing,
+      experienceLevel: input.experience_level,
+      discordUsername,
+      teamStatus,
+      teamName,
+    };
+    const [updated] = await db
+      .update(registrationsTable)
+      .set(changes)
+      .where(and(eq(registrationsTable.id, registrationId), forThisEvent))
+      .returning();
+    if (!updated) {
+      res.status(404).json({ error: "Registration not found." });
+      return;
+    }
+    // Which fields changed and by whom, without the values (NFR-02).
+    const changedFields = (Object.keys(changes) as (keyof typeof changes)[])
+      .filter((key) => before[key] !== updated[key]);
+    req.log.info(
+      { registrationId, changedFields, changedBy: req.user!.id },
+      "Organizer edited a registration",
+    );
+    res.json(toApi(updated, await loadDiscordLinks([updated.id])));
+  } catch (err: unknown) {
+    if (isUniqueViolation(err)) {
+      res
+        .status(409)
+        .json({ error: "Another registration already uses this email." });
+      return;
+    }
+    req.log.error({ err, registrationId }, "Failed to edit registration");
+    res
+      .status(500)
+      .json({ error: "The changes couldn't be saved. Please try again." });
+  }
+});
 
 // FR-04: change a registration's status. The request carries the status the
 // organizer saw; if someone else changed it since, the change is refused so

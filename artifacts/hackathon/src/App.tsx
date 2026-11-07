@@ -6,6 +6,7 @@ import {
   useCheckRegistration,
   useDeleteRegistration,
   useResendConfirmation,
+  useUpdateRegistration,
   useUpdateRegistrationStatus,
   useGetRegistrationHistory,
   getGetRegistrationHistoryQueryKey,
@@ -15,6 +16,8 @@ import {
   getCheckRegistrationQueryKey,
   getGetAdminStatsQueryKey,
   getListRegistrationsQueryKey,
+  type Registration as AdminRegistration,
+  type RegistrationUpdateInput,
 } from "@workspace/api-client-react";
 import {
   ArrowDown,
@@ -39,6 +42,7 @@ import {
   Menu,
   Monitor,
   Network,
+  PencilLine,
   Trash2,
   Trophy,
   Users,
@@ -1354,6 +1358,293 @@ function ResendConfirmationButton({
     </span>
   );
 }
+type EditForm = {
+  name: string;
+  email: string;
+  school: string;
+  class_standing: string;
+  experience_level: string;
+  discord_username: string;
+  team_status: string;
+  team_name: string;
+};
+function EditRegistrationButton({
+  registration,
+  onSaved,
+}: {
+  registration: AdminRegistration;
+  onSaved: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<EditForm | null>(null);
+  const [error, setError] = useState("");
+  const update = useUpdateRegistration();
+  const start = () => {
+    setForm({
+      name: registration.name,
+      email: registration.email,
+      school: registration.school,
+      class_standing: registration.class_standing,
+      experience_level: registration.experience_level,
+      discord_username: registration.discord_username ?? "",
+      team_status: registration.team_status ?? "",
+      team_name: registration.team_name ?? "",
+    });
+    setError("");
+    setOpen(true);
+  };
+  const close = () => {
+    if (!update.isPending) setOpen(false);
+  };
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+  const change = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    form && setForm({ ...form, [e.target.name]: e.target.value });
+  const save = (e: FormEvent) => {
+    e.preventDefault();
+    if (!form) return;
+    setError("");
+    const data: RegistrationUpdateInput = {
+      name: form.name,
+      email: form.email,
+      school: form.school,
+      class_standing:
+        form.class_standing as RegistrationUpdateInput["class_standing"],
+      experience_level:
+        form.experience_level as RegistrationUpdateInput["experience_level"],
+      discord_username: form.discord_username.trim() || null,
+      team_status: (form.team_status ||
+        null) as RegistrationUpdateInput["team_status"],
+      team_name:
+        form.team_status === "has_team" ? form.team_name.trim() || null : null,
+    };
+    update.mutate(
+      { id: registration.id, data },
+      {
+        onSuccess: () => {
+          setOpen(false);
+          onSaved();
+        },
+        onError: (err) => {
+          const code = getApiErrorStatus(err);
+          const message = (err as { data?: { error?: string } })?.data?.error;
+          setError(
+            code === 409
+              ? "Another registration already uses this email."
+              : code === 400 && message
+                ? message
+                : code === 404
+                  ? "This registration no longer exists. Close and refresh."
+                  : "The changes couldn't be saved. Try again.",
+          );
+        },
+      },
+    );
+  };
+  const verified = registration.discord_status === "verified";
+  return (
+    <>
+      <button
+        type="button"
+        onClick={start}
+        className="inline-flex min-h-[34px] items-center gap-2 rounded-md border border-[#3a3350] px-3 py-1.5 text-xs font-semibold text-[#c4b5fd] transition hover:border-[#a78bfa] hover:bg-[#221d33]"
+        data-testid={`button-edit-registration-${registration.id}`}
+      >
+        <PencilLine size={14} />
+        <span>Edit</span>
+      </button>
+      {open && form && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:items-center"
+          onMouseDown={(e) => e.target === e.currentTarget && close()}
+        >
+          <form
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`edit-title-${registration.id}`}
+            onSubmit={save}
+            className="panel w-full max-w-2xl p-6 sm:p-8"
+            data-testid={`dialog-edit-registration-${registration.id}`}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="eyebrow">Edit registration</p>
+                <h2
+                  id={`edit-title-${registration.id}`}
+                  className="display mt-2 text-2xl text-[#f7f4ed]"
+                >
+                  {registration.name}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={close}
+                aria-label="Close"
+                className="text-[#7d848e] hover:text-[#f7f4ed]"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              <label className="sm:col-span-2">
+                <span className="eyebrow !text-[10px]">Full name</span>
+                <input
+                  name="name"
+                  value={form.name}
+                  onChange={change}
+                  className="field"
+                  required
+                  data-testid="input-edit-name"
+                />
+              </label>
+              <label>
+                <span className="eyebrow !text-[10px]">Email (.edu)</span>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={change}
+                  className="field"
+                  required
+                  data-testid="input-edit-email"
+                />
+              </label>
+              <label>
+                <span className="eyebrow !text-[10px]">School</span>
+                <input
+                  name="school"
+                  value={form.school}
+                  onChange={change}
+                  className="field"
+                  required
+                  data-testid="input-edit-school"
+                />
+              </label>
+              <label>
+                <span className="eyebrow !text-[10px]">Class standing</span>
+                <select
+                  name="class_standing"
+                  value={form.class_standing}
+                  onChange={change}
+                  className="field"
+                  data-testid="select-edit-class-standing"
+                >
+                  <option value="freshman">Freshman</option>
+                  <option value="sophomore">Sophomore</option>
+                  <option value="junior">Junior</option>
+                  <option value="senior">Senior</option>
+                  <option value="graduate">Graduate Student</option>
+                </select>
+              </label>
+              <label>
+                <span className="eyebrow !text-[10px]">Experience level</span>
+                <select
+                  name="experience_level"
+                  value={form.experience_level}
+                  onChange={change}
+                  className="field"
+                  data-testid="select-edit-experience"
+                >
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                  <option value="professional">Professional</option>
+                </select>
+              </label>
+              <label>
+                <span className="eyebrow !text-[10px]">Discord username</span>
+                <input
+                  name="discord_username"
+                  value={form.discord_username}
+                  onChange={change}
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  className="field font-mono"
+                  data-testid="input-edit-discord"
+                />
+                <span className="mt-1 block text-[11px] leading-4 text-[#7d848e]">
+                  Their username, not display name. In Discord, /admin
+                  verification-queue shows the username from their failed
+                  /verify.
+                </span>
+              </label>
+              <label>
+                <span className="eyebrow !text-[10px]">Team</span>
+                <select
+                  name="team_status"
+                  value={form.team_status}
+                  onChange={change}
+                  className="field"
+                  data-testid="select-edit-team-status"
+                >
+                  <option value="">Not given</option>
+                  <option value="has_team">Has a team</option>
+                  <option value="looking">Looking for a team</option>
+                  <option value="solo">Solo</option>
+                </select>
+              </label>
+              {form.team_status === "has_team" && (
+                <label className="sm:col-span-2">
+                  <span className="eyebrow !text-[10px]">Team name</span>
+                  <input
+                    name="team_name"
+                    value={form.team_name}
+                    onChange={change}
+                    className="field"
+                    data-testid="input-edit-team-name"
+                  />
+                </label>
+              )}
+            </div>
+            {verified && (
+              <p className="mt-5 text-xs leading-5 text-[#7d848e]">
+                This person is already verified on Discord. Changing their email
+                or Discord username here doesn't change that link; use /admin
+                unlink and /admin link in Discord for that.
+              </p>
+            )}
+            {error && (
+              <p
+                className="mt-5 text-sm text-[#ff9f85]"
+                data-testid="status-edit-error"
+              >
+                {error}
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={close}
+                className="btn btn-ghost !min-h-[40px]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={update.isPending}
+                className="btn btn-primary !min-h-[40px]"
+                data-testid="button-save-registration"
+              >
+                {update.isPending ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Saving
+                  </>
+                ) : (
+                  "Save changes"
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </>
+  );
+}
 function DeleteRegistrationButton({
   id,
   name,
@@ -1700,11 +1991,17 @@ function Admin() {
                       {new Date(r.created_at).toLocaleDateString()}
                     </td>
                     <td className="p-4">
-                      <DeleteRegistrationButton
-                        id={r.id}
-                        name={r.name}
-                        onDeleted={refreshAdminData}
-                      />
+                      <div className="flex flex-col items-start gap-2">
+                        <EditRegistrationButton
+                          registration={r}
+                          onSaved={refreshAdminData}
+                        />
+                        <DeleteRegistrationButton
+                          id={r.id}
+                          name={r.name}
+                          onDeleted={refreshAdminData}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))
