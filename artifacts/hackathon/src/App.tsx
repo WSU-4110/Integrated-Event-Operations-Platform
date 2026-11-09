@@ -63,7 +63,8 @@ import mochiCoLogo from "@assets/sponsors/mochi-co.png";
 import districtDetroitLogo from "@assets/sponsors/district-detroit-opportunity-center.png";
 import wingSnobLogo from "@assets/sponsors/wing-snob-dearborn.jpg";
 import { Switch, Route } from "wouter";
-import { EVENT_CONFIG, FAQ, SCHEDULE } from "@/config/event";
+import { EVENT_CONFIG, FAQ } from "@/config/event";
+import { eventHubFacade } from "@/lib/eventHubFacade";
 import NotFound from "@/pages/not-found";
 import "./index.css";
 
@@ -414,9 +415,11 @@ function About() {
   );
 }
 function Schedule() {
-  const dayOne = SCHEDULE.filter((item) => item.time.startsWith("Sat"));
-  const dayTwo = SCHEDULE.filter((item) => item.time.startsWith("Sun"));
-  const Timeline = ({ items }: { items: typeof SCHEDULE }) => (
+  const hub = useMemo(() => eventHubFacade.getEventHub(), []);
+  const scheduleItems = hub.schedule.items;
+  const dayOne = scheduleItems.filter((item) => item.time.startsWith("Sat"));
+  const dayTwo = scheduleItems.filter((item) => item.time.startsWith("Sun"));
+  const Timeline = ({ items }: { items: typeof scheduleItems }) => (
     <>
       {items.map((item, i) => (
         <div
@@ -451,6 +454,11 @@ function Schedule() {
           copy="Show up ready. We will take care of the momentum."
           icon={<CalendarDays size={17} />}
         />
+        {hub.schedule.status !== "available" && (
+          <p className="mx-auto max-w-3xl text-center text-[#9ca3af]">
+            {hub.schedule.message}
+          </p>
+        )}
         <div className="mx-auto max-w-3xl">
           <div>
             <p className="eyebrow mb-5">Day One · Saturday, November 14</p>

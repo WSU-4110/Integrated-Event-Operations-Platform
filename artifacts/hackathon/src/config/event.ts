@@ -49,3 +49,40 @@ export const FAQ = [
   { q: "Can beginners participate?", a: "Absolutely. We welcome participants of all experience levels, and mentors will be available to help you and your team along the way." },
   { q: "What can we build?", a: "You can build anything — a web app, mobile app, hardware project, AI tool, or any creative technical solution. Company-specific tracks will be announced before the event, and the top 3 projects overall win prizes separate from the company tracks." },
 ];
+
+// FR-14 Event Hub content. Items with `published: false` are drafts and are
+// never shown to participants. The list is empty until organizers publish the
+// first announcement (FR-13 will manage these).
+export const ANNOUNCEMENTS: {
+  id: string;
+  title: string;
+  body: string;
+  postedAt: string;
+  published: boolean;
+}[] = [];
+
+export const RESOURCES: {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  kind: "student-hub" | "external";
+  published: boolean;
+}[] = [
+  {
+    id: "student-hub",
+    title: "AWS Student Builder Group Student Hub",
+    description: "Club news, learning resources, and past events.",
+    url: EVENT_CONFIG.mainWebsiteUrl,
+    kind: "student-hub",
+    published: true,
+  },
+  {
+    id: "discord",
+    title: "BuilderWars Discord",
+    description: "Ask mentors questions and find teammates.",
+    url: EVENT_CONFIG.discordInviteUrl,
+    kind: "external",
+    published: true,
+  },
+];
