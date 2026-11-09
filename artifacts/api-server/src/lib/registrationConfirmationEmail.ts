@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { createEmailSender, type EmailSender } from "./email/emailSender";
 
 // Relative to the bundled server file (artifacts/api-server/dist/index.mjs).
 export const informationPacketPath = fileURLToPath(
@@ -8,9 +9,6 @@ export const informationPacketPath = fileURLToPath(
   ),
 );
 
-const RESEND_API_URL = "https://api.resend.com/emails";
-const EMAIL_FROM =
-  process.env.RESEND_FROM_EMAIL ?? "BuilderWars <hello@builderwars.dev>";
 const CONTACT_EMAIL = "awssbg@wayne.edu";
 const DISCORD_INVITE_URL = "https://discord.com/invite/mrYkakzvUj";
 const INSTAGRAM_URL = "https://www.instagram.com/builderwars.hack/";
@@ -27,10 +25,6 @@ function escapeHtml(value: string): string {
         "'": "&#039;",
       })[character]!,
   );
-}
-
-export function isEmailConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY);
 }
 
 // The registration confirmation: thanks, plus how to join the Discord and
@@ -90,39 +84,24 @@ AWS Student Builder Group at Wayne State`;
   };
 }
 
-// Sends the registration confirmation through Resend. Throws if Resend isn't
-// configured or rejects the message; the caller keeps the registration either
-// way and records whether the email went out.
-export async function sendRegistrationConfirmation(details: {
+type ConfirmationDetails = {
   name: string;
   email: string;
   discordUsername: string | null;
-}): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not set.");
-  }
-  const { subject, text, html } = buildRegistrationEmail(details);
+};
 
-  const response = await fetch(RESEND_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: EMAIL_FROM,
-      to: [details.email],
-      subject,
-      text,
-      html,
-    }),
-  });
+// The context of the Strategy pattern: builds the confirmation and hands it to
+// whichever EmailSender it was given. Throws if the sender fails; the caller
+// keeps the registration either way and records whether the email went out.
+export class RegistrationConfirmationMailer {
+  constructor(private readonly sender: EmailSender) {}
 
-  if (!response.ok) {
-    const details = await response.text();
-    throw new Error(
-      `Resend rejected the confirmation email (${response.status}): ${details}`,
-    );
+  async sendConfirmation(details: ConfirmationDetails): Promise<void> {
+    const { subject, text, html } = buildRegistrationEmail(details);
+    await this.sender.send({ to: details.email, subject, text, html });
   }
 }
+
+export const confirmationMailer = new RegistrationConfirmationMailer(
+  createEmailSender(),
+);

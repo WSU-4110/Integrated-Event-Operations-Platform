@@ -18,7 +18,7 @@ import {
   UpdateRegistrationBody,
   UpdateRegistrationStatusBody,
 } from "@workspace/api-zod";
-import { sendRegistrationConfirmation } from "../lib/registrationConfirmationEmail";
+import { confirmationMailer } from "../lib/registrationConfirmationEmail";
 
 const router: IRouter = Router();
 // Comma-separated list of organizer emails allowed into /api/admin.
@@ -470,7 +470,7 @@ router.post(
     }
 
     try {
-      await sendRegistrationConfirmation({
+      await confirmationMailer.sendConfirmation({
         name: registration.name,
         email: registration.email,
         discordUsername: registration.discordUsername,

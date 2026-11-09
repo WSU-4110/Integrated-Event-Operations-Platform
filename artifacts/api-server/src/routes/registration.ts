@@ -6,8 +6,8 @@ import {
   CheckRegistrationQueryParams,
 } from "@workspace/api-zod";
 import {
+  confirmationMailer,
   informationPacketPath,
-  sendRegistrationConfirmation,
 } from "../lib/registrationConfirmationEmail";
 
 const router: IRouter = Router();
@@ -113,7 +113,7 @@ router.post("/registrations", async (req, res): Promise<void> => {
   // resend (NFR-04).
   let emailSent = false;
   try {
-    await sendRegistrationConfirmation({
+    await confirmationMailer.sendConfirmation({
       name: registration.name,
       email: registration.email,
       discordUsername: registration.discordUsername,
