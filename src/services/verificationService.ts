@@ -2,6 +2,8 @@ import type { Repositories } from '../database/repositories/index.js';
 import type { ParticipantLink } from '../database/schema/index.js';
 import { isEligibleStatus } from '../database/website/registrations.js';
 import { normalizeDiscordUsername, normalizeEmail } from '../utils/discordUsername.js';
+import { VerificationRequest } from './verification/VerificationRequest.js';
+import { buildVerificationChain } from './verification/VerificationChainBuilder.js';
 
 // Links Discord accounts to website registrations. A self-service link needs
 // BOTH the Discord username stored on the registration AND the registration
@@ -43,6 +45,7 @@ export type VerificationService = ReturnType<typeof createVerificationService>;
 
 export function createVerificationService(repos: Repositories) {
   const { registrations, links, attempts } = repos;
+  const chain = buildVerificationChain(repos);
 
   async function isRateLimited(discordUserId: string): Promise<boolean> {
     const failures = await attempts.countRecentFailures(discordUserId, RATE_LIMIT.windowMs);
@@ -58,58 +61,10 @@ export function createVerificationService(repos: Repositories) {
       discordUsername: string;
       email: string;
     }): Promise<VerifyOutcome> {
-      const { discordUserId, discordUsername } = input;
-      const record = (
-        result: Parameters<typeof attempts.record>[0]['result'],
-        registrationId?: number,
-      ) => attempts.record({ discordUserId, discordUsername, result, registrationId });
-
-      const existing = await links.findByDiscordUserId(discordUserId);
-      if (existing) return { kind: 'already_verified', link: existing };
-
-      if (await isRateLimited(discordUserId)) {
-        await record('RATE_LIMITED');
-        return { kind: 'rate_limited' };
-      }
-
-      const username = normalizeDiscordUsername(discordUsername);
-      const candidates = (await registrations.findByEmail(normalizeEmail(input.email))).filter(
-        (reg) => username !== null && normalizeDiscordUsername(reg.discordUsername) === username,
+      // The checks live in ./verification as a Chain of Responsibility.
+      return chain.handle(
+        new VerificationRequest(input.discordUserId, input.discordUsername, input.email),
       );
-
-      if (candidates.length === 0) {
-        await record('NO_MATCH');
-        return { kind: 'no_match' };
-      }
-      if (candidates.length > 1) {
-        await record('AMBIGUOUS');
-        return { kind: 'ambiguous', registrationIds: candidates.map((c) => c.id) };
-      }
-
-      const [registration] = candidates as [(typeof candidates)[number]];
-      if (!isEligibleStatus(registration.status)) {
-        await record('INELIGIBLE', registration.id);
-        return { kind: 'ineligible', status: registration.status };
-      }
-
-      const created = await links.create({
-        discordUserId,
-        registrationId: registration.id,
-        linkedBy: null,
-      });
-      if (!created.ok) {
-        if (created.conflict === 'discord_user') {
-          // Lost a race with this user's own concurrent /verify.
-          const link = await links.findByDiscordUserId(discordUserId);
-          if (link) return { kind: 'already_verified', link };
-        }
-        await record('ALREADY_LINKED', registration.id);
-        return { kind: 'already_linked', registrationId: registration.id };
-      }
-
-      await record('MATCHED', registration.id);
-      await attempts.resolveForUser(discordUserId);
-      return { kind: 'verified', link: created.link };
     },
 
     /** Organizer override: link by registration ID or email, bypassing the username check. */
