@@ -8,6 +8,7 @@ export const Colors = {
   schedule: 0x60a5fa,
   food: 0xfb923c,
   deadline: 0xf97316,
+  teams: 0x818cf8,
   muted: 0x99aab5,
   success: 0x57f287,
   warning: 0xfee75c,

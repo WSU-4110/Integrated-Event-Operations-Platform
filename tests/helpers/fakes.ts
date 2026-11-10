@@ -5,6 +5,7 @@ import type { BotContext, Services } from '../../src/interactions/types.js';
 import type { AnnouncementService } from '../../src/services/announcementService.js';
 import { loadContent } from '../../src/services/contentService.js';
 import type { ScheduleService } from '../../src/services/scheduleService.js';
+import type { TeamService } from '../../src/services/teamService.js';
 import type { VerificationService } from '../../src/services/verificationService.js';
 import type { WorkshopService } from '../../src/services/workshopService.js';
 import type { Logger } from '../../src/utils/logger.js';
@@ -26,8 +27,13 @@ export function fakeConfig(overrides: Partial<Config> = {}): Config {
       clientId: '200000000000000001',
       guildId: '300000000000000001',
     },
-    roles: { organizerRoleIds: [ORGANIZER_ROLE], participantRoleId: PARTICIPANT_ROLE },
+    roles: {
+      organizerRoleIds: [ORGANIZER_ROLE],
+      participantRoleId: PARTICIPANT_ROLE,
+      mentorRoleId: null,
+    },
     channels: { verificationLogId: LOG_CHANNEL, announcementId: ANNOUNCEMENT_CHANNEL },
+    teams: { maxSize: 4, channelsEnabled: false, categoryId: null },
     database: { url: 'postgres://localhost/test', ssl: { mode: 'disable' } },
     eventId: 'builderwars-2026',
     eventTimeZone: 'America/Detroit',
@@ -93,6 +99,17 @@ export function stubAnnouncementService(
   } as unknown as AnnouncementService;
 }
 
+/** A team service where nobody is on a team. */
+export function stubTeamService(overrides: Partial<TeamService> = {}): TeamService {
+  return {
+    maxSize: 4,
+    removeParticipant: vi.fn(async () => ({ kind: 'not_on_team' })),
+    removeInactiveMembers: vi.fn(async () => []),
+    clearOpenings: vi.fn(async () => {}),
+    ...overrides,
+  } as unknown as TeamService;
+}
+
 export async function fakeContext(services: Partial<Services> = {}) {
   const logger = fakeLogger();
   const content = await loadContent({
@@ -107,6 +124,7 @@ export async function fakeContext(services: Partial<Services> = {}) {
       workshops: stubWorkshopService(),
       schedule: stubScheduleService(),
       announcements: stubAnnouncementService(),
+      teams: stubTeamService(),
       ...services,
     },
   };

@@ -22,6 +22,20 @@
       "when": 1792982656391,
       "tag": "0002_schedule_announcements",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793918965527,
+      "tag": "0003_website_reads_links",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793918967276,
+      "tag": "0004_teams",
+      "breakpoints": true
     }
   ]
 }
