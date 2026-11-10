@@ -1783,7 +1783,7 @@ function Admin() {
   return (
     <div className="min-h-screen bg-[#111418] text-[#f7f4ed]">
       <header className="border-b border-[#292e36] px-5 py-5">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
+        <div className="flex items-center justify-between">
           <span className="flex items-center gap-3 font-bold tracking-[.12em] text-[#a78bfa]">
             <img src={logoSubmark} alt="BuilderWars" className="h-7 w-7" />
             ADMIN DASHBOARD
@@ -1797,7 +1797,7 @@ function Admin() {
           </button>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl p-5 py-10">
+      <main className="w-full p-5 py-10">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Total registrations", statsData?.total ?? "—"],
@@ -1826,7 +1826,7 @@ function Admin() {
           ))}
         </div>
         <div className="mt-8 flex flex-col justify-between gap-4 sm:flex-row">
-          <div className="flex flex-1 gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap gap-3">
             <input
               value={search}
               onChange={(e) => {
@@ -1889,10 +1889,10 @@ function Admin() {
             Download CSV
           </a>
         </div>
-        <div className="panel mt-5 overflow-x-auto">
-          <table className="w-full min-w-[1200px] text-left text-sm">
-            <thead className="border-b border-[#2a3039] text-xs uppercase tracking-wider text-[#7d848e]">
-              <tr>
+        <div className="panel mt-5">
+          <table role="table" className="admin-registrations w-full text-left text-sm">
+            <thead role="rowgroup" className="border-b border-[#2a3039] text-xs uppercase tracking-wider text-[#7d848e]">
+              <tr role="row">
                 {[
                   "Name",
                   "Email",
@@ -1905,23 +1905,24 @@ function Admin() {
                   "Registered",
                   "Actions",
                 ].map((x) => (
-                  <th className="p-4" key={x}>
+                  <th role="columnheader" scope="col" className="p-2" key={x}>
                     {x}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
               {rows.isLoading ? (
-                <tr>
-                  <td colSpan={10} className="p-10 text-center text-[#9ca3af]">
+                <tr role="row">
+                  <td role="cell" colSpan={10} className="p-10 text-center text-[#9ca3af]">
                     <Loader2 className="mx-auto animate-spin text-[#a78bfa]" />
                   </td>
                 </tr>
               ) : rows.isError ? (
                 // Show an error instead of stale rows if loading fails (FR-03).
-                <tr>
+                <tr role="row">
                   <td
+                    role="cell"
                     colSpan={10}
                     className="p-10 text-center text-[#a78bfa]"
                     data-testid="status-admin-load-error"
@@ -1941,30 +1942,30 @@ function Admin() {
                 </tr>
               ) : (
                 rows.data?.registrations?.map((r) => (
-                  <tr className="border-b border-[#242a31]" key={r.id}>
-                    <td className="p-4 font-medium">{r.name}</td>
-                    <td className="p-4 text-[#9ca3af]">{r.email}</td>
-                    <td className="p-4 text-[#9ca3af]">{r.school}</td>
-                    <td className="p-4 capitalize text-[#9ca3af]">
+                  <tr role="row" className="admin-registration-row border-b border-[#242a31]" key={r.id}>
+                    <td role="cell" data-label="Name" className="p-2 font-medium">{r.name}</td>
+                    <td role="cell" data-label="Email" className="p-2 text-[#9ca3af]">{r.email}</td>
+                    <td role="cell" data-label="School" className="p-2 text-[#9ca3af]">{r.school}</td>
+                    <td role="cell" data-label="Class" className="p-2 capitalize text-[#9ca3af]">
                       {r.class_standing}
                     </td>
-                    <td className="p-4 capitalize text-[#a78bfa]">
+                    <td role="cell" data-label="Experience" className="p-2 capitalize text-[#a78bfa]">
                       {r.experience_level}
                     </td>
-                    <td className="p-4">
+                    <td role="cell" data-label="Discord" className="p-2">
                       <DiscordCell
                         username={r.discord_username}
                         status={r.discord_status}
                         verifiedAt={r.discord_verified_at}
                       />
                     </td>
-                    <td className="p-4 text-[#9ca3af]">
+                    <td role="cell" data-label="Team" className="p-2 text-[#9ca3af]">
                       {r.team_status
                         ? (TEAM_LABELS[r.team_status] ?? r.team_status)
                         : "—"}
                       {r.team_name ? ` · ${r.team_name}` : ""}
                     </td>
-                    <td className="p-4">
+                    <td role="cell" data-label="Access" className="p-2">
                       <AccessControl
                         id={r.id}
                         name={r.name}
@@ -1987,10 +1988,10 @@ function Admin() {
                           />
                         )}
                     </td>
-                    <td className="p-4 text-[#9ca3af]">
+                    <td role="cell" data-label="Registered" className="p-2 text-[#9ca3af]">
                       {new Date(r.created_at).toLocaleDateString()}
                     </td>
-                    <td className="p-4">
+                    <td role="cell" data-label="Actions" className="p-2">
                       <div className="flex flex-col items-start gap-2">
                         <EditRegistrationButton
                           registration={r}
