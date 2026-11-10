@@ -1679,7 +1679,7 @@ function DeleteRegistrationButton({
     }
   };
   return (
-    <div className="flex min-w-[150px] flex-col items-start gap-1">
+    <div className="flex min-w-0 flex-col items-start gap-1">
       <button
         type="button"
         onClick={handleClick}
