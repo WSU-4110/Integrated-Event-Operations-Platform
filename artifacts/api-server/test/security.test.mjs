@@ -89,6 +89,10 @@ const ADMIN_REQUESTS = [
   ["GET", "/admin/registrations"],
   ["GET", "/admin/stats"],
   ["GET", "/admin/export"],
+  ["GET", "/admin/event-content"],
+  ["POST", "/admin/event-content"],
+  ["PUT", "/admin/event-content/1"],
+  ["DELETE", "/admin/event-content/1"],
   ["GET", "/admin/registrations/1/history"],
   [
     "PATCH",
@@ -290,6 +294,9 @@ describe("access and Discord verification status", () => {
   };
 
   test("without the bot's table, Discord status is unknown", async () => {
+    const availability = await call(base, "GET", "/status");
+    assert.equal(availability.status, 200);
+    assert.equal(JSON.parse(availability.text).discordLinkStore, "unavailable");
     const r = await findParticipant();
     assert.equal(r.discord_status, "unknown");
     const stats = JSON.parse(
@@ -570,5 +577,181 @@ describe("dashboard filters and check-in count", () => {
       admin,
     );
     assert.equal(res.status, 400);
+  });
+});
+
+describe("FR-13 event content", () => {
+  const organizerPath = "/admin/event-content";
+  const publicPath = "/event-content";
+  const admin = cookie(SESSIONS.admin);
+  const announcement = {
+    kind: "announcement",
+    title: `Welcome ${run}`,
+    body: "Check in at noon.",
+    published: false,
+  };
+
+  async function list(path, headers = {}) {
+    const result = await call(base, "GET", path, undefined, headers);
+    assert.equal(result.status, 200);
+    return JSON.parse(result.text);
+  }
+
+  async function create(content) {
+    const result = await call(base, "POST", organizerPath, content, admin);
+    assert.equal(result.status, 201);
+    return JSON.parse(result.text);
+  }
+
+  test("an organizer can draft, publish, edit, unpublish, and delete an announcement", async () => {
+    const draft = await create(announcement);
+    const path = `${organizerPath}/${draft.id}`;
+    const publicItem = async () =>
+      (await list(publicPath)).find(({ id }) => id === draft.id);
+    assert.equal(draft.authorId, `admin-${run}`);
+    assert.ok(Number.isFinite(Date.parse(draft.updatedAt)));
+    assert.ok(
+      (await list(organizerPath, admin)).some(({ id }) => id === draft.id),
+    );
+    assert.equal(await publicItem(), undefined);
+
+    const published = await call(
+      base,
+      "PUT",
+      path,
+      {
+        ...announcement,
+        body: "Check in at 1 PM.",
+        published: true,
+      },
+      admin,
+    );
+    assert.equal(published.status, 200);
+    const saved = JSON.parse(published.text);
+    assert.equal(saved.authorId, draft.authorId);
+    assert.ok(Date.parse(saved.updatedAt) >= Date.parse(draft.updatedAt));
+    const visible = await publicItem();
+    assert.equal(visible.body, "Check in at 1 PM.");
+    assert.ok(!Object.hasOwn(visible, "authorId"));
+
+    const unpublished = await call(base, "PUT", path, announcement, admin);
+    assert.equal(unpublished.status, 200);
+    assert.equal(await publicItem(), undefined);
+    assert.equal(
+      (await call(base, "DELETE", path, undefined, admin)).status,
+      204,
+    );
+    assert.ok(
+      !(await list(organizerPath, admin)).some(({ id }) => id === draft.id),
+    );
+  });
+
+  test("ordered links survive invalid updates and database write failures", async () => {
+    const resource = {
+      kind: "resource",
+      title: `Submit ${run}`,
+      url: "https://example.com/submit",
+      position: 20,
+      published: true,
+    };
+    const second = await create(resource);
+    const first = await create({
+      ...resource,
+      title: `Rules ${run}`,
+      position: 10,
+    });
+    const path = `${organizerPath}/${second.id}`;
+    const publicLinks = async () =>
+      (await list(publicPath)).filter(
+        ({ id }) => id === first.id || id === second.id,
+      );
+    assert.deepEqual(
+      (await publicLinks()).map(({ id }) => id),
+      [first.id, second.id],
+    );
+
+    const invalid = await call(
+      base,
+      "PUT",
+      path,
+      { ...resource, url: "invalid link" },
+      admin,
+    );
+    assert.equal(invalid.status, 400);
+    assert.equal((await publicLinks())[1].url, resource.url);
+
+    // Make PostgreSQL reject an otherwise valid update in this disposable test database.
+    const client = new pg.Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    try {
+      await client.query(
+        "ALTER TABLE event_content ADD CONSTRAINT fr13_test_reject_title CHECK (title <> 'FR-13 test rejected save') NOT VALID",
+      );
+      const failed = await call(
+        base,
+        "PUT",
+        path,
+        {
+          ...resource,
+          title: "FR-13 test rejected save",
+          published: false,
+        },
+        admin,
+      );
+      assert.equal(failed.status, 500);
+      assert.deepEqual(JSON.parse(failed.text), {
+        error: "Could not save or load event content.",
+      });
+      assert.equal((await publicLinks())[1].title, resource.title);
+
+      const reordered = await call(
+        base,
+        "PUT",
+        path,
+        { ...resource, position: 5 },
+        admin,
+      );
+      assert.equal(reordered.status, 200);
+      assert.deepEqual(
+        (await publicLinks()).map(({ id }) => id),
+        [second.id, first.id],
+      );
+    } finally {
+      await client.query(
+        "ALTER TABLE event_content DROP CONSTRAINT IF EXISTS fr13_test_reject_title",
+      );
+      await client.end();
+      for (const { id } of [first, second]) {
+        await call(base, "DELETE", `${organizerPath}/${id}`, undefined, admin);
+      }
+    }
+  });
+});
+
+describe("NFR-05 availability status", () => {
+  test("reports database and integrations without making Discord a liveness dependency", async () => {
+    const status = await call(base, "GET", "/status");
+    assert.equal(status.status, 200);
+    assert.equal(status.headers.get("cache-control"), "no-store");
+    const body = JSON.parse(status.text);
+    assert.equal(body.web, "up");
+    assert.equal(body.database, "up");
+    assert.equal(body.discordLinkStore, "up");
+    assert.deepEqual(body.confirmationEmail, { status: "disabled" });
+    assert.equal((await call(base, "GET", "/healthz")).status, 200);
+  });
+
+  test("reports database failure while liveness still responds", async () => {
+    const withoutDb = await startServer(19_400 + Math.floor(Math.random() * 500), {
+      DATABASE_URL: "postgresql://unused@127.0.0.1:1/unused",
+      RUN_MIGRATIONS: "false",
+    });
+    const status = await call(withoutDb, "GET", "/status");
+    assert.equal(status.status, 503);
+    const body = JSON.parse(status.text);
+    assert.equal(body.web, "up");
+    assert.equal(body.database, "unavailable");
+    assert.equal(body.discordLinkStore, "unknown");
+    assert.equal((await call(withoutDb, "GET", "/healthz")).status, 200);
   });
 });

@@ -29,6 +29,20 @@ function escapeHtml(value: string): string {
   );
 }
 
+let lastConfirmation:
+  { status: "accepted" | "failed"; observedAt: Date } | undefined;
+
+export function getConfirmationEmailStatus() {
+  if (!isEmailConfigured()) return { status: "disabled" };
+  if (
+    !lastConfirmation ||
+    Date.now() - lastConfirmation.observedAt.getTime() > 15 * 60 * 1000
+  ) {
+    return { status: "unknown" };
+  }
+  return lastConfirmation;
+}
+
 export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY);
 }
@@ -104,25 +118,32 @@ export async function sendRegistrationConfirmation(details: {
   }
   const { subject, text, html } = buildRegistrationEmail(details);
 
-  const response = await fetch(RESEND_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: EMAIL_FROM,
-      to: [details.email],
-      subject,
-      text,
-      html,
-    }),
-  });
+  try {
+    const response = await fetch(RESEND_API_URL, {
+      method: "POST",
+      signal: AbortSignal.timeout(5000),
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: EMAIL_FROM,
+        to: [details.email],
+        subject,
+        text,
+        html,
+      }),
+    });
 
-  if (!response.ok) {
-    const details = await response.text();
-    throw new Error(
-      `Resend rejected the confirmation email (${response.status}): ${details}`,
-    );
+    if (!response.ok) {
+      const details = await response.text();
+      throw new Error(
+        `Resend rejected the confirmation email (${response.status}): ${details}`,
+      );
+    }
+    lastConfirmation = { status: "accepted", observedAt: new Date() };
+  } catch (error) {
+    lastConfirmation = { status: "failed", observedAt: new Date() };
+    throw error;
   }
 }

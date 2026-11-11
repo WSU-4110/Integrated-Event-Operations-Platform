@@ -68,6 +68,7 @@ import wingSnobLogo from "@assets/sponsors/wing-snob-dearborn.jpg";
 import { Switch, Route } from "wouter";
 import { EVENT_CONFIG, FAQ, SCHEDULE } from "@/config/event";
 import NotFound from "@/pages/not-found";
+import { OrganizerEventContent, PublishedEventContent } from "@/components/EventContent";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -468,6 +469,24 @@ function Schedule() {
     </section>
   );
 }
+// Gold, silver, and bronze, matching the sponsor tier colors.
+const PLACE_PRIZES = [
+  { place: "1st place", amount: "$1,000", medal: "Gold", color: "#fbbf24" },
+  { place: "2nd place", amount: "$500", medal: "Silver", color: "#cbd5e1" },
+  { place: "3rd place", amount: "$250", medal: "Bronze", color: "#d08b5b" },
+];
+const TRACK_PRIZES = [
+  {
+    track: "AWS track",
+    amount: "$500",
+    perk: "AWS credits for every team member",
+  },
+  {
+    track: "FREE WILi track",
+    amount: "$250",
+    perk: "A FREE WILi OG and Accessory Kit for every team member",
+  },
+];
 function Prizes() {
   return (
     <section
@@ -477,13 +496,61 @@ function Prizes() {
       <div className="container-shell">
         <SectionHeading
           label="04 / THE UPSIDE"
-          title="Prizes."
-          copy="Prizes for the top 3 projects overall, plus company-specific tracks. Details will be announced before the event."
+          title="$2,500+ in prizes."
+          copy="Amazon gift cards for the top 3 teams and two sponsor tracks, plus perks for every member of a winning track team."
           icon={<Gift size={17} />}
         />
-        <div className="panel mx-auto max-w-3xl p-10 text-center">
-          <p className="eyebrow">Prizes</p>
-          <p className="mt-4 font-mono text-5xl text-[#a78bfa]">TBD</p>
+        <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-3">
+          {PLACE_PRIZES.map(({ place, amount, medal, color }) => (
+            <div
+              key={place}
+              className="panel border-t-4 p-6 text-center"
+              style={{ borderTopColor: color }}
+              data-testid={`prize-${place.split(" ")[0]}`}
+            >
+              <Trophy size={22} className="mx-auto" style={{ color }} />
+              <p
+                className="mt-3 text-xs font-bold uppercase tracking-[.2em]"
+                style={{ color }}
+              >
+                {medal} · {place}
+              </p>
+              <p className="mt-2 font-mono text-4xl" style={{ color }}>
+                {amount}
+              </p>
+              <p className="mt-2 text-xs text-[#9ca3af]">Amazon gift card</p>
+            </div>
+          ))}
+        </div>
+        <div className="mx-auto mt-4 grid max-w-3xl gap-4 sm:grid-cols-2">
+          {TRACK_PRIZES.map(({ track, amount, perk }) => (
+            <div
+              key={track}
+              className="panel border-t-4 border-t-[#a78bfa] p-6"
+            >
+              <p className="eyebrow">{track}</p>
+              <p className="mt-3 font-mono text-3xl text-[#a78bfa]">
+                {amount}
+                <span className="ml-2 font-sans text-xs text-[#9ca3af]">
+                  Amazon gift card
+                </span>
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[#e7e5df]">+ {perk}</p>
+            </div>
+          ))}
+        </div>
+        <div className="panel mx-auto mt-4 max-w-3xl p-6 text-sm leading-6 text-[#9ca3af]">
+          <p>
+            <span className="font-semibold text-[#f7f4ed]">
+              More chances to win:
+            </span>{" "}
+            gift card raffles during workshops and more prizes at game night.
+          </p>
+          <p className="mt-2">
+            Gift cards are per team and split evenly among teammates. Tracks
+            are optional, so build anything you want; a project can win a track
+            prize and a top-3 prize.
+          </p>
         </div>
       </div>
     </section>
@@ -493,8 +560,8 @@ type Sponsor = {
   id: string;
   name: string;
   url?: string;
-  logo: string;
-  logoClassName: string;
+  logo?: string;
+  logoClassName?: string;
   note?: string;
 };
 const GOLD_SPONSORS: Sponsor[] = [
@@ -560,29 +627,51 @@ const FUEL_SPONSORS: Sponsor[] = [
     note: "Little Caesars Pizza donation compliments of The District Detroit Opportunity Center",
   },
   {
+    id: "cedarland-bakery",
+    name: "Cedarland Bakery",
+    url: "https://cedarlandbakery.org/",
+  },
+  {
     id: "wing-snob-dearborn",
     name: "Wing Snob Dearborn",
     url: "https://www.instagram.com/wingsnobdearborn/",
     logo: wingSnobLogo,
     logoClassName: "h-20 w-20 rounded-lg object-cover",
   },
+  {
+    id: "pit-stop-eatery",
+    name: "Pit Stop Eatery",
+    url: "https://www.thepitstopeatery.com/",
+  },
 ];
 function SponsorCard({ sponsor }: { sponsor: Sponsor }) {
   const content = (
     <>
       <div className="flex h-20 items-center justify-center">
-        <img
-          src={sponsor.logo}
-          alt={`${sponsor.name} logo`}
-          className={sponsor.logoClassName}
-        />
-      </div>
-      <p className="mt-4 text-sm font-semibold text-[#f7f4ed]">
-        {sponsor.name}
-        {sponsor.url && (
-          <ExternalLink size={12} className="ml-1.5 inline text-[#a78bfa]" />
+        {sponsor.logo ? (
+          <img
+            src={sponsor.logo}
+            alt={`${sponsor.name} logo`}
+            className={sponsor.logoClassName}
+          />
+        ) : (
+          // No logo yet: the name is the wordmark.
+          <span className="display text-2xl text-[#f7f4ed]">
+            {sponsor.name}
+            {sponsor.url && (
+              <ExternalLink size={14} className="ml-2 inline text-[#a78bfa]" />
+            )}
+          </span>
         )}
-      </p>
+      </div>
+      {sponsor.logo && (
+        <p className="mt-4 text-sm font-semibold text-[#f7f4ed]">
+          {sponsor.name}
+          {sponsor.url && (
+            <ExternalLink size={12} className="ml-1.5 inline text-[#a78bfa]" />
+          )}
+        </p>
+      )}
       {sponsor.note && (
         <p className="mt-2 text-xs leading-5 text-[#9ca3af]">{sponsor.note}</p>
       )}
@@ -664,7 +753,7 @@ function Sponsors() {
           labelClassName="text-[#a78bfa]"
           copy="Keeping builders fed and caffeinated for all 24 hours."
           sponsors={FUEL_SPONSORS}
-          gridClassName="sm:grid-cols-2"
+          gridClassName="sm:grid-cols-3"
         />
         <div className="panel mx-auto mt-10 flex max-w-3xl flex-col items-start justify-between gap-5 p-6 sm:flex-row sm:items-center">
           <div>
@@ -754,7 +843,33 @@ function Registration() {
   });
   const [result, setResult] = useState<{ emailSent: boolean } | null>(null);
   const [error, setError] = useState("");
+  const [attempted, setAttempted] = useState(false);
   const validEmail = /^[^\s@]+@[^\s@]+\.edu$/i.test(form.email);
+  const fieldErrors = {
+    name: form.name.trim() ? "" : "Enter your full name.",
+    email: validEmail ? "" : "Enter a valid school email ending in .edu.",
+    school: form.school.trim() ? "" : "Enter your school.",
+    discord_username: form.discord_username.trim().length >= 2 ? "" : "Enter your Discord username.",
+    team_status: form.team_status ? "" : "Choose a team status.",
+  };
+  function fieldError(name: keyof typeof fieldErrors) {
+    return attempted ? fieldErrors[name] : "";
+  }
+  function errorAttributes(name: keyof typeof fieldErrors) {
+    const invalid = Boolean(fieldError(name));
+    return {
+      "aria-invalid": invalid || undefined,
+      "aria-describedby": invalid ? `registration-${name}-error` : undefined,
+    };
+  }
+  function errorMessage(name: keyof typeof fieldErrors) {
+    const message = fieldError(name);
+    return message && (
+      <span id={`registration-${name}-error`} className="mt-1 block text-xs text-red-400">
+        {message}
+      </span>
+    );
+  }
   const check = useCheckRegistration(
     { email: form.email || "invalid@example.com" },
     {
@@ -772,16 +887,15 @@ function Registration() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    if (
-      !form.name.trim() ||
-      !form.school.trim() ||
-      !validEmail ||
-      form.discord_username.trim().length < 2 ||
-      !form.team_status
-    ) {
-      setError(
-        "Please complete every required field and use your .edu email address.",
-      );
+    setAttempted(true);
+    const firstInvalid = Object.keys(fieldErrors).find(
+      (name) => fieldErrors[name as keyof typeof fieldErrors],
+    );
+    if (firstInvalid || !form.team_status) {
+      if (firstInvalid && e.currentTarget instanceof HTMLFormElement) {
+        const field = e.currentTarget.elements.namedItem(firstInvalid);
+        if (field instanceof HTMLElement) field.focus();
+      }
       return;
     }
     if (check.data?.registered) {
@@ -854,7 +968,7 @@ function Registration() {
               </p>
             </div>
           ) : (
-            <form onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-2">
+            <form noValidate onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-2">
               <label className="sm:col-span-2">
                 <span className="eyebrow !text-[10px]">Full name *</span>
                 <input
@@ -865,7 +979,9 @@ function Registration() {
                   autoComplete="name"
                   className="field"
                   data-testid="input-name"
+                  {...errorAttributes("name")}
                 />
+                {errorMessage("name")}
               </label>
               <label>
                 <span className="eyebrow !text-[10px]">
@@ -880,7 +996,9 @@ function Registration() {
                   autoComplete="email"
                   className="field"
                   data-testid="input-email"
+                  {...errorAttributes("email")}
                 />
+                {errorMessage("email")}
               </label>
               <label>
                 <span className="eyebrow !text-[10px]">School *</span>
@@ -891,7 +1009,9 @@ function Registration() {
                   placeholder="Your college or university"
                   className="field"
                   data-testid="input-school"
+                  {...errorAttributes("school")}
                 />
+                {errorMessage("school")}
               </label>
               <label>
                 <span className="eyebrow !text-[10px]">Class standing *</span>
@@ -933,7 +1053,9 @@ function Registration() {
                   placeholder="yourname"
                   className="field"
                   data-testid="input-discord"
+                  {...errorAttributes("discord_username")}
                 />
+                {errorMessage("discord_username")}
                 <span className="mt-1 block text-[11px] leading-4 text-[#7d848e]">
                   Your username, not your display name. You'll verify with it in
                   our Discord.
@@ -947,6 +1069,7 @@ function Registration() {
                   onChange={change}
                   className="field"
                   data-testid="select-team-status"
+                  {...errorAttributes("team_status")}
                 >
                   <option value="" disabled>
                     Choose one
@@ -955,6 +1078,7 @@ function Registration() {
                   <option value="looking">I'm looking for a team</option>
                   <option value="solo">I'll compete solo</option>
                 </select>
+                {errorMessage("team_status")}
               </label>
               {form.team_status === "has_team" && (
                 <label className="sm:col-span-2">
@@ -983,7 +1107,8 @@ function Registration() {
               </p>
               {error && (
                 <p
-                  className="sm:col-span-2 text-sm text-[#a78bfa]"
+                  role="alert"
+                  className="sm:col-span-2 text-sm text-red-400"
                   data-testid="status-registration-error"
                 >
                   {error}
@@ -1118,6 +1243,7 @@ function Home() {
         <Hero />
         <About />
         <Schedule />
+        <PublishedEventContent />
         <Prizes />
         <Sponsors />
         <Faq />
@@ -1810,7 +1936,8 @@ function Admin() {
           </button>
         </div>
       </header>
-      <main className="w-full p-5 py-10">
+      <main className="mx-auto w-full max-w-6xl p-5 py-10">
+        <OrganizerEventContent />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Total registrations", statsData?.total ?? "—"],

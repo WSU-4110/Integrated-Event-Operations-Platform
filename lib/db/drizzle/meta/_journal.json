@@ -33,8 +33,15 @@
     {
       "idx": 4,
       "version": "7",
-      "when": 1794418393918,
-      "tag": "0004_check_in",
+      "when": 1794196284250,
+      "tag": "0004_event_content",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794421114457,
+      "tag": "0005_check_in",
       "breakpoints": true
     }
   ]
