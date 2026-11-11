@@ -64,7 +64,9 @@ import fordLogo from "@assets/sponsors/ford.png";
 import redBullLogo from "@assets/sponsors/red-bull.webp";
 import mochiCoLogo from "@assets/sponsors/mochi-co.png";
 import districtDetroitLogo from "@assets/sponsors/district-detroit-opportunity-center.png";
-import wingSnobLogo from "@assets/sponsors/wing-snob-dearborn.jpg";
+import wingSnobLogo from "@assets/sponsors/wing-snob-dearborn.webp";
+import cedarlandLogo from "@assets/sponsors/cedarland-bakery.webp";
+import pitStopLogo from "@assets/sponsors/pit-stop-eatery.webp";
 import { Switch, Route } from "wouter";
 import { EVENT_CONFIG, FAQ, SCHEDULE } from "@/config/event";
 import NotFound from "@/pages/not-found";
@@ -471,9 +473,9 @@ function Schedule() {
 }
 // Gold, silver, and bronze, matching the sponsor tier colors.
 const PLACE_PRIZES = [
-  { place: "1st place", amount: "$1,000", medal: "Gold", color: "#fbbf24" },
-  { place: "2nd place", amount: "$500", medal: "Silver", color: "#cbd5e1" },
-  { place: "3rd place", amount: "$250", medal: "Bronze", color: "#d08b5b" },
+  { place: "1st place", amount: "$1,000", color: "#fbbf24" },
+  { place: "2nd place", amount: "$500", color: "#cbd5e1" },
+  { place: "3rd place", amount: "$250", color: "#d08b5b" },
 ];
 const TRACK_PRIZES = [
   {
@@ -501,7 +503,7 @@ function Prizes() {
           icon={<Gift size={17} />}
         />
         <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-3">
-          {PLACE_PRIZES.map(({ place, amount, medal, color }) => (
+          {PLACE_PRIZES.map(({ place, amount, color }) => (
             <div
               key={place}
               className="panel border-t-4 p-6 text-center"
@@ -513,7 +515,7 @@ function Prizes() {
                 className="mt-3 text-xs font-bold uppercase tracking-[.2em]"
                 style={{ color }}
               >
-                {medal} · {place}
+                {place}
               </p>
               <p className="mt-2 font-mono text-4xl" style={{ color }}>
                 {amount}
@@ -630,18 +632,22 @@ const FUEL_SPONSORS: Sponsor[] = [
     id: "cedarland-bakery",
     name: "Cedarland Bakery",
     url: "https://cedarlandbakery.org/",
+    logo: cedarlandLogo,
+    logoClassName: "h-20 w-auto object-contain",
   },
   {
     id: "wing-snob-dearborn",
     name: "Wing Snob Dearborn",
     url: "https://www.instagram.com/wingsnobdearborn/",
     logo: wingSnobLogo,
-    logoClassName: "h-20 w-20 rounded-lg object-cover",
+    logoClassName: "h-20 w-auto object-contain",
   },
   {
     id: "pit-stop-eatery",
     name: "Pit Stop Eatery",
     url: "https://www.thepitstopeatery.com/",
+    logo: pitStopLogo,
+    logoClassName: "h-20 w-auto object-contain",
   },
 ];
 function SponsorCard({ sponsor }: { sponsor: Sponsor }) {
