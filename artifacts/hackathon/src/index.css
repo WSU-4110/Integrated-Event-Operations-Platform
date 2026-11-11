@@ -24,3 +24,5 @@
 .divider { display:flex; align-items:center; justify-content:center; gap:14px; color:#a78bfa; } .divider::before,.divider::after { content:''; width:50px; height:1px; background:#a78bfa; opacity:.55; }
 @keyframes float { 0%,100% { transform:translateY(0); opacity:.7 } 50% { transform:translateY(7px); opacity:1 } } .float { animation:float 1.8s ease-in-out infinite; }
 @media (max-width:768px) { .container-shell{width:min(100% - 28px,600px)} .section{padding:80px 0} }
+
+.field[aria-invalid="true"] { border-color: #f87171; }
