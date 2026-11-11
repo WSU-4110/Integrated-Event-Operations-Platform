@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
+import { ExternalLink } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 type ContentKind = "announcement" | "resource";
@@ -35,32 +36,53 @@ async function getItems<T>(path: string, signal: AbortSignal): Promise<T[]> {
   return response.json();
 }
 
-export function PublishedEventContent() {
+// The public section stays hidden until at least one item is published, and
+// while loading or if loading fails, so visitors never see an empty block.
+export function PublishedEventContent({ heading }: { heading: ReactNode }) {
   const content = useQuery({
     queryKey: [publicPath],
     queryFn: ({ signal }) => getItems<PublishedItem>(publicPath, signal),
   });
+  const items = content.data ?? [];
+  if (items.length === 0) return null;
+  const announcements = items.filter((item) => item.kind === "announcement");
+  const resources = items.filter((item) => item.kind === "resource" && item.url);
 
   return (
-    <section className="container-shell py-12" aria-labelledby="event-content-heading">
-      <h2 id="event-content-heading" className="display text-3xl">Announcements and resources</h2>
-      {content.isPending && <p role="status">Loading event updates…</p>}
-      {content.isError && <p role="status">Could not load event updates. Try refreshing.</p>}
-      {content.data?.length === 0 && <p>No published updates yet.</p>}
-      <ul className="mt-4 grid gap-3">
-        {content.data?.map((item) => (
-          <li key={item.id} className="panel p-4">
-            {item.kind === "resource" && item.url ? (
-              <a className="underline" href={item.url}>{item.title}</a>
-            ) : (
-              <>
-                <h3 className="font-semibold">{item.title}</h3>
-                <p className="mt-1 whitespace-pre-wrap">{item.body}</p>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
+    <section id="updates" className="section" data-testid="section-event-content">
+      <div className="container-shell">
+        {heading}
+        <div className="mx-auto grid max-w-3xl gap-4">
+          {announcements.map((item) => (
+            <article key={item.id} className="panel p-6">
+              <h3 className="text-lg font-semibold text-[#f7f4ed]">{item.title}</h3>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#9ca3af]">
+                {item.body}
+              </p>
+            </article>
+          ))}
+          {resources.length > 0 && (
+            <div className="panel p-6">
+              <p className="eyebrow">Resources</p>
+              <ul className="mt-4 grid gap-3">
+                {resources.map((item) => (
+                  <li key={item.id}>
+                    <a
+                      className="inline-flex items-center gap-2 font-semibold text-[#c4b5fd] underline-offset-4 hover:underline"
+                      href={item.url!}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {item.title}
+                      <ExternalLink size={13} />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   );
 }
@@ -117,8 +139,15 @@ export function OrganizerEventContent() {
   }
 
   return (
-    <section className="panel mb-8 space-y-4 p-5" aria-labelledby="organizer-content-heading">
-      <h2 id="organizer-content-heading" className="text-xl font-bold">Manage announcements and resources</h2>
+    // Collapsed by default so it doesn't push the registrations down.
+    <details className="panel mt-10 p-5" data-testid="panel-event-content">
+      <summary className="cursor-pointer text-xl font-bold">
+        Manage announcements and resources
+        <span className="ml-2 text-sm font-normal text-[#9ca3af]">
+          (published items appear on the homepage)
+        </span>
+      </summary>
+      <div className="mt-4 space-y-4">
       {items.isPending && <p role="status">Loading content…</p>}
       {items.isError && <p role="alert">Could not load organizer content. Check your access or refresh.</p>}
       <form onSubmit={submit}>
@@ -182,6 +211,7 @@ export function OrganizerEventContent() {
           </li>
         ))}
       </ul>
-    </section>
+      </div>
+    </details>
   );
 }

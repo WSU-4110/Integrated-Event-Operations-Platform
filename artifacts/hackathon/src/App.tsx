@@ -1240,7 +1240,16 @@ function Home() {
         <Hero />
         <About />
         <Schedule />
-        <PublishedEventContent />
+        <PublishedEventContent
+          heading={
+            <SectionHeading
+              label="LATEST / UPDATES"
+              title="Announcements."
+              copy="News from the organizers, plus the links you'll need this weekend."
+              icon={<Mail size={17} />}
+            />
+          }
+        />
         <Prizes />
         <Sponsors />
         <Faq />
@@ -1924,7 +1933,6 @@ function Admin() {
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl p-5 py-10">
-        <OrganizerEventContent />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Total registrations", statsData?.total ?? "—"],
@@ -2160,6 +2168,7 @@ function Admin() {
             Next
           </button>
         </div>
+        <OrganizerEventContent />
       </main>
     </div>
   );
