@@ -19,4 +19,6 @@ export interface AdminStats {
      * @nullable
      */
   discord_verified: number | null;
+  /** Registrations checked in at the venue. */
+  checked_in: number;
 }

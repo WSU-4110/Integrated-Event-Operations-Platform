@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ListRegistrationsAccess } from './listRegistrationsAccess';
+import type { ListRegistrationsCheckIn } from './listRegistrationsCheckIn';
+import type { ListRegistrationsClassStanding } from './listRegistrationsClassStanding';
+import type { ListRegistrationsDiscord } from './listRegistrationsDiscord';
 
 export type ListRegistrationsParams = {
 search?: string;
@@ -15,6 +18,12 @@ team_status?: string;
  * active (pending or approved) or removed (declined or waitlisted)
  */
 access?: ListRegistrationsAccess;
+class_standing?: ListRegistrationsClassStanding;
+/**
+ * verified or not_verified, from the Discord bot's records
+ */
+discord?: ListRegistrationsDiscord;
+check_in?: ListRegistrationsCheckIn;
 limit?: number;
 offset?: number;
 };

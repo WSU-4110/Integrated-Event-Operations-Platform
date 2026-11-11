@@ -86,6 +86,9 @@ export const ListRegistrationsQueryParams = zod.object({
   "experience_level": zod.coerce.string().optional(),
   "team_status": zod.coerce.string().optional(),
   "access": zod.enum(['active', 'removed']).optional().describe('active (pending or approved) or removed (declined or waitlisted)'),
+  "class_standing": zod.enum(['freshman', 'sophomore', 'junior', 'senior', 'graduate']).optional(),
+  "discord": zod.enum(['verified', 'not_verified']).optional().describe('verified or not_verified, from the Discord bot\'s records'),
+  "check_in": zod.enum(['checked_in', 'not_checked_in']).optional(),
   "limit": zod.coerce.number().int().default(listRegistrationsQueryLimitDefault),
   "offset": zod.coerce.number().int().default(listRegistrationsQueryOffsetDefault)
 })
@@ -108,6 +111,7 @@ export const ListRegistrationsResponse = zod.object({
   "discord_verified_at": zod.coerce.date().nullish(),
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
+  "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
   "created_at": zod.coerce.date()
 })),
   "total": zod.number()
@@ -181,6 +185,7 @@ export const UpdateRegistrationResponse = zod.object({
   "discord_verified_at": zod.coerce.date().nullish(),
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
+  "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
   "created_at": zod.coerce.date()
 })
 
@@ -215,6 +220,7 @@ export const UpdateRegistrationStatusResponse = zod.object({
   "discord_verified_at": zod.coerce.date().nullish(),
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
+  "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
   "created_at": zod.coerce.date()
 })
 
@@ -258,7 +264,8 @@ export const GetAdminStatsResponse = zod.object({
   "by_experience_level": zod.record(zod.string(), zod.number()),
   "by_team_status": zod.record(zod.string(), zod.number()),
   "by_status": zod.record(zod.string(), zod.number()),
-  "discord_verified": zod.number().nullable().describe('Active registrations verified on Discord; null if the bot\'s records can\'t be read.')
+  "discord_verified": zod.number().nullable().describe('Active registrations verified on Discord; null if the bot\'s records can\'t be read.'),
+  "checked_in": zod.number().describe('Registrations checked in at the venue.')
 })
 
 

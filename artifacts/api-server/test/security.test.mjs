@@ -305,6 +305,18 @@ describe("access and Discord verification status", () => {
     assert.equal(stats.discord_verified, null);
   });
 
+  test("without the bot's table, the Discord filter explains it can't be used", async () => {
+    const res = await call(
+      base,
+      "GET",
+      "/admin/registrations?discord=verified",
+      null,
+      admin,
+    );
+    assert.equal(res.status, 503);
+    assertNoParticipantData(res.text);
+  });
+
   test("a bot verification shows as verified and is counted", async () => {
     const r = await findParticipant();
     const client = new pg.Client({ connectionString: DATABASE_URL });
@@ -501,6 +513,70 @@ describe("organizers can edit a registration", () => {
       admin,
     );
     assert.equal(res.status, 404);
+  });
+});
+
+describe("dashboard filters and check-in count", () => {
+  const admin = cookie(SESSIONS.admin);
+  const list = async (query) =>
+    JSON.parse(
+      (
+        await call(
+          base,
+          "GET",
+          `/admin/registrations?search=${encodeURIComponent(PARTICIPANT_EMAIL)}&${query}`,
+          null,
+          admin,
+        )
+      ).text,
+    );
+
+  test("filters by class standing", async () => {
+    assert.equal((await list("class_standing=junior")).total, 1);
+    assert.equal((await list("class_standing=senior")).total, 0);
+  });
+
+  test("filters by Discord verification", async () => {
+    // The participant was linked by the Discord verification test above.
+    assert.equal((await list("discord=verified")).total, 1);
+    assert.equal((await list("discord=not_verified")).total, 0);
+  });
+
+  test("filters by check-in and counts check-ins", async () => {
+    const before = await list("check_in=not_checked_in");
+    assert.equal(before.total, 1);
+    assert.equal(before.registrations[0].checked_in_at, null);
+    const statsBefore = JSON.parse(
+      (await call(base, "GET", "/admin/stats", null, admin)).text,
+    );
+
+    const client = new pg.Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(
+      "update registrations set checked_in_at = now(), checked_in_by = $1 where email = $2",
+      [`admin-${run}`, PARTICIPANT_EMAIL],
+    );
+    await client.end();
+
+    const after = await list("check_in=checked_in");
+    assert.equal(after.total, 1);
+    assert.ok(after.registrations[0].checked_in_at);
+    assert.equal((await list("check_in=not_checked_in")).total, 0);
+    const statsAfter = JSON.parse(
+      (await call(base, "GET", "/admin/stats", null, admin)).text,
+    );
+    assert.equal(statsAfter.checked_in, statsBefore.checked_in + 1);
+  });
+
+  test("rejects unknown filter values", async () => {
+    const res = await call(
+      base,
+      "GET",
+      "/admin/registrations?check_in=maybe",
+      null,
+      admin,
+    );
+    assert.equal(res.status, 400);
   });
 });
 

@@ -73,6 +73,9 @@ export const registrationsTable = pgTable(
     confirmationEmailSentAt: timestamp("confirmation_email_sent_at", {
       withTimezone: true,
     }),
+    // Arrival at the venue (FR-10). Empty until an organizer checks them in.
+    checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
+    checkedInBy: text("checked_in_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
