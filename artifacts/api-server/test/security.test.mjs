@@ -294,6 +294,9 @@ describe("access and Discord verification status", () => {
   };
 
   test("without the bot's table, Discord status is unknown", async () => {
+    const availability = await call(base, "GET", "/status");
+    assert.equal(availability.status, 200);
+    assert.equal(JSON.parse(availability.text).discordLinkStore, "unavailable");
     const r = await findParticipant();
     assert.equal(r.discord_status, "unknown");
     const stats = JSON.parse(
@@ -646,5 +649,33 @@ describe("FR-13 event content", () => {
         await call(base, "DELETE", `${organizerPath}/${id}`, undefined, admin);
       }
     }
+  });
+});
+
+describe("NFR-05 availability status", () => {
+  test("reports database and integrations without making Discord a liveness dependency", async () => {
+    const status = await call(base, "GET", "/status");
+    assert.equal(status.status, 200);
+    assert.equal(status.headers.get("cache-control"), "no-store");
+    const body = JSON.parse(status.text);
+    assert.equal(body.web, "up");
+    assert.equal(body.database, "up");
+    assert.equal(body.discordLinkStore, "up");
+    assert.deepEqual(body.confirmationEmail, { status: "disabled" });
+    assert.equal((await call(base, "GET", "/healthz")).status, 200);
+  });
+
+  test("reports database failure while liveness still responds", async () => {
+    const withoutDb = await startServer(19_400 + Math.floor(Math.random() * 500), {
+      DATABASE_URL: "postgresql://unused@127.0.0.1:1/unused",
+      RUN_MIGRATIONS: "false",
+    });
+    const status = await call(withoutDb, "GET", "/status");
+    assert.equal(status.status, 503);
+    const body = JSON.parse(status.text);
+    assert.equal(body.web, "up");
+    assert.equal(body.database, "unavailable");
+    assert.equal(body.discordLinkStore, "unknown");
+    assert.equal((await call(withoutDb, "GET", "/healthz")).status, 200);
   });
 });

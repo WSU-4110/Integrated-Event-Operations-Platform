@@ -24,3 +24,20 @@
 .divider { display:flex; align-items:center; justify-content:center; gap:14px; color:#a78bfa; } .divider::before,.divider::after { content:''; width:50px; height:1px; background:#a78bfa; opacity:.55; }
 @keyframes float { 0%,100% { transform:translateY(0); opacity:.7 } 50% { transform:translateY(7px); opacity:1 } } .float { animation:float 1.8s ease-in-out infinite; }
 @media (max-width:768px) { .container-shell{width:min(100% - 28px,600px)} .section{padding:80px 0} }
+
+/* Keep wide tables readable without a horizontal scrolling container. */
+.admin-registrations { table-layout: fixed; overflow-wrap: anywhere; }
+.admin-registrations th { position: sticky; top: 0; z-index: 1; background: #1a1f27; }
+.admin-registrations th:nth-child(2) { width: 15%; }
+.admin-registrations th:nth-child(8) { width: 13%; }
+.admin-registrations th:last-child { width: 11%; }
+
+@media (max-width: 1199px) {
+  .admin-registrations, .admin-registrations tbody, .admin-registrations tr { display: block; }
+  .admin-registrations thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .admin-registrations td { display: block; }
+  .admin-registration-row { padding: .5rem; }
+  .admin-registration-row td { position: relative; padding-left: 30%; }
+  .admin-registration-row td::before { content: attr(data-label); position: absolute; left: .5rem; width: 25%; font-weight: 600; color: #c4b5fd; }
+}
+.field[aria-invalid="true"] { border-color: #f87171; }

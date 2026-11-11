@@ -191,3 +191,7 @@ Not redirected (decided 2026-10-18). Its DNS is managed in Replit, which only of
 ## Old Replit deployment
 
 Keep it running until the new site is live and the data import is verified, then turn it off in Replit.
+
+## Event availability (NFR-05)
+
+See the [event availability runbook](event-availability.md) for probes, incident recording, and the event-window target.
