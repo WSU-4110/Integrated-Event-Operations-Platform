@@ -65,6 +65,7 @@ import wingSnobLogo from "@assets/sponsors/wing-snob-dearborn.jpg";
 import { Switch, Route } from "wouter";
 import { EVENT_CONFIG, FAQ, SCHEDULE } from "@/config/event";
 import NotFound from "@/pages/not-found";
+import { OrganizerEventContent, PublishedEventContent } from "@/components/EventContent";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -1151,6 +1152,7 @@ function Home() {
         <Hero />
         <About />
         <Schedule />
+        <PublishedEventContent />
         <Prizes />
         <Sponsors />
         <Faq />
@@ -1833,7 +1835,8 @@ function Admin() {
           </button>
         </div>
       </header>
-      <main className="w-full p-5 py-10">
+      <main className="mx-auto w-full max-w-6xl p-5 py-10">
+        <OrganizerEventContent />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Total registrations", statsData?.total ?? "—"],

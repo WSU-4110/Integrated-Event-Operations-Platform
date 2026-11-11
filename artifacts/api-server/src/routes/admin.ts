@@ -19,6 +19,7 @@ import {
   UpdateRegistrationStatusBody,
 } from "@workspace/api-zod";
 import { sendRegistrationConfirmation } from "../lib/registrationConfirmationEmail";
+import { organizerEventContent } from "./eventContent";
 
 const router: IRouter = Router();
 // Comma-separated list of organizer emails allowed into /api/admin.
@@ -59,6 +60,8 @@ router.use("/admin", async (req, res, next) => {
   res.locals.adminEmail = email;
   next();
 });
+
+router.use(organizerEventContent);
 
 type DiscordLinkInfo = { active: boolean; linkedAt: Date };
 type DiscordLinks = Map<number, DiscordLinkInfo> | null;
