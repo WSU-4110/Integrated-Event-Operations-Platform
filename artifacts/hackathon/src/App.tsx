@@ -465,6 +465,23 @@ function Schedule() {
     </section>
   );
 }
+const PLACE_PRIZES = [
+  { place: "1st place", amount: "$1,000" },
+  { place: "2nd place", amount: "$500" },
+  { place: "3rd place", amount: "$250" },
+];
+const TRACK_PRIZES = [
+  {
+    track: "AWS track",
+    amount: "$500",
+    perk: "AWS credits for every team member",
+  },
+  {
+    track: "FREE WILi track",
+    amount: "$250",
+    perk: "A FREE WILi OG and Accessory Kit for every team member",
+  },
+];
 function Prizes() {
   return (
     <section
@@ -474,13 +491,49 @@ function Prizes() {
       <div className="container-shell">
         <SectionHeading
           label="04 / THE UPSIDE"
-          title="Prizes."
-          copy="Prizes for the top 3 projects overall, plus company-specific tracks. Details will be announced before the event."
+          title="$2,500+ in prizes."
+          copy="Amazon gift cards for the top 3 teams and two sponsor tracks, plus perks for every member of a winning track team."
           icon={<Gift size={17} />}
         />
-        <div className="panel mx-auto max-w-3xl p-10 text-center">
-          <p className="eyebrow">Prizes</p>
-          <p className="mt-4 font-mono text-5xl text-[#a78bfa]">TBD</p>
+        <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-3">
+          {PLACE_PRIZES.map(({ place, amount }) => (
+            <div
+              key={place}
+              className="panel p-6 text-center"
+              data-testid={`prize-${place.split(" ")[0]}`}
+            >
+              <p className="eyebrow">{place}</p>
+              <p className="mt-3 font-mono text-4xl text-[#a78bfa]">{amount}</p>
+              <p className="mt-2 text-xs text-[#9ca3af]">Amazon gift card</p>
+            </div>
+          ))}
+        </div>
+        <div className="mx-auto mt-4 grid max-w-3xl gap-4 sm:grid-cols-2">
+          {TRACK_PRIZES.map(({ track, amount, perk }) => (
+            <div key={track} className="panel p-6">
+              <p className="eyebrow">{track}</p>
+              <p className="mt-3 font-mono text-3xl text-[#a78bfa]">
+                {amount}
+                <span className="ml-2 font-sans text-xs text-[#9ca3af]">
+                  Amazon gift card
+                </span>
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[#e7e5df]">+ {perk}</p>
+            </div>
+          ))}
+        </div>
+        <div className="panel mx-auto mt-4 max-w-3xl p-6 text-sm leading-6 text-[#9ca3af]">
+          <p>
+            <span className="font-semibold text-[#f7f4ed]">
+              More chances to win:
+            </span>{" "}
+            gift card raffles during workshops and more prizes at game night.
+          </p>
+          <p className="mt-2">
+            Gift cards are per team and split evenly among teammates. Tracks
+            are optional, so build anything you want; a project can win a track
+            prize and a top-3 prize.
+          </p>
         </div>
       </div>
     </section>
@@ -490,8 +543,8 @@ type Sponsor = {
   id: string;
   name: string;
   url?: string;
-  logo: string;
-  logoClassName: string;
+  logo?: string;
+  logoClassName?: string;
   note?: string;
 };
 const GOLD_SPONSORS: Sponsor[] = [
@@ -557,29 +610,51 @@ const FUEL_SPONSORS: Sponsor[] = [
     note: "Little Caesars Pizza donation compliments of The District Detroit Opportunity Center",
   },
   {
+    id: "cedarland-bakery",
+    name: "Cedarland Bakery",
+    url: "https://cedarlandbakery.org/",
+  },
+  {
     id: "wing-snob-dearborn",
     name: "Wing Snob Dearborn",
     url: "https://www.instagram.com/wingsnobdearborn/",
     logo: wingSnobLogo,
     logoClassName: "h-20 w-20 rounded-lg object-cover",
   },
+  {
+    id: "pit-stop-eatery",
+    name: "Pit Stop Eatery",
+    url: "https://www.thepitstopeatery.com/",
+  },
 ];
 function SponsorCard({ sponsor }: { sponsor: Sponsor }) {
   const content = (
     <>
       <div className="flex h-20 items-center justify-center">
-        <img
-          src={sponsor.logo}
-          alt={`${sponsor.name} logo`}
-          className={sponsor.logoClassName}
-        />
-      </div>
-      <p className="mt-4 text-sm font-semibold text-[#f7f4ed]">
-        {sponsor.name}
-        {sponsor.url && (
-          <ExternalLink size={12} className="ml-1.5 inline text-[#a78bfa]" />
+        {sponsor.logo ? (
+          <img
+            src={sponsor.logo}
+            alt={`${sponsor.name} logo`}
+            className={sponsor.logoClassName}
+          />
+        ) : (
+          // No logo yet: the name is the wordmark.
+          <span className="display text-2xl text-[#f7f4ed]">
+            {sponsor.name}
+            {sponsor.url && (
+              <ExternalLink size={14} className="ml-2 inline text-[#a78bfa]" />
+            )}
+          </span>
         )}
-      </p>
+      </div>
+      {sponsor.logo && (
+        <p className="mt-4 text-sm font-semibold text-[#f7f4ed]">
+          {sponsor.name}
+          {sponsor.url && (
+            <ExternalLink size={12} className="ml-1.5 inline text-[#a78bfa]" />
+          )}
+        </p>
+      )}
       {sponsor.note && (
         <p className="mt-2 text-xs leading-5 text-[#9ca3af]">{sponsor.note}</p>
       )}
@@ -661,7 +736,7 @@ function Sponsors() {
           labelClassName="text-[#a78bfa]"
           copy="Keeping builders fed and caffeinated for all 24 hours."
           sponsors={FUEL_SPONSORS}
-          gridClassName="sm:grid-cols-2"
+          gridClassName="sm:grid-cols-3"
         />
         <div className="panel mx-auto mt-10 flex max-w-3xl flex-col items-start justify-between gap-5 p-6 sm:flex-row sm:items-center">
           <div>
