@@ -465,10 +465,11 @@ function Schedule() {
     </section>
   );
 }
+// Gold, silver, and bronze, matching the sponsor tier colors.
 const PLACE_PRIZES = [
-  { place: "1st place", amount: "$1,000" },
-  { place: "2nd place", amount: "$500" },
-  { place: "3rd place", amount: "$250" },
+  { place: "1st place", amount: "$1,000", medal: "Gold", color: "#fbbf24" },
+  { place: "2nd place", amount: "$500", medal: "Silver", color: "#cbd5e1" },
+  { place: "3rd place", amount: "$250", medal: "Bronze", color: "#d08b5b" },
 ];
 const TRACK_PRIZES = [
   {
@@ -496,21 +497,33 @@ function Prizes() {
           icon={<Gift size={17} />}
         />
         <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-3">
-          {PLACE_PRIZES.map(({ place, amount }) => (
+          {PLACE_PRIZES.map(({ place, amount, medal, color }) => (
             <div
               key={place}
-              className="panel p-6 text-center"
+              className="panel border-t-4 p-6 text-center"
+              style={{ borderTopColor: color }}
               data-testid={`prize-${place.split(" ")[0]}`}
             >
-              <p className="eyebrow">{place}</p>
-              <p className="mt-3 font-mono text-4xl text-[#a78bfa]">{amount}</p>
+              <Trophy size={22} className="mx-auto" style={{ color }} />
+              <p
+                className="mt-3 text-xs font-bold uppercase tracking-[.2em]"
+                style={{ color }}
+              >
+                {medal} · {place}
+              </p>
+              <p className="mt-2 font-mono text-4xl" style={{ color }}>
+                {amount}
+              </p>
               <p className="mt-2 text-xs text-[#9ca3af]">Amazon gift card</p>
             </div>
           ))}
         </div>
         <div className="mx-auto mt-4 grid max-w-3xl gap-4 sm:grid-cols-2">
           {TRACK_PRIZES.map(({ track, amount, perk }) => (
-            <div key={track} className="panel p-6">
+            <div
+              key={track}
+              className="panel border-t-4 border-t-[#a78bfa] p-6"
+            >
               <p className="eyebrow">{track}</p>
               <p className="mt-3 font-mono text-3xl text-[#a78bfa]">
                 {amount}
