@@ -40,3 +40,4 @@
   .admin-registration-row td { position: relative; padding-left: 30%; }
   .admin-registration-row td::before { content: attr(data-label); position: absolute; left: .5rem; width: 25%; font-weight: 600; color: #c4b5fd; }
 }
+.field[aria-invalid="true"] { border-color: #f87171; }

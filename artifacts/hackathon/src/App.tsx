@@ -751,7 +751,33 @@ function Registration() {
   });
   const [result, setResult] = useState<{ emailSent: boolean } | null>(null);
   const [error, setError] = useState("");
+  const [attempted, setAttempted] = useState(false);
   const validEmail = /^[^\s@]+@[^\s@]+\.edu$/i.test(form.email);
+  const fieldErrors = {
+    name: form.name.trim() ? "" : "Enter your full name.",
+    email: validEmail ? "" : "Enter a valid school email ending in .edu.",
+    school: form.school.trim() ? "" : "Enter your school.",
+    discord_username: form.discord_username.trim().length >= 2 ? "" : "Enter your Discord username.",
+    team_status: form.team_status ? "" : "Choose a team status.",
+  };
+  function fieldError(name: keyof typeof fieldErrors) {
+    return attempted ? fieldErrors[name] : "";
+  }
+  function errorAttributes(name: keyof typeof fieldErrors) {
+    const invalid = Boolean(fieldError(name));
+    return {
+      "aria-invalid": invalid || undefined,
+      "aria-describedby": invalid ? `registration-${name}-error` : undefined,
+    };
+  }
+  function errorMessage(name: keyof typeof fieldErrors) {
+    const message = fieldError(name);
+    return message && (
+      <span id={`registration-${name}-error`} className="mt-1 block text-xs text-red-400">
+        {message}
+      </span>
+    );
+  }
   const check = useCheckRegistration(
     { email: form.email || "invalid@example.com" },
     {
@@ -769,16 +795,15 @@ function Registration() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    if (
-      !form.name.trim() ||
-      !form.school.trim() ||
-      !validEmail ||
-      form.discord_username.trim().length < 2 ||
-      !form.team_status
-    ) {
-      setError(
-        "Please complete every required field and use your .edu email address.",
-      );
+    setAttempted(true);
+    const firstInvalid = Object.keys(fieldErrors).find(
+      (name) => fieldErrors[name as keyof typeof fieldErrors],
+    );
+    if (firstInvalid || !form.team_status) {
+      if (firstInvalid && e.currentTarget instanceof HTMLFormElement) {
+        const field = e.currentTarget.elements.namedItem(firstInvalid);
+        if (field instanceof HTMLElement) field.focus();
+      }
       return;
     }
     if (check.data?.registered) {
@@ -851,7 +876,7 @@ function Registration() {
               </p>
             </div>
           ) : (
-            <form onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-2">
+            <form noValidate onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-2">
               <label className="sm:col-span-2">
                 <span className="eyebrow !text-[10px]">Full name *</span>
                 <input
@@ -862,7 +887,9 @@ function Registration() {
                   autoComplete="name"
                   className="field"
                   data-testid="input-name"
+                  {...errorAttributes("name")}
                 />
+                {errorMessage("name")}
               </label>
               <label>
                 <span className="eyebrow !text-[10px]">
@@ -877,7 +904,9 @@ function Registration() {
                   autoComplete="email"
                   className="field"
                   data-testid="input-email"
+                  {...errorAttributes("email")}
                 />
+                {errorMessage("email")}
               </label>
               <label>
                 <span className="eyebrow !text-[10px]">School *</span>
@@ -888,7 +917,9 @@ function Registration() {
                   placeholder="Your college or university"
                   className="field"
                   data-testid="input-school"
+                  {...errorAttributes("school")}
                 />
+                {errorMessage("school")}
               </label>
               <label>
                 <span className="eyebrow !text-[10px]">Class standing *</span>
@@ -930,7 +961,9 @@ function Registration() {
                   placeholder="yourname"
                   className="field"
                   data-testid="input-discord"
+                  {...errorAttributes("discord_username")}
                 />
+                {errorMessage("discord_username")}
                 <span className="mt-1 block text-[11px] leading-4 text-[#7d848e]">
                   Your username, not your display name. You'll verify with it in
                   our Discord.
@@ -944,6 +977,7 @@ function Registration() {
                   onChange={change}
                   className="field"
                   data-testid="select-team-status"
+                  {...errorAttributes("team_status")}
                 >
                   <option value="" disabled>
                     Choose one
@@ -952,6 +986,7 @@ function Registration() {
                   <option value="looking">I'm looking for a team</option>
                   <option value="solo">I'll compete solo</option>
                 </select>
+                {errorMessage("team_status")}
               </label>
               {form.team_status === "has_team" && (
                 <label className="sm:col-span-2">
@@ -980,7 +1015,8 @@ function Registration() {
               </p>
               {error && (
                 <p
-                  className="sm:col-span-2 text-sm text-[#a78bfa]"
+                  role="alert"
+                  className="sm:col-span-2 text-sm text-red-400"
                   data-testid="status-registration-error"
                 >
                   {error}
