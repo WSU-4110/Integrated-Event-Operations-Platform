@@ -183,6 +183,11 @@ export interface Registration {
   source: string;
   /** @nullable */
   confirmation_email_sent_at?: string | null;
+  /**
+     * When the participant checked in at the venue (FR-10); null until then.
+     * @nullable
+     */
+  checked_in_at?: string | null;
   created_at: string;
 }
 
@@ -239,6 +244,8 @@ export interface AdminStats {
      * @nullable
      */
   discord_verified: number | null;
+  /** Registrations checked in at the venue. */
+  checked_in: number;
 }
 
 export interface AuthUser {
@@ -266,6 +273,12 @@ team_status?: string;
  * active (pending or approved) or removed (declined or waitlisted)
  */
 access?: ListRegistrationsAccess;
+class_standing?: ListRegistrationsClassStanding;
+/**
+ * verified or not_verified, from the Discord bot's records
+ */
+discord?: ListRegistrationsDiscord;
+check_in?: ListRegistrationsCheckIn;
 limit?: number;
 offset?: number;
 };
@@ -276,5 +289,32 @@ export type ListRegistrationsAccess = typeof ListRegistrationsAccess[keyof typeo
 export const ListRegistrationsAccess = {
   active: 'active',
   removed: 'removed',
+} as const;
+
+export type ListRegistrationsClassStanding = typeof ListRegistrationsClassStanding[keyof typeof ListRegistrationsClassStanding];
+
+
+export const ListRegistrationsClassStanding = {
+  freshman: 'freshman',
+  sophomore: 'sophomore',
+  junior: 'junior',
+  senior: 'senior',
+  graduate: 'graduate',
+} as const;
+
+export type ListRegistrationsDiscord = typeof ListRegistrationsDiscord[keyof typeof ListRegistrationsDiscord];
+
+
+export const ListRegistrationsDiscord = {
+  verified: 'verified',
+  not_verified: 'not_verified',
+} as const;
+
+export type ListRegistrationsCheckIn = typeof ListRegistrationsCheckIn[keyof typeof ListRegistrationsCheckIn];
+
+
+export const ListRegistrationsCheckIn = {
+  checked_in: 'checked_in',
+  not_checked_in: 'not_checked_in',
 } as const;
 

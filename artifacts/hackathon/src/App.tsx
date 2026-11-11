@@ -17,6 +17,9 @@ import {
   getGetAdminStatsQueryKey,
   getListRegistrationsQueryKey,
   type Registration as AdminRegistration,
+  type ListRegistrationsCheckIn,
+  type ListRegistrationsClassStanding,
+  type ListRegistrationsDiscord,
   type RegistrationUpdateInput,
 } from "@workspace/api-client-react";
 import {
@@ -1717,18 +1720,28 @@ function Admin() {
   const [search, setSearch] = useState("");
   const [level, setLevel] = useState("");
   const [team, setTeam] = useState("");
-  const [accessFilter, setAccessFilter] = useState("");
+  const [classStanding, setClassStanding] = useState("");
+  const [discordFilter, setDiscordFilter] = useState("");
+  const [checkInFilter, setCheckInFilter] = useState("");
   const [offset, setOffset] = useState(0);
   const params = useMemo(
     () => ({
       search: search || undefined,
       experience_level: level || undefined,
       team_status: team || undefined,
-      access: (accessFilter || undefined) as "active" | "removed" | undefined,
+      class_standing: (classStanding || undefined) as
+        | ListRegistrationsClassStanding
+        | undefined,
+      discord: (discordFilter || undefined) as
+        | ListRegistrationsDiscord
+        | undefined,
+      check_in: (checkInFilter || undefined) as
+        | ListRegistrationsCheckIn
+        | undefined,
       limit: 50,
       offset,
     }),
-    [search, level, team, accessFilter, offset],
+    [search, level, team, classStanding, discordFilter, checkInFilter, offset],
   );
   const stats = useGetAdminStats({
     query: { queryKey: getGetAdminStatsQueryKey() },
@@ -1802,13 +1815,7 @@ function Admin() {
           {[
             ["Total registrations", statsData?.total ?? "—"],
             ["Verified on Discord", statsData?.discord_verified ?? "—"],
-            [
-              "Removed",
-              statsData
-                ? (statsData.by_status?.declined ?? 0) +
-                  (statsData.by_status?.waitlisted ?? 0)
-                : "—",
-            ],
+            ["Checked in", statsData?.checked_in ?? "—"],
             [
               "Looking for a team",
               statsData ? (statsData.by_team_status?.looking ?? 0) : "—",
@@ -1834,7 +1841,7 @@ function Admin() {
                 setOffset(0);
               }}
               placeholder="Search registrations"
-              className="field max-w-sm"
+              className="field max-w-[260px]"
               data-testid="input-admin-search"
             />
             <select
@@ -1843,7 +1850,7 @@ function Admin() {
                 setLevel(e.target.value);
                 setOffset(0);
               }}
-              className="field max-w-[170px]"
+              className="field max-w-[160px]"
               data-testid="select-admin-level"
             >
               <option value="">All levels</option>
@@ -1858,7 +1865,7 @@ function Admin() {
                 setTeam(e.target.value);
                 setOffset(0);
               }}
-              className="field max-w-[170px]"
+              className="field max-w-[160px]"
               data-testid="select-admin-team"
             >
               <option value="">All team statuses</option>
@@ -1867,22 +1874,51 @@ function Admin() {
               <option value="solo">Solo</option>
             </select>
             <select
-              value={accessFilter}
+              value={classStanding}
               onChange={(e) => {
-                setAccessFilter(e.target.value);
+                setClassStanding(e.target.value);
                 setOffset(0);
               }}
-              className="field max-w-[170px]"
-              data-testid="select-admin-access"
+              className="field max-w-[160px]"
+              data-testid="select-admin-class"
             >
-              <option value="">Active and removed</option>
-              <option value="active">Active</option>
-              <option value="removed">Removed</option>
+              <option value="">All classes</option>
+              <option value="freshman">Freshman</option>
+              <option value="sophomore">Sophomore</option>
+              <option value="junior">Junior</option>
+              <option value="senior">Senior</option>
+              <option value="graduate">Graduate</option>
+            </select>
+            <select
+              value={discordFilter}
+              onChange={(e) => {
+                setDiscordFilter(e.target.value);
+                setOffset(0);
+              }}
+              className="field max-w-[160px]"
+              data-testid="select-admin-discord"
+            >
+              <option value="">Verified or not</option>
+              <option value="verified">Verified on Discord</option>
+              <option value="not_verified">Not verified</option>
+            </select>
+            <select
+              value={checkInFilter}
+              onChange={(e) => {
+                setCheckInFilter(e.target.value);
+                setOffset(0);
+              }}
+              className="field max-w-[160px]"
+              data-testid="select-admin-check-in"
+            >
+              <option value="">Checked in or not</option>
+              <option value="checked_in">Checked in</option>
+              <option value="not_checked_in">Not checked in</option>
             </select>
           </div>
           <a
             href="/api/admin/export"
-            className="btn btn-primary"
+            className="btn btn-primary shrink-0 self-start"
             data-testid="link-export-csv"
           >
             <Download size={16} />

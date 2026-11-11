@@ -123,6 +123,25 @@ paths:
           schema:
             type: string
             enum: [active, removed]
+        - name: class_standing
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [freshman, sophomore, junior, senior, graduate]
+        - name: discord
+          in: query
+          required: false
+          description: "verified or not_verified, from the Discord bot's records"
+          schema:
+            type: string
+            enum: [verified, not_verified]
+        - name: check_in
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [checked_in, not_checked_in]
         - name: limit
           in: query
           required: false
@@ -527,6 +546,10 @@ components:
         confirmation_email_sent_at:
           type: ["string", "null"]
           format: date-time
+        checked_in_at:
+          type: ["string", "null"]
+          format: date-time
+          description: "When the participant checked in at the venue (FR-10); null until then."
         created_at:
           type: string
           format: date-time
@@ -592,7 +615,7 @@ components:
 
     AdminStats:
       type: object
-      required: [total, by_experience_level, by_team_status, by_status, discord_verified]
+      required: [total, by_experience_level, by_team_status, by_status, discord_verified, checked_in]
       properties:
         total:
           type: number
@@ -611,6 +634,9 @@ components:
         discord_verified:
           type: ["number", "null"]
           description: "Active registrations verified on Discord; null if the bot's records can't be read."
+        checked_in:
+          type: number
+          description: "Registrations checked in at the venue."
 
     AuthUser:
       type: object

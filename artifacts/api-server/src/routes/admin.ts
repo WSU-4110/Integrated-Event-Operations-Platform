@@ -1,5 +1,17 @@
 import { Router, type IRouter } from "express";
-import { and, count, eq, ilike, inArray, or, type SQL } from "drizzle-orm";
+import {
+  and,
+  count,
+  eq,
+  exists,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  not,
+  or,
+  type SQL,
+} from "drizzle-orm";
 import {
   ACTIVE_STATUSES,
   db,
@@ -126,6 +138,7 @@ function toApi(r: Registration, links: DiscordLinks) {
     discord_verified_at: discord.verifiedAt,
     source: r.source,
     confirmation_email_sent_at: r.confirmationEmailSentAt,
+    checked_in_at: r.checkedInAt,
     created_at: r.createdAt,
   };
 }
@@ -139,8 +152,17 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
     return;
   }
 
-  const { search, experience_level, team_status, access, limit, offset } =
-    parsed.data;
+  const {
+    search,
+    experience_level,
+    team_status,
+    access,
+    class_standing,
+    discord,
+    check_in,
+    limit,
+    offset,
+  } = parsed.data;
 
   const conditions: SQL[] = [forThisEvent];
   if (search) {
@@ -160,6 +182,34 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
   if (team_status) {
     conditions.push(eq(registrationsTable.teamStatus, team_status));
   }
+  if (class_standing) {
+    conditions.push(eq(registrationsTable.classStanding, class_standing));
+  }
+  if (check_in) {
+    conditions.push(
+      check_in === "checked_in"
+        ? isNotNull(registrationsTable.checkedInAt)
+        : isNull(registrationsTable.checkedInAt),
+    );
+  }
+  if (discord) {
+    // Verified = an active link in the Discord bot's records.
+    const verified = exists(
+      db
+        .select({ one: discordParticipantLinksTable.id })
+        .from(discordParticipantLinksTable)
+        .where(
+          and(
+            eq(
+              discordParticipantLinksTable.registrationId,
+              registrationsTable.id,
+            ),
+            eq(discordParticipantLinksTable.active, true),
+          ),
+        ),
+    );
+    conditions.push(discord === "verified" ? verified : not(verified));
+  }
   if (access) {
     conditions.push(
       inArray(
@@ -170,16 +220,29 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
   }
   const whereClause = and(...conditions);
 
-  const [registrations, totalResult] = await Promise.all([
-    db
-      .select()
-      .from(registrationsTable)
-      .where(whereClause)
-      .orderBy(registrationsTable.createdAt)
-      .limit(limit)
-      .offset(offset),
-    db.select({ count: count() }).from(registrationsTable).where(whereClause),
-  ]);
+  let registrations: Registration[];
+  let totalResult: { count: number }[];
+  try {
+    [registrations, totalResult] = await Promise.all([
+      db
+        .select()
+        .from(registrationsTable)
+        .where(whereClause)
+        .orderBy(registrationsTable.createdAt)
+        .limit(limit)
+        .offset(offset),
+      db.select({ count: count() }).from(registrationsTable).where(whereClause),
+    ]);
+  } catch (err) {
+    if (discord && isDiscordUnavailable(err)) {
+      res.status(503).json({
+        error:
+          "Discord verification status isn't available, so this filter can't be used yet.",
+      });
+      return;
+    }
+    throw err;
+  }
 
   const links = await loadDiscordLinks(registrations.map((r) => r.id));
   res.json({
@@ -496,7 +559,7 @@ router.post(
 );
 
 router.get("/admin/stats", async (_req, res): Promise<void> => {
-  const [totalResult, byLevel, byTeam, byStatus] = await Promise.all([
+  const [totalResult, byLevel, byTeam, byStatus, checkedIn] = await Promise.all([
     db.select({ count: count() }).from(registrationsTable).where(forThisEvent),
     db
       .select({ key: registrationsTable.experienceLevel, count: count() })
@@ -513,6 +576,10 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
       .from(registrationsTable)
       .where(forThisEvent)
       .groupBy(registrationsTable.status),
+    db
+      .select({ count: count() })
+      .from(registrationsTable)
+      .where(and(forThisEvent, isNotNull(registrationsTable.checkedInAt))),
   ]);
 
   // Active registrations with an active Discord verification.
@@ -549,6 +616,7 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
     by_team_status: tally(byTeam),
     by_status: tally(byStatus),
     discord_verified: discordVerified,
+    checked_in: Number(checkedIn[0]?.count ?? 0),
   });
 });
 
