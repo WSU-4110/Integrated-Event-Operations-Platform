@@ -108,7 +108,7 @@ const handleEventContentError: ErrorRequestHandler = (
     next(error);
     return;
   }
-  req.log.error("Event content request failed");
+  req.log.error({ err: error }, "Event content request failed");
   res.status(500).json({ error: "Could not save or load event content." });
 };
 
