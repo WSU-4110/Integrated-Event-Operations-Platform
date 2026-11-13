@@ -159,6 +159,20 @@ export const RegistrationDiscordStatus = {
   unknown: 'unknown',
 } as const;
 
+/**
+ * Latest Discord verification code: none = no usable code, email_failed = issued but the email didn't go out.
+ */
+export type RegistrationVerificationCodeStatus = typeof RegistrationVerificationCodeStatus[keyof typeof RegistrationVerificationCodeStatus];
+
+
+export const RegistrationVerificationCodeStatus = {
+  none: 'none',
+  sent: 'sent',
+  email_failed: 'email_failed',
+  used: 'used',
+  expired: 'expired',
+} as const;
+
 export interface Registration {
   id: number;
   name: string;
@@ -183,6 +197,8 @@ export interface Registration {
   source: string;
   /** @nullable */
   confirmation_email_sent_at?: string | null;
+  /** Latest Discord verification code: none = no usable code, email_failed = issued but the email didn't go out. */
+  verification_code_status?: RegistrationVerificationCodeStatus;
   /**
      * When the participant checked in at the venue (FR-10); null until then.
      * @nullable
@@ -217,6 +233,10 @@ export interface StatusHistory {
 
 export interface ResendConfirmationResult {
   confirmation_email_sent_at: string;
+}
+
+export interface SendVerificationCodeResult {
+  email_sent: boolean;
 }
 
 export interface RegistrationCheckResult {

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { RegistrationDiscordStatus } from './registrationDiscordStatus';
+import type { RegistrationVerificationCodeStatus } from './registrationVerificationCodeStatus';
 
 export interface Registration {
   id: number;
@@ -31,6 +32,8 @@ export interface Registration {
   source: string;
   /** @nullable */
   confirmation_email_sent_at?: Date | null;
+  /** Latest Discord verification code: none = no usable code, email_failed = issued but the email didn't go out. */
+  verification_code_status?: RegistrationVerificationCodeStatus;
   /**
      * When the participant checked in at the venue (FR-10); null until then.
      * @nullable

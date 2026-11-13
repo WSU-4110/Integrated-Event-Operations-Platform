@@ -353,6 +353,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /admin/registrations/{id}/verification-code:
+    post:
+      operationId: sendVerificationCode
+      tags: [admin]
+      summary: Send a Discord verification code
+      description: Issues a new single-use code (valid up to 24 hours), invalidates any earlier unused code, and emails it to the registered address. Only active registrations (pending or approved) can receive one. If the email fails the code is still recorded and organizers can call this again to retry. The code itself is never returned. Requires organizer authentication.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Code issued; email_sent says whether the email went out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendVerificationCodeResult"
+        "404":
+          description: Registration not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: The registration has been removed, so it can't receive a code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /admin/stats:
     get:
       operationId: getAdminStats
@@ -546,6 +578,10 @@ components:
         confirmation_email_sent_at:
           type: ["string", "null"]
           format: date-time
+        verification_code_status:
+          type: string
+          enum: [none, sent, email_failed, used, expired]
+          description: "Latest Discord verification code: none = no usable code, email_failed = issued but the email didn't go out."
         checked_in_at:
           type: ["string", "null"]
           format: date-time
@@ -594,6 +630,13 @@ components:
         confirmation_email_sent_at:
           type: string
           format: date-time
+
+    SendVerificationCodeResult:
+      type: object
+      required: [email_sent]
+      properties:
+        email_sent:
+          type: boolean
 
     RegistrationCheckResult:
       type: object

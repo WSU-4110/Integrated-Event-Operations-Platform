@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   index,
   integer,
@@ -6,6 +7,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const EVENT_ID = "builderwars-2026";
@@ -111,3 +113,34 @@ export const registrationStatusChangesTable = pgTable(
 
 export type RegistrationStatusChange =
   typeof registrationStatusChangesTable.$inferSelect;
+
+// Single-use Discord verification codes (FR-05). Only a hash of the code is
+// stored, so a lost email means issuing a replacement, never re-sending.
+// The partial unique index lets the database guarantee that a registration
+// has at most one unused code at a time.
+export const verificationCodesTable = pgTable(
+  "verification_codes",
+  {
+    id: serial("id").primaryKey(),
+    registrationId: integer("registration_id")
+      .notNull()
+      .references(() => registrationsTable.id, { onDelete: "cascade" }),
+    codeHash: text("code_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    invalidatedAt: timestamp("invalidated_at", { withTimezone: true }),
+    emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
+    emailFailedAt: timestamp("email_failed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("verification_codes_one_unused_idx")
+      .on(table.registrationId)
+      .where(sql`${table.usedAt} is null and ${table.invalidatedAt} is null`),
+    index("verification_codes_registration_idx").on(table.registrationId),
+  ],
+);
+
+export type VerificationCode = typeof verificationCodesTable.$inferSelect;

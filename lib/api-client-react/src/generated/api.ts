@@ -33,6 +33,7 @@ import type {
   RegistrationInput,
   RegistrationUpdateInput,
   ResendConfirmationResult,
+  SendVerificationCodeResult,
   StatusChangeInput,
   StatusHistory
 } from './api.schemas';
@@ -825,6 +826,78 @@ export const useResendConfirmation = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getResendConfirmationMutationOptions(options));
+    }
+
+export const getSendVerificationCodeUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/registrations/${id}/verification-code`
+}
+
+/**
+ * Issues a new single-use code (valid up to 24 hours), invalidates any earlier unused code, and emails it to the registered address. Only active registrations (pending or approved) can receive one. If the email fails the code is still recorded and organizers can call this again to retry. The code itself is never returned. Requires organizer authentication.
+ * @summary Send a Discord verification code
+ */
+export const sendVerificationCode = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<SendVerificationCodeResult> => {
+
+  return customFetch<SendVerificationCodeResult>(getSendVerificationCodeUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSendVerificationCodeMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendVerificationCode>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendVerificationCode>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['sendVerificationCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendVerificationCode>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  sendVerificationCode(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendVerificationCodeMutationResult = NonNullable<Awaited<ReturnType<typeof sendVerificationCode>>>
+
+    export type SendVerificationCodeMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Send a Discord verification code
+ */
+export const useSendVerificationCode = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendVerificationCode>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendVerificationCode>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getSendVerificationCodeMutationOptions(options));
     }
 
 export const getGetAdminStatsUrl = () => {

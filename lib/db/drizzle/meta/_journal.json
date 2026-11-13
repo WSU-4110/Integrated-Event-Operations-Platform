@@ -43,6 +43,13 @@
       "when": 1794421114457,
       "tag": "0005_check_in",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794531323071,
+      "tag": "0006_spotty_george_stacy",
+      "breakpoints": true
     }
   ]
 }

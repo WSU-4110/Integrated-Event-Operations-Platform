@@ -111,6 +111,7 @@ export const ListRegistrationsResponse = zod.object({
   "discord_verified_at": zod.coerce.date().nullish(),
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
+  "verification_code_status": zod.enum(['none', 'sent', 'email_failed', 'used', 'expired']).optional().describe('Latest Discord verification code: none = no usable code, email_failed = issued but the email didn\'t go out.'),
   "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
   "created_at": zod.coerce.date()
 })),
@@ -185,6 +186,7 @@ export const UpdateRegistrationResponse = zod.object({
   "discord_verified_at": zod.coerce.date().nullish(),
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
+  "verification_code_status": zod.enum(['none', 'sent', 'email_failed', 'used', 'expired']).optional().describe('Latest Discord verification code: none = no usable code, email_failed = issued but the email didn\'t go out.'),
   "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
   "created_at": zod.coerce.date()
 })
@@ -220,6 +222,7 @@ export const UpdateRegistrationStatusResponse = zod.object({
   "discord_verified_at": zod.coerce.date().nullish(),
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
+  "verification_code_status": zod.enum(['none', 'sent', 'email_failed', 'used', 'expired']).optional().describe('Latest Discord verification code: none = no usable code, email_failed = issued but the email didn\'t go out.'),
   "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
   "created_at": zod.coerce.date()
 })
@@ -252,6 +255,19 @@ export const ResendConfirmationParams = zod.object({
 
 export const ResendConfirmationResponse = zod.object({
   "confirmation_email_sent_at": zod.coerce.date()
+})
+
+
+/**
+ * Issues a new single-use code (valid up to 24 hours), invalidates any earlier unused code, and emails it to the registered address. Only active registrations (pending or approved) can receive one. If the email fails the code is still recorded and organizers can call this again to retry. The code itself is never returned. Requires organizer authentication.
+ * @summary Send a Discord verification code
+ */
+export const SendVerificationCodeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SendVerificationCodeResponse = zod.object({
+  "email_sent": zod.boolean()
 })
 
 
