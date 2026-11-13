@@ -8,7 +8,10 @@ import { normalizeDiscordUsername, normalizeEmail } from '../utils/discordUserna
 // email, and the registration must be pending or approved. A username alone
 // is never enough: anyone can rename themselves to match someone else.
 
-export const RATE_LIMIT = { maxFailures: 5, windowMs: 60 * 60 * 1000 };
+export const RATE_LIMIT = {
+  maxFailures: 5,
+  windowMs: 15 * 60 * 1000,
+};
 
 export type VerifyOutcome =
   | { kind: 'verified'; link: ParticipantLink }
