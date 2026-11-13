@@ -5,6 +5,9 @@ import { useAuth } from "@workspace/replit-auth-web";
 import {
   useCheckRegistration,
   useCheckInRegistration,
+  useUndoCheckIn,
+  useGetAttendanceCorrections,
+  getGetAttendanceCorrectionsQueryKey,
   useDeleteRegistration,
   useResendConfirmation,
   useUpdateRegistration,
@@ -1473,6 +1476,75 @@ function DiscordCell({
     </div>
   );
 }
+function AttendanceCorrectionControl({ registration, onChanged }: {
+  registration: AdminRegistration;
+  onChanged: () => Promise<unknown>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [expectedVersion, setExpectedVersion] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  const historyKey = getGetAttendanceCorrectionsQueryKey(registration.id);
+  const history = useGetAttendanceCorrections(registration.id, { query: { queryKey: historyKey, enabled: showHistory } });
+  const undo = useUndoCheckIn({ mutation: {
+    onSuccess: () => { setOpen(false); setReason(""); setError(""); setExpectedVersion(null); },
+    onError: (err) => {
+      const stale = getApiErrorStatus(err) === 409;
+      setError(stale ? "Attendance changed. Review the refreshed record and reopen the correction form."
+        : "Correction could not be confirmed. Review the refreshed attendance before retrying.");
+      if (stale) { setOpen(false); setExpectedVersion(null); }
+    },
+    onSettled: async () => { await Promise.all([onChanged(), queryClient.invalidateQueries({ queryKey: historyKey })]); },
+  } });
+  return (
+    <div className="min-w-0 space-y-2 text-xs">
+      {registration.checked_in_at && !open && <button type="button" className="underline text-[#a78bfa]"
+        data-testid={`button-undo-check-in-${registration.id}`} disabled={undo.isPending}
+        onClick={() => { setExpectedVersion(registration.attendance_version ?? 0); setError(""); setOpen(true); }}>
+        Reverse check-in
+      </button>}
+      {open && registration.checked_in_at && <form noValidate onSubmit={e => {
+        e.preventDefault();
+        if (!reason.trim() || reason.trim().length > 1000) {
+          setError("Enter a correction reason (1–1000 characters).");
+          const field = e.currentTarget.elements.namedItem("reason"); if (field instanceof HTMLElement) field.focus();
+          return;
+        }
+        if (expectedVersion === null || !window.confirm(`Reverse check-in for ${registration.name}?\n\nOriginal arrival: ${new Date(registration.checked_in_at!).toLocaleString()}\nReason: ${reason.trim()}\n\nThe correction will be recorded.`)) return;
+        setError("");
+        undo.mutate({ id: registration.id, data: { reason: reason.trim(), expected_attendance_version: expectedVersion } });
+      }}>
+        <fieldset disabled={undo.isPending} className="min-w-0 space-y-2">
+          <label className="block" htmlFor={`correction-reason-${registration.id}`}>Reason *</label>
+          <textarea id={`correction-reason-${registration.id}`} name="reason" value={reason}
+            onChange={e => setReason(e.target.value)} maxLength={1000} rows={3}
+            className="field w-full min-w-0 !min-h-[80px] !text-xs"
+            aria-invalid={Boolean(error) || undefined} aria-describedby={error ? `correction-error-${registration.id}` : undefined}
+            data-testid={`input-correction-reason-${registration.id}`} />
+          <button type="submit" className="block underline text-[#ff9985]" data-testid={`button-save-correction-${registration.id}`}>
+            {undo.isPending ? "Saving…" : "Save reversal"}
+          </button>
+          <button type="button" className="underline text-[#9ca3af]" data-testid={`button-cancel-correction-${registration.id}`}
+            onClick={() => { setOpen(false); setReason(""); setError(""); }}>Cancel</button>
+        </fieldset>
+      </form>}
+      {error && <p id={`correction-error-${registration.id}`} role="alert" className="text-[#ff9985]">{error}</p>}
+      <button type="button" className="block underline text-[#9ca3af]" data-testid={`button-correction-history-${registration.id}`}
+        onClick={() => setShowHistory(!showHistory)}>{showHistory ? "Hide corrections" : "Correction history"}</button>
+      {showHistory && <div className="space-y-2" data-testid={`correction-history-${registration.id}`}>
+        {history.isLoading ? <p>Loading corrections…</p> : history.isError ? <p role="alert" className="text-[#ff9985]">History could not be loaded. <button className="underline" onClick={() => void history.refetch()}>Retry</button></p>
+          : !history.data?.corrections.length ? <p>No attendance corrections.</p>
+          : history.data.corrections.map(c => <div key={c.id} className="border-l border-[#434b58] pl-2 text-[#b9bec6]">
+            <p>{c.reason}</p><p>By {c.corrected_by_email}</p>
+            <time dateTime={c.corrected_at}>{new Date(c.corrected_at).toLocaleString()}</time>
+            <p>Original arrival: {new Date(c.original_checked_in_at).toLocaleString()}</p>
+          </div>)}
+      </div>}
+    </div>
+  );
+}
+
 function CheckInControl({ registration, onChanged }: {
   registration: AdminRegistration;
   onChanged: () => Promise<unknown>;
@@ -2221,6 +2293,7 @@ function Admin() {
                     <td role="cell" data-label="Actions" className="p-2">
                       <div className="flex flex-col items-start gap-2">
                         <CheckInControl registration={r} onChanged={refreshAdminData} />
+                        <AttendanceCorrectionControl registration={r} onChanged={refreshAdminData} />
                         <EditRegistrationButton
                           registration={r}
                           onSaved={refreshAdminData}

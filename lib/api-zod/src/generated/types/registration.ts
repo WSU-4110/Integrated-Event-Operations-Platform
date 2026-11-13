@@ -31,6 +31,7 @@ export interface Registration {
   source: string;
   /** @nullable */
   confirmation_email_sent_at?: Date | null;
+  attendance_version?: number;
   /**
      * When the participant checked in at the venue (FR-10); null until then.
      * @nullable

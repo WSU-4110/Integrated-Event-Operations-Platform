@@ -1,0 +1,13 @@
+# FR-11 attendance corrections
+
+Based on the unmerged FR-10 branch, not main. This patch adds only FR-11. Keep the PR based on arian/fr-10-check-in until FR-10 is merged; do not merge either automatically.
+
+An authorized organizer can reverse an accidental check-in after entering a nonblank reason (maximum 1000 characters). The server locks the event registration and checks its attendance version so a stale form cannot reverse a newer arrival. Clearing attendance and recording the original arrival time/organizer, reason, correcting organizer and correction time are one transaction. Failed corrections roll back both changes. Normal check-in increments the attendance version and still requires approved status.
+
+Duplicate check-in preserves and displays the existing arrival time. Reversal makes the participant eligible for another normal check-in if still approved. Counts and filters reflect only current attendance; correction history is retained separately and available only to authorized organizers. Changing registration approval or Discord access is outside this correction action.
+
+Implementation: add attendance_version and attendance_corrections in one migration; add POST undo-check-in and GET attendance-corrections under the existing organizer guard; add inline reason/confirmation and correction history to the dashboard. Verify authorization, required reasons, duplicate/stale/concurrent requests, rollback, history and re-check-in with real PostgreSQL and the actual built browser. Reuse FR-10 regressions and avoid unrelated changes.
+
+Verification: the 65-test FR-10 baseline passed. The new correction tests failed before implementation; the final API suite passed all 75 tests with no skips. TypeScript library/API/frontend checks and both builds passed. Actual local Chromium used the built application, real API/session logic and PostgreSQL to verify reason validation and cancel, audit-write rollback, successful reversal/count/history, re-check-in, stale forms after a newer arrival, signed-out protection, and the FR-10 regression flow. The correction form fits desktop/mobile widths and no application JavaScript errors occurred. Screenshots were visually inspected. External Google login was stubbed at the login destination; no live participant, email or Discord actions were used. A focused self-review checked authorization, event scoping, transaction rollback, version races and audit privacy; no extra agents were used.
+
+The migration is generated against the FR-10 branch. Before an eventual merge, reconcile migration history if other PRs added migrations independently. No production schema, main branch, PR merge or deployment is changed by this patch.

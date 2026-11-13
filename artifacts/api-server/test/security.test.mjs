@@ -12,6 +12,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { checkInTests } from "./checkIn.mjs";
+import { attendanceCorrectionTests } from "./attendanceCorrections.mjs";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 if (!DATABASE_URL) {
@@ -96,6 +97,8 @@ const ADMIN_REQUESTS = [
   ["DELETE", "/admin/event-content/1"],
   ["GET", "/admin/registrations/1/history"],
   ["POST", "/admin/registrations/1/check-in"],
+  ["POST", "/admin/registrations/1/undo-check-in", { reason: "Mistake", expected_attendance_version: 1 }],
+  ["GET", "/admin/registrations/1/attendance-corrections"],
   [
     "PATCH",
     "/admin/registrations/1/status",
@@ -141,6 +144,8 @@ let base;
 let unconfiguredBase;
 
 checkInTests({ getBase: () => base, call, databaseUrl: DATABASE_URL,
+  admin: cookie(SESSIONS.admin), organizerId: `admin-${run}` });
+attendanceCorrectionTests({ getBase: () => base, call, databaseUrl: DATABASE_URL,
   admin: cookie(SESSIONS.admin), organizerId: `admin-${run}` });
 
 before(async () => {

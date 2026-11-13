@@ -183,6 +183,7 @@ export interface Registration {
   source: string;
   /** @nullable */
   confirmation_email_sent_at?: string | null;
+  attendance_version?: number;
   /**
      * When the participant checked in at the venue (FR-10); null until then.
      * @nullable
@@ -195,8 +196,45 @@ export interface CheckInResult {
   registration_id: number;
   event_id: string;
   checked_in_at: string;
+  attendance_version: number;
   /** Authenticated organizer user ID; provided by the server */
   checked_in_by: string;
+}
+
+export interface AttendanceCorrectionInput {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  reason: string;
+  /** @minimum 0 */
+  expected_attendance_version: number;
+}
+
+export interface AttendanceState {
+  registration_id: number;
+  event_id: string;
+  /** @nullable */
+  checked_in_at: string | null;
+  /** @nullable */
+  checked_in_by: string | null;
+  attendance_version: number;
+}
+
+export interface AttendanceCorrection {
+  id: number;
+  reason: string;
+  original_checked_in_at: string;
+  /** @nullable */
+  original_checked_in_by?: string | null;
+  corrected_by: string;
+  corrected_by_email: string;
+  corrected_at: string;
+  attendance_version: number;
+}
+
+export interface AttendanceCorrections {
+  corrections: AttendanceCorrection[];
 }
 
 export type StatusChangeInputStatus = typeof StatusChangeInputStatus[keyof typeof StatusChangeInputStatus];

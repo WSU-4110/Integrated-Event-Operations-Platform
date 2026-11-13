@@ -111,6 +111,7 @@ export const ListRegistrationsResponse = zod.object({
   "discord_verified_at": zod.coerce.date().nullish(),
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
+  "attendance_version": zod.number().optional(),
   "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
   "created_at": zod.coerce.date()
 })),
@@ -185,6 +186,7 @@ export const UpdateRegistrationResponse = zod.object({
   "discord_verified_at": zod.coerce.date().nullish(),
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
+  "attendance_version": zod.number().optional(),
   "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
   "created_at": zod.coerce.date()
 })
@@ -202,7 +204,57 @@ export const CheckInRegistrationResponse = zod.object({
   "registration_id": zod.number(),
   "event_id": zod.string(),
   "checked_in_at": zod.coerce.date(),
+  "attendance_version": zod.number(),
   "checked_in_by": zod.string().describe('Authenticated organizer user ID; provided by the server')
+})
+
+
+/**
+ * Organizer-only. Requires the displayed attendance version; refuses stale corrections. Clearing attendance and saving its reason, correcting organizer, time and original attendance are transactional.
+ * @summary Reverse a mistaken check-in with a required reason
+ */
+export const UndoCheckInParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const undoCheckInBodyReasonMax = 1000;
+
+export const undoCheckInBodyExpectedAttendanceVersionMin = 0;
+
+
+
+export const UndoCheckInBody = zod.object({
+  "reason": zod.string().min(1).max(undoCheckInBodyReasonMax),
+  "expected_attendance_version": zod.number().min(undoCheckInBodyExpectedAttendanceVersionMin)
+})
+
+export const UndoCheckInResponse = zod.object({
+  "registration_id": zod.number(),
+  "event_id": zod.string(),
+  "checked_in_at": zod.coerce.date().nullable(),
+  "checked_in_by": zod.string().nullable(),
+  "attendance_version": zod.number()
+})
+
+
+/**
+ * @summary Organizer-only attendance correction history
+ */
+export const GetAttendanceCorrectionsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetAttendanceCorrectionsResponse = zod.object({
+  "corrections": zod.array(zod.object({
+  "id": zod.number(),
+  "reason": zod.string(),
+  "original_checked_in_at": zod.coerce.date(),
+  "original_checked_in_by": zod.string().nullish(),
+  "corrected_by": zod.string(),
+  "corrected_by_email": zod.string(),
+  "corrected_at": zod.coerce.date(),
+  "attendance_version": zod.number()
+}))
 })
 
 
@@ -236,6 +288,7 @@ export const UpdateRegistrationStatusResponse = zod.object({
   "discord_verified_at": zod.coerce.date().nullish(),
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
+  "attendance_version": zod.number().optional(),
   "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
   "created_at": zod.coerce.date()
 })
