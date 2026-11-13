@@ -481,13 +481,15 @@ const PLACE_PRIZES = [
 const TRACK_PRIZES = [
   {
     track: "AWS track",
+    name: "Most Impactful AI Architecture on AWS",
     amount: "$500",
     perk: "AWS credits for every team member",
   },
   {
-    track: "FREE WILi track",
+    track: "FREE-WILi track",
+    name: "The Deep End Challenge",
     amount: "$250",
-    perk: "A FREE WILi OG and Accessory Kit for every team member",
+    perk: "A FREE-WILi OG and Accessory Kit for every team member. Runner-up team members get a FREE-WILi 2 T-shirt",
   },
 ];
 function Prizes() {
@@ -526,12 +528,13 @@ function Prizes() {
           ))}
         </div>
         <div className="mx-auto mt-4 grid max-w-3xl gap-4 sm:grid-cols-2">
-          {TRACK_PRIZES.map(({ track, amount, perk }) => (
+          {TRACK_PRIZES.map(({ track, name, amount, perk }) => (
             <div
               key={track}
               className="panel border-t-4 border-t-[#a78bfa] p-6"
             >
               <p className="eyebrow">{track}</p>
+              <p className="mt-2 font-semibold text-[#f7f4ed]">{name}</p>
               <p className="mt-3 font-mono text-3xl text-[#a78bfa]">
                 {amount}
                 <span className="ml-2 font-sans text-xs text-[#9ca3af]">
@@ -551,8 +554,8 @@ function Prizes() {
           </p>
           <p className="mt-2">
             Gift cards are per team and split evenly among teammates. Tracks
-            are optional, so build anything you want; a project can win a track
-            prize and a top-3 prize.
+            are optional, so build anything you want. Enter one track, both, or
+            neither; a project can win a track prize and a top-3 prize.
           </p>
         </div>
       </div>
