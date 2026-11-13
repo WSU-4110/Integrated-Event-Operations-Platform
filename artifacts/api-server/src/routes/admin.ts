@@ -169,7 +169,9 @@ router.post(
           and(
             forThisEvent,
             eq(registrationsTable.id, registrationId),
-            eq(registrationsTable.status, "approved"),
+            // Active access (pending or approved). Approval was replaced by
+            // Remove/Restore, so registrations stay "pending" (FR-04).
+            inArray(registrationsTable.status, ACTIVE_STATUSES),
             isNull(registrationsTable.checkedInAt),
           ),
         )
@@ -214,7 +216,7 @@ router.post(
           .status(409)
           .json({
             error:
-              "Check-in requires an approved registration. Reload to review the current status.",
+              "This participant was removed from the event, so they can't be checked in. Reload to review their access.",
           });
       }
     } catch (err: unknown) {
