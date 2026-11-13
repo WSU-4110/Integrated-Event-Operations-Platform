@@ -7,7 +7,7 @@ import {
 } from '../schema/index.js';
 import type { Database } from '../types.js';
 
-/** Results that count toward the rate limit and show in the organizer queue. */
+/** Results that count toward the rate limit and organizer queue. */
 export const FAILED_RESULTS: readonly VerificationResult[] = [
   'NO_MATCH',
   'INELIGIBLE',
@@ -23,13 +23,13 @@ export interface VerificationAttemptRepository {
     registrationId?: number | null;
   }): Promise<void>;
 
-  /** Failures in the last windowMs, using the database clock. */
+  /** Number of failures in the most recent window. */
   countRecentFailures(
     discordUserId: string,
     windowMs: number,
   ): Promise<number>;
 
-  /** Whether the user is still within a 15-minute lockout. */
+  /** Whether a 15-minute lockout is currently active. */
   isLockedOut(
     discordUserId: string,
     windowMs: number,
@@ -37,7 +37,7 @@ export interface VerificationAttemptRepository {
 
   resolveForUser(discordUserId: string): Promise<void>;
 
-  /** The latest unresolved failure per user, newest first. */
+  /** Latest unresolved failure per user, newest first. */
   listUnresolved(limit: number): Promise<VerificationAttempt[]>;
 }
 
@@ -69,8 +69,16 @@ export function createVerificationAttemptRepository(
     },
 
     async isLockedOut(discordUserId, windowMs) {
-      // Look back two windows to find the fifth failure
-      // that could have triggered an active lockout.
+      // Use the database clock for both stored timestamps
+      // and the current time.
+      const [clock] = await db.select({
+        now: sql<Date>`now()`,
+      });
+
+      const now = new Date(clock?.now ?? Date.now()).getTime();
+
+      // Only failures within the last two windows can
+      // contribute to a lockout that is still active.
       const windowStart = sql`now() - make_interval(secs => ${(windowMs * 2) / 1000})`;
 
       const recent = await db
@@ -83,24 +91,42 @@ export function createVerificationAttemptRepository(
             gte(a.createdAt, windowStart),
           ),
         )
-        .orderBy(desc(a.createdAt));
+        .orderBy(a.createdAt);
 
-      // Find any five failures within one 15-minute window.
-      // A lockout lasts 15 minutes after the fifth failure.
-      const now = Date.now();
+      // Find the earliest group of five failures occurring
+      // within the configured failure window.
+      //
+      // The fifth failure starts a 15-minute lockout.
+      // Failures during that lockout must not restart it.
+      let index = 0;
 
-      for (let i = 4; i < recent.length; i++) {
-        const fifthFailure = recent[i - 4].createdAt.getTime();
-        const firstFailure = recent[i].createdAt.getTime();
+      while (index + 4 < recent.length) {
+        const first = recent[index].createdAt.getTime();
 
-        const failuresWithinWindow =
-          fifthFailure - firstFailure <= windowMs;
+        let fifthIndex = index + 4;
 
-        const lockoutStillActive =
-          now - fifthFailure < windowMs;
+        while (
+          fifthIndex < recent.length &&
+          recent[fifthIndex].createdAt.getTime() - first > windowMs
+        ) {
+          index++;
+          if (index + 4 >= recent.length) return false;
+          fifthIndex = index + 4;
+        }
 
-        if (failuresWithinWindow && lockoutStillActive) {
+        const fifth = recent[fifthIndex].createdAt.getTime();
+        const expiresAt = fifth + windowMs;
+
+        if (now < expiresAt) {
           return true;
+        }
+
+        // Skip failures that happened during the expired lockout.
+        while (
+          index < recent.length &&
+          recent[index].createdAt.getTime() < expiresAt
+        ) {
+          index++;
         }
       }
 
