@@ -1,3 +1,4 @@
+
 {
   "version": "7",
   "dialect": "postgresql",
@@ -42,6 +43,13 @@
       "version": "7",
       "when": 1794421114457,
       "tag": "0005_check_in",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794441600000,
+      "tag": "0006_event_schedule",
       "breakpoints": true
     }
   ]
