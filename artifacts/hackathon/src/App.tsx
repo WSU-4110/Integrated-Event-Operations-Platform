@@ -2009,7 +2009,7 @@ function Admin() {
             ["Checked in", statsData?.checked_in ?? "—"],
             [
               "Looking for a team",
-              statsData ? (statsData.by_team_status?.looking ?? 0) : "—",
+              statsData?.looking_for_team ?? "—",
             ],
           ].map(([l, v], i) => (
             <div className="panel p-5" key={l as string}>
@@ -2187,10 +2187,35 @@ function Admin() {
                       />
                     </td>
                     <td role="cell" data-label="Team" className="p-2 text-[#9ca3af]">
-                      {r.team_status
-                        ? (TEAM_LABELS[r.team_status] ?? r.team_status)
-                        : "—"}
-                      {r.team_name ? ` · ${r.team_name}` : ""}
+                      {r.discord_team ? (
+                        // Their actual team from the Discord bot's /team.
+                        <div data-testid={`text-discord-team-${r.id}`}>
+                          <span className="text-[#e7e5df]">
+                            {r.discord_team.name}
+                          </span>
+                          <span className="block text-xs text-[#a78bfa]">
+                            On Discord · {r.discord_team.member_count}{" "}
+                            {r.discord_team.member_count === 1
+                              ? "member"
+                              : "members"}
+                          </span>
+                          {r.team_status && r.team_status !== "has_team" && (
+                            <span className="block text-xs text-[#7d848e]">
+                              Registered as{" "}
+                              {(
+                                TEAM_LABELS[r.team_status] ?? r.team_status
+                              ).toLowerCase()}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {r.team_status
+                            ? (TEAM_LABELS[r.team_status] ?? r.team_status)
+                            : "—"}
+                          {r.team_name ? ` · ${r.team_name}` : ""}
+                        </>
+                      )}
                     </td>
                     <td role="cell" data-label="Access" className="p-2">
                       <AccessControl

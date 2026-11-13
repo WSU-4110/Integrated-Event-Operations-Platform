@@ -760,3 +760,83 @@ describe("NFR-05 availability status", () => {
     assert.equal((await call(withoutDb, "GET", "/healthz")).status, 200);
   });
 });
+
+describe("Discord /team teams on the dashboard", () => {
+  const admin = cookie(SESSIONS.admin);
+  const TEAM_NAME = `Night Owls ${run}`;
+  const LOOKING_EMAIL = `looking-${run}@wayne.edu`;
+  const get = async (path) =>
+    JSON.parse((await call(base, "GET", path, null, admin)).text);
+  const find = async (email, query = "") =>
+    get(
+      `/admin/registrations?search=${encodeURIComponent(email)}${query ? `&${query}` : ""}`,
+    );
+
+  test("without the bot's team tables, teams fall back to the registration answer", async () => {
+    const list = await find(PARTICIPANT_EMAIL);
+    assert.equal(list.registrations[0].discord_team, null);
+    // The participant registered as solo; the filter still works.
+    assert.equal((await find(PARTICIPANT_EMAIL, "team_status=solo")).total, 1);
+    assert.equal(typeof (await get("/admin/stats")).looking_for_team, "number");
+  });
+
+  test("a /team team shows on the dashboard and counts as having a team", async () => {
+    const res = await call(base, "POST", "/registrations", {
+      name: "Looking Person",
+      email: LOOKING_EMAIL,
+      school: "Wayne State",
+      class_standing: "freshman",
+      experience_level: "beginner",
+      discord_username: "looking.person",
+      team_status: "looking",
+    });
+    assert.equal(res.status, 201);
+    const lookingId = JSON.parse(res.text).id;
+    const lookingBefore = (await get("/admin/stats")).looking_for_team;
+
+    const client = new pg.Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    try {
+      // Same shape as the bot's teams migration (Discord-Bot branch).
+      await client.query(`create table if not exists discord_bot.teams (
+        id serial primary key, name text not null, owner_link_id integer not null)`);
+      await client.query(`create table if not exists discord_bot.team_members (
+        id serial primary key, team_id integer not null,
+        participant_link_id integer not null unique)`);
+      const owner = await client.query(
+        "select l.id from discord_bot.participant_links l join registrations r on r.id = l.registration_id where r.email = $1",
+        [PARTICIPANT_EMAIL],
+      );
+      const member = await client.query(
+        "insert into discord_bot.participant_links (discord_user_id, registration_id) values ($1, $2) returning id",
+        [`discord-looking-${run}`, lookingId],
+      );
+      const team = await client.query(
+        "insert into discord_bot.teams (name, owner_link_id) values ($1, $2) returning id",
+        [TEAM_NAME, owner.rows[0].id],
+      );
+      for (const linkId of [owner.rows[0].id, member.rows[0].id]) {
+        await client.query(
+          "insert into discord_bot.team_members (team_id, participant_link_id) values ($1, $2)",
+          [team.rows[0].id, linkId],
+        );
+      }
+    } finally {
+      await client.end();
+    }
+
+    const looking = (await find(LOOKING_EMAIL)).registrations[0];
+    assert.deepEqual(looking.discord_team, { name: TEAM_NAME, member_count: 2 });
+    assert.equal(looking.team_status, "looking", "the registration answer is kept");
+
+    // Joining a team on Discord counts as having a team.
+    assert.equal((await find(LOOKING_EMAIL, "team_status=has_team")).total, 1);
+    assert.equal((await find(LOOKING_EMAIL, "team_status=looking")).total, 0);
+    assert.equal((await find(PARTICIPANT_EMAIL, "team_status=solo")).total, 0);
+    assert.equal((await get("/admin/stats")).looking_for_team, lookingBefore - 1);
+
+    const csv = (await call(base, "GET", "/admin/export", null, admin)).text;
+    assert.ok(csv.split("\n")[0].includes("discord_team"));
+    assert.ok(csv.includes(TEAM_NAME));
+  });
+});

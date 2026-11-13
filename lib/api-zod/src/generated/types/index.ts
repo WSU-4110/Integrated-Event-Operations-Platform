@@ -15,6 +15,7 @@ export * from './apiError';
 export * from './authUser';
 export * from './checkInResult';
 export * from './checkRegistrationParams';
+export * from './discordTeam';
 export * from './healthStatus';
 export * from './listRegistrationsAccess';
 export * from './listRegistrationsCheckIn';
