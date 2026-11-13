@@ -116,6 +116,7 @@ const ADMIN_REQUESTS = [
     },
   ],
   ["POST", "/admin/registrations/1/resend-confirmation"],
+  ["POST", "/admin/registrations/1/verification-code"],
   ["DELETE", "/admin/registrations/1"],
 ];
 
@@ -758,5 +759,117 @@ describe("NFR-05 availability status", () => {
     assert.equal(body.database, "unavailable");
     assert.equal(body.discordLinkStore, "unknown");
     assert.equal((await call(withoutDb, "GET", "/healthz")).status, 200);
+  });
+});
+
+describe("FR-05 verification codes", () => {
+  const admin = cookie(SESSIONS.admin);
+  const CODE_EMAIL = `code-${run}@wayne.edu`;
+  let id;
+
+  const dbRows = async (sql, params = []) => {
+    const client = new pg.Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    try {
+      return (await client.query(sql, params)).rows;
+    } finally {
+      await client.end();
+    }
+  };
+  const codes = () =>
+    dbRows(
+      "select * from verification_codes where registration_id = $1 order by id",
+      [id],
+    );
+  const issue = () =>
+    call(base, "POST", `/admin/registrations/${id}/verification-code`, null, admin);
+
+  before(async () => {
+    const res = await call(base, "POST", "/registrations", {
+      name: "Code Person",
+      email: CODE_EMAIL,
+      school: "Wayne State",
+      class_standing: "junior",
+      experience_level: "beginner",
+      discord_username: "codeperson",
+      team_status: "solo",
+    });
+    assert.equal(res.status, 201);
+    id = JSON.parse(res.text).id;
+  });
+
+  test("a code is stored hashed, expires within 24 hours, and is never returned", async () => {
+    const res = await issue();
+    assert.equal(res.status, 200);
+    // Tests run without RESEND_API_KEY, so the email fails: still recorded.
+    assert.deepEqual(JSON.parse(res.text), { email_sent: false });
+    const [row] = await codes();
+    assert.match(row.code_hash, /^[0-9a-f]{64}$/);
+    assert.ok(row.email_failed_at, "the failed email is recorded");
+    assert.equal(row.email_sent_at, null);
+    const ms = row.expires_at.getTime() - Date.now();
+    assert.ok(ms > 0 && ms <= 24 * 60 * 60 * 1000);
+  });
+
+  test("a replacement invalidates the earlier unused code", async () => {
+    assert.equal((await issue()).status, 200);
+    const rows = await codes();
+    assert.equal(rows.length, 2);
+    assert.ok(rows[0].invalidated_at, "the first code was invalidated");
+    assert.equal(rows[1].invalidated_at, null);
+    const unused = rows.filter((r) => !r.used_at && !r.invalidated_at);
+    assert.equal(unused.length, 1, "only one unused code at a time");
+  });
+
+  test("the database refuses a second unused code", async () => {
+    await assert.rejects(
+      dbRows(
+        "insert into verification_codes (registration_id, code_hash, expires_at) values ($1, 'x', now())",
+        [id],
+      ),
+      /verification_codes_one_unused_idx/,
+    );
+  });
+
+  test("the dashboard shows the code status, not the code", async () => {
+    const res = await call(
+      base,
+      "GET",
+      `/admin/registrations?search=${encodeURIComponent(CODE_EMAIL)}`,
+      null,
+      admin,
+    );
+    const registration = JSON.parse(res.text).registrations[0];
+    assert.equal(registration.verification_code_status, "email_failed");
+    assert.ok(!res.text.includes("code_hash"));
+  });
+
+  test("removing someone invalidates their code and blocks new ones", async () => {
+    const removed = await call(
+      base,
+      "PATCH",
+      `/admin/registrations/${id}/status`,
+      { status: "declined", expected_status: "pending" },
+      admin,
+    );
+    assert.equal(removed.status, 200);
+    const unused = (await codes()).filter(
+      (r) => !r.used_at && !r.invalidated_at,
+    );
+    assert.equal(unused.length, 0);
+    const refused = await issue();
+    assert.equal(refused.status, 409);
+    assert.equal((await codes()).length, 2, "no code was created");
+  });
+
+  test("an unknown registration gets a 404", async () => {
+    const res = await call(
+      base,
+      "POST",
+      "/admin/registrations/999999999/verification-code",
+      null,
+      admin,
+    );
+    assert.equal(res.status, 404);
   });
 });
