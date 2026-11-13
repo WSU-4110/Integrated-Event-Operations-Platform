@@ -252,6 +252,62 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /admin/registrations/{id}/check-in:
+    post:
+      operationId: checkInRegistration
+      tags: [admin]
+      summary: Check in an approved participant
+      description: Requires organizer authentication. Saves the database time and authenticated organizer ID for an approved registration in this event. Refuses unapproved or already checked-in records and ignores client-supplied attendance metadata. Duplicate requests never overwrite the first check-in. Reload attendance after any uncertain response.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Attendance saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckInResult"
+        "400":
+          description: Invalid registration ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Not an authorized organizer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Registration not found in this event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Registration is not approved or is already checked in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: Check-in could not be confirmed; reload before retrying
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /admin/registrations/{id}/status:
     patch:
       operationId: updateRegistrationStatus
@@ -553,6 +609,21 @@ components:
         created_at:
           type: string
           format: date-time
+
+    CheckInResult:
+      type: object
+      required: [registration_id, event_id, checked_in_at, checked_in_by]
+      properties:
+        registration_id:
+          type: number
+        event_id:
+          type: string
+        checked_in_at:
+          type: string
+          format: date-time
+        checked_in_by:
+          type: string
+          description: Authenticated organizer user ID; provided by the server
 
     StatusChangeInput:
       type: object

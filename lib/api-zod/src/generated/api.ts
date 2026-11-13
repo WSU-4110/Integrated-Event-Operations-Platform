@@ -191,6 +191,22 @@ export const UpdateRegistrationResponse = zod.object({
 
 
 /**
+ * Requires organizer authentication. Saves the database time and authenticated organizer ID for an approved registration in this event. Refuses unapproved or already checked-in records and ignores client-supplied attendance metadata. Duplicate requests never overwrite the first check-in. Reload attendance after any uncertain response.
+ * @summary Check in an approved participant
+ */
+export const CheckInRegistrationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CheckInRegistrationResponse = zod.object({
+  "registration_id": zod.number(),
+  "event_id": zod.string(),
+  "checked_in_at": zod.coerce.date(),
+  "checked_in_by": zod.string().describe('Authenticated organizer user ID; provided by the server')
+})
+
+
+/**
  * Sets status to "declined" (remove; the Discord bot then removes the participant role) or "pending" (restore), if allowed and the registration still has expected_status. Records the change in its history. Requires organizer authentication.
  * @summary Remove a registration from the event, or restore it
  */

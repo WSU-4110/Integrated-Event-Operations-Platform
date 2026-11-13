@@ -191,6 +191,14 @@ export interface Registration {
   created_at: string;
 }
 
+export interface CheckInResult {
+  registration_id: number;
+  event_id: string;
+  checked_in_at: string;
+  /** Authenticated organizer user ID; provided by the server */
+  checked_in_by: string;
+}
+
 export type StatusChangeInputStatus = typeof StatusChangeInputStatus[keyof typeof StatusChangeInputStatus];
 
 
