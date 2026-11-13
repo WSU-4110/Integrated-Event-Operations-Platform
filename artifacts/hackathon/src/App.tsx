@@ -1483,7 +1483,7 @@ function CheckInControl({ registration, onChanged }: {
     onError: async (err) => {
       const status = getApiErrorStatus(err);
       setError(status === 409
-        ? "Attendance or approval changed. Review the refreshed record before trying again."
+        ? "Attendance or access changed. Review the refreshed record before trying again."
         : status === 401 || status === 403
           ? "Your organizer session has ended. Sign in again."
           : "Check-in could not be confirmed. Review the refreshed attendance before trying again.");
@@ -1498,19 +1498,19 @@ function CheckInControl({ registration, onChanged }: {
       </time>
     </div>
   );
-  if (registration.status !== "approved") return (
+  if (!isActiveStatus(registration.status)) return (
     <span className="text-xs text-[#9ca3af]" data-testid={`status-check-in-${registration.id}`}>
-      Check-in requires approval
+      Removed · can't check in
     </span>
   );
   return (
     <div className="min-w-0 space-y-1">
-      <span className="block text-xs text-[#9ca3af]">Approved · not checked in</span>
+      <span className="block text-xs text-[#9ca3af]">Not checked in</span>
       <button type="button" disabled={checkIn.isPending}
         className="inline-flex min-h-[34px] items-center gap-2 rounded-md border border-[#38573f] px-3 py-1.5 text-xs font-semibold text-[#b8e5c0] disabled:opacity-50"
         data-testid={`button-check-in-${registration.id}`}
         onClick={() => {
-          if (!window.confirm(`Check in ${registration.name}?\n\nApproval: approved.\nAttendance: not checked in.\nThis records their arrival at BuilderWars.`)) return;
+          if (!window.confirm(`Check in ${registration.name}?\n\nThis records their arrival at BuilderWars.`)) return;
           setError("");
           checkIn.mutate({ id: registration.id });
         }}>
