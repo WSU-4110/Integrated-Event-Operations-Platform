@@ -114,6 +114,7 @@ paths:
         - name: team_status
           in: query
           required: false
+          description: "has_team, looking, or solo. When the Discord bot's team records can be read, someone on a /team team counts as has_team, even if they registered as looking or solo."
           schema:
             type: string
         - name: access
@@ -606,6 +607,11 @@ components:
           type: ["string", "null"]
           format: date-time
           description: "When the participant checked in at the venue (FR-10); null until then."
+        discord_team:
+          description: "The team this person is on in the Discord bot (/team); null if none or if the bot's records can't be read."
+          oneOf:
+            - $ref: "#/components/schemas/DiscordTeam"
+            - type: "null"
         created_at:
           type: string
           format: date-time
@@ -686,7 +692,7 @@ components:
 
     AdminStats:
       type: object
-      required: [total, by_experience_level, by_team_status, by_status, discord_verified, checked_in]
+      required: [total, by_experience_level, by_team_status, by_status, discord_verified, checked_in, looking_for_team]
       properties:
         total:
           type: number
@@ -708,6 +714,18 @@ components:
         checked_in:
           type: number
           description: "Registrations checked in at the venue."
+        looking_for_team:
+          type: number
+          description: "Active registrations that said they're looking for a team and aren't on a Discord /team team yet (registration answer only, if the bot's records can't be read)."
+
+    DiscordTeam:
+      type: object
+      required: [name, member_count]
+      properties:
+        name:
+          type: string
+        member_count:
+          type: number
 
     AuthUser:
       type: object

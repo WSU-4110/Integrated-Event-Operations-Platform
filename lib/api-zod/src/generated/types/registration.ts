@@ -5,6 +5,7 @@
  * Hackathon website API
  * OpenAPI spec version: 0.1.0
  */
+import type { DiscordTeam } from './discordTeam';
 import type { RegistrationDiscordStatus } from './registrationDiscordStatus';
 
 export interface Registration {
@@ -36,5 +37,7 @@ export interface Registration {
      * @nullable
      */
   checked_in_at?: Date | null;
+  /** The team this person is on in the Discord bot (/team); null if none or if the bot's records can't be read. */
+  discord_team?: DiscordTeam | null;
   created_at: Date;
 }
