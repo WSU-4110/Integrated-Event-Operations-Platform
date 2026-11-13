@@ -10,6 +10,7 @@ import {
   isNull,
   not,
   or,
+  sql,
   type SQL,
 } from "drizzle-orm";
 import {
@@ -147,6 +148,86 @@ function toApi(r: Registration, links: DiscordLinks) {
 }
 
 const forThisEvent = eq(registrationsTable.eventId, EVENT_ID);
+
+// FR-10: authoritative attendance lives on the website's event registration.
+// The conditional write locks/rechecks the row and saves both fields together.
+// Do not call optional integrations after saving and turn a saved check-in
+// into a misleading error if Discord happens to be unavailable.
+router.post(
+  "/admin/registrations/:id/check-in",
+  async (req, res): Promise<void> => {
+    const registrationId = parseId(req.params.id);
+    if (!registrationId || registrationId > 2_147_483_647) {
+      res.status(400).json({ error: "A valid registration ID is required." });
+      return;
+    }
+    try {
+      const [checkedIn] = await db
+        .update(registrationsTable)
+        .set({ checkedInAt: sql`clock_timestamp()`, checkedInBy: req.user!.id })
+        .where(
+          and(
+            forThisEvent,
+            eq(registrationsTable.id, registrationId),
+            eq(registrationsTable.status, "approved"),
+            isNull(registrationsTable.checkedInAt),
+          ),
+        )
+        .returning();
+      if (checkedIn) {
+        req.log.info(
+          {
+            registrationId,
+            eventId: checkedIn.eventId,
+            organizerId: req.user!.id,
+          },
+          "Participant checked in",
+        );
+        res.json({
+          registration_id: checkedIn.id,
+          event_id: checkedIn.eventId,
+          checked_in_at: checkedIn.checkedInAt,
+          checked_in_by: checkedIn.checkedInBy,
+        });
+        return;
+      }
+      const [current] = await db
+        .select({
+          status: registrationsTable.status,
+          checkedInAt: registrationsTable.checkedInAt,
+        })
+        .from(registrationsTable)
+        .where(and(forThisEvent, eq(registrationsTable.id, registrationId)));
+      if (!current) {
+        res
+          .status(404)
+          .json({ error: "Registration not found for this event." });
+      } else if (current.checkedInAt) {
+        res
+          .status(409)
+          .json({
+            error:
+              "This participant is already checked in. Reload attendance to see the saved time.",
+          });
+      } else {
+        res
+          .status(409)
+          .json({
+            error:
+              "Check-in requires an approved registration. Reload to review the current status.",
+          });
+      }
+    } catch (err: unknown) {
+      req.log.error({ err, registrationId }, "Check-in could not be confirmed");
+      res
+        .status(500)
+        .json({
+          error:
+            "Check-in could not be confirmed. Reload attendance before trying again.",
+        });
+    }
+  },
+);
 
 router.get("/admin/registrations", async (req, res): Promise<void> => {
   const parsed = ListRegistrationsQueryParams.safeParse(req.query);

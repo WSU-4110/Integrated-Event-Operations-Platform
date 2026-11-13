@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { checkInTests } from "./checkIn.mjs";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 if (!DATABASE_URL) {
@@ -94,6 +95,7 @@ const ADMIN_REQUESTS = [
   ["PUT", "/admin/event-content/1"],
   ["DELETE", "/admin/event-content/1"],
   ["GET", "/admin/registrations/1/history"],
+  ["POST", "/admin/registrations/1/check-in"],
   [
     "PATCH",
     "/admin/registrations/1/status",
@@ -137,6 +139,9 @@ function assertNoParticipantData(text) {
 
 let base;
 let unconfiguredBase;
+
+checkInTests({ getBase: () => base, call, databaseUrl: DATABASE_URL,
+  admin: cookie(SESSIONS.admin), organizerId: `admin-${run}` });
 
 before(async () => {
   base = await startServer(18_400 + Math.floor(Math.random() * 500), {
