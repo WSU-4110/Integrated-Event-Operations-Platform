@@ -856,11 +856,32 @@ function csvCell(value: string | number | Date | null | undefined): string {
   return str;
 }
 
+
 router.get("/admin/export", async (_req, res): Promise<void> => {
+  // FR-16: Filter exported participants by attendance.
+  const checkInFilter = _req.query.check_in;
+
+  if (
+    checkInFilter !== undefined &&
+    checkInFilter !== "checked_in" &&
+    checkInFilter !== "not_checked_in"
+  ) {
+    res.status(400).json({ error: "Invalid attendance filter" });
+    return;
+  }
+
+  const conditions: SQL[] = [forThisEvent];
+
+  if (checkInFilter === "checked_in") {
+    conditions.push(isNotNull(registrationsTable.checkedInAt));
+  } else if (checkInFilter === "not_checked_in") {
+    conditions.push(isNull(registrationsTable.checkedInAt));
+  }
+
   const registrations = await db
     .select()
     .from(registrationsTable)
-    .where(forThisEvent)
+    .where(and(...conditions))
     .orderBy(registrationsTable.createdAt);
 
   const columns = [
@@ -879,6 +900,7 @@ router.get("/admin/export", async (_req, res): Promise<void> => {
     "discord_verified_at",
     "source",
     "confirmation_email_sent_at",
+    "checked_in_at",
     "created_at",
   ] as const;
   
