@@ -1,4 +1,11 @@
+/** Longest allowed user message. */
 export const MAX_MESSAGE_CHARS = 500;
+/**
+ * Longest allowed earlier chatbot reply sent back as history. Replies are
+ * longer than a user message, so they get a higher cap; a limit of
+ * MAX_MESSAGE_CHARS would reject the whole conversation after any long answer.
+ */
+export const MAX_ASSISTANT_CHARS = 4000;
 export const MAX_HISTORY = 10;
 
 export type ChatMessage = {
@@ -16,7 +23,8 @@ export type ValidationResult =
  * Rules:
  * - must be an array with 1 to MAX_HISTORY messages
  * - each message has role "user" or "assistant" and a string content
- * - each content has 1 to MAX_MESSAGE_CHARS characters (not blank)
+ * - each content is not blank, at most MAX_MESSAGE_CHARS characters for a user
+ *   message and at most MAX_ASSISTANT_CHARS for an assistant message
  * - the conversation starts and ends with a "user" message
  *
  * Pure function: no I/O, so it is easy to unit test.
@@ -51,10 +59,11 @@ export function validateMessages(input: unknown): ValidationResult {
     if (content.trim().length === 0) {
       return { ok: false, error: "content must not be empty." };
     }
-    if (content.length > MAX_MESSAGE_CHARS) {
+    const maxChars = role === "user" ? MAX_MESSAGE_CHARS : MAX_ASSISTANT_CHARS;
+    if (content.length > maxChars) {
       return {
         ok: false,
-        error: `content must be at most ${MAX_MESSAGE_CHARS} characters.`,
+        error: `content must be at most ${maxChars} characters.`,
       };
     }
     messages.push({ role, content });

@@ -35,6 +35,7 @@ Stored in GitHub (Settings → Secrets and variables → Actions) and passed to 
 | `ADMIN_EMAILS` | Secret | Comma-separated admin emails (#20) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Secrets | Google sign-in (#20) |
 | `RESEND_API_KEY` | Secret | Email sending (#1, #6) |
+| `ANTHROPIC_API_KEY` | Secret | AI provider key for the FAQ chatbot (#84) |
 | `DEPLOY_ENABLED` | Variable | `true` once the steps below are done |
 | `RESEND_FROM_EMAIL` | Variable | For example `BuilderWars <hello@builderwars.dev>` |
 | `CANONICAL_HOST` | Variable | `builderwars.dev`. Every other hostname is redirected there. Leave unset until the domain points at the service, or the default Lightsail URL will redirect to a domain that doesn't resolve yet. |

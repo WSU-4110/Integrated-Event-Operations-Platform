@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  MAX_ASSISTANT_CHARS,
   MAX_HISTORY,
   MAX_MESSAGE_CHARS,
   validateMessages,
@@ -23,6 +24,23 @@ test("content length boundaries: 0, 1, max, and max + 1 characters", () => {
   assert.equal(validateMessages([user("a")]).ok, true);
   assert.equal(validateMessages([user("a".repeat(MAX_MESSAGE_CHARS))]).ok, true);
   assert.equal(validateMessages([user("a".repeat(MAX_MESSAGE_CHARS + 1))]).ok, false);
+});
+
+test("assistant replies may be longer than user messages (boundaries: max and max + 1)", () => {
+  const longReply = (length) => bot("a".repeat(length));
+  // A reply well over the 500-character user limit must not break the next question.
+  assert.equal(
+    validateMessages([user("hi"), longReply(MAX_MESSAGE_CHARS + 1), user("more?")]).ok,
+    true,
+  );
+  assert.equal(
+    validateMessages([user("hi"), longReply(MAX_ASSISTANT_CHARS), user("more?")]).ok,
+    true,
+  );
+  assert.equal(
+    validateMessages([user("hi"), longReply(MAX_ASSISTANT_CHARS + 1), user("more?")]).ok,
+    false,
+  );
 });
 
 test("history size boundaries: 1, max, and max + 1 messages", () => {
