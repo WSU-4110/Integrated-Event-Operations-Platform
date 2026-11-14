@@ -63,6 +63,16 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Keep the information packet at a fixed URL so links in emails,
+        // Discord, and Shipyard keep working when the PDF is updated.
+        assetFileNames: (assetInfo) =>
+          assetInfo.names.includes('BuilderWars_Information_Packet.pdf')
+            ? 'assets/[name][extname]'
+            : 'assets/[name]-[hash][extname]',
+      },
+    },
   },
   server: {
     port,

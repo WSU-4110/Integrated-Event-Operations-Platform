@@ -40,6 +40,7 @@ The event is Saturday–Sunday, November 14–15, 2026. Sprint-2 ends November 1
 | [#22](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/22) | [NFR-03] Usability for Participants and Organizers |
 | [#24](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/24) | [NFR-05] Availability During Event Operations |
 | [#25](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/25) | [NFR-06] Performance Under Expected Event Load |
+| [#84](https://github.com/WSU-4110/Integrated-Event-Operations-Platform/issues/84) | [FR-20] Answer Event Questions with the FAQ Chatbot |
 
 ### Sprint-3
 

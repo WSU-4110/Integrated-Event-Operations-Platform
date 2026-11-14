@@ -28,7 +28,7 @@ export function attendanceCorrectionTests({
     const person = async () =>
       (
         await client.query(
-          "insert into registrations(name,email,school,class_standing,experience_level,status) values('Correction Participant',$1,'Test University','junior','beginner','approved') returning id",
+          "insert into registrations(name,email,school,class_standing,experience_level,status) values('Correction Participant',$1,'Test University','junior','beginner','pending') returning id",
           [`correction-${run}-${n++}@example.edu`],
         )
       ).rows[0].id;

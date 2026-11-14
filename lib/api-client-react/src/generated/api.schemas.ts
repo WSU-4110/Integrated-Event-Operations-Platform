@@ -159,6 +159,11 @@ export const RegistrationDiscordStatus = {
   unknown: 'unknown',
 } as const;
 
+export interface DiscordTeam {
+  name: string;
+  member_count: number;
+}
+
 export interface Registration {
   id: number;
   name: string;
@@ -189,6 +194,8 @@ export interface Registration {
      * @nullable
      */
   checked_in_at?: string | null;
+  /** The team this person is on in the Discord bot (/team); null if none or if the bot's records can't be read. */
+  discord_team?: DiscordTeam | null;
   created_at: string;
 }
 
@@ -292,6 +299,8 @@ export interface AdminStats {
   discord_verified: number | null;
   /** Registrations checked in at the venue. */
   checked_in: number;
+  /** Active registrations that said they're looking for a team and aren't on a Discord /team team yet (registration answer only, if the bot's records can't be read). */
+  looking_for_team: number;
 }
 
 export interface AuthUser {
@@ -314,6 +323,9 @@ email: string;
 export type ListRegistrationsParams = {
 search?: string;
 experience_level?: string;
+/**
+ * has_team, looking, or solo. When the Discord bot's team records can be read, someone on a /team team counts as has_team, even if they registered as looking or solo.
+ */
 team_status?: string;
 /**
  * active (pending or approved) or removed (declined or waitlisted)

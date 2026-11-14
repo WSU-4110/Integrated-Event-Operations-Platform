@@ -25,8 +25,9 @@ export function checkInTests({
         await client.end();
       }
     });
+    // New registrations are "pending"; approval no longer exists (FR-04).
     const participant = async (
-      status = "approved",
+      status = "pending",
       event = "builderwars-2026",
     ) => {
       const email = `checkin-${run}-${sequence++}@example.edu`;
@@ -95,8 +96,15 @@ export function checkInTests({
         if (total) assert.ok(list.registrations[0].checked_in_at);
       }
     });
-    test("refuses pending, waitlisted and declined without recording attendance", async () => {
-      for (const status of ["pending", "waitlisted", "declined"]) {
+    test("checks in any active registration, pending or approved", async () => {
+      for (const status of ["pending", "approved"]) {
+        const p = await participant(status);
+        assert.equal((await check(p.id)).status, 200, status);
+        assert.ok((await saved(p.id)).checked_in_at, status);
+      }
+    });
+    test("refuses removed (waitlisted and declined) without recording attendance", async () => {
+      for (const status of ["waitlisted", "declined"]) {
         const p = await participant(status);
         assert.equal((await check(p.id)).status, 409);
         const row = await saved(p.id);
@@ -178,7 +186,7 @@ export function checkInTests({
           getBase(),
           "PATCH",
           `/admin/registrations/${p.id}/status`,
-          { status: "declined", expected_status: "approved" },
+          { status: "declined", expected_status: p.status },
           admin,
         ),
       ]);
