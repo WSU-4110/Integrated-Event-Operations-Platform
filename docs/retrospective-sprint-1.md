@@ -33,7 +33,7 @@ This is a proposed action plan. The named owners and estimates below need team a
 | Action | Proposed owner | When | Completion evidence |
 |---|---|---|---|
 | Establish shared task ownership and daily progress tracking. | Mohammad Altiwainy | At Sprint 2 planning, then each working day | Every member has a task with acceptance criteria and an hour estimate. Teams contains stand-up updates, the workbook records daily hours remaining, and each member can explain their own progress. |
-| Fix and verify the admin table’s layout and scrolling behavior. | Tajwar Khan | Before the next Sprint 2 review or demonstration | A PR shows the table using the available desktop width and keeping headers visible while scrolling. Arian records checks with long records and at desktop and mobile sizes. |
+| Fix and verify the admin table’s layout and scrolling behavior. | Arian Azad | Before the next Sprint 2 review or demonstration | A PR shows the table using the available desktop width and keeping headers visible while scrolling. Arian records checks with long records and at desktop and mobile sizes. |
 
 ## 4. Staff and Class Feedback and Our Response
 
