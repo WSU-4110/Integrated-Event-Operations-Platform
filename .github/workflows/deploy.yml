@@ -111,6 +111,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           RESEND_FROM_EMAIL: ${{ vars.RESEND_FROM_EMAIL }}
           CANONICAL_HOST: ${{ vars.CANONICAL_HOST }}
         run: |
@@ -121,7 +122,7 @@ jobs:
               environment: (env | with_entries(select(.key | IN(
                 "DATABASE_URL", "ADMIN_EMAILS", "GOOGLE_CLIENT_ID",
                 "GOOGLE_CLIENT_SECRET", "RESEND_API_KEY", "RESEND_FROM_EMAIL",
-                "CANONICAL_HOST"
+                "CANONICAL_HOST", "ANTHROPIC_API_KEY"
               )) | select(.value != "")))
             }
           }' > containers.json

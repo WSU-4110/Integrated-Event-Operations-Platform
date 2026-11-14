@@ -1,0 +1,244 @@
+BUILDERWARS PARTICIPANT GUIDE
+AWS Student Builder Group at Wayne State University
+
+Everything you need for the first BuilderWars Hackathon: schedule, prizes and tracks, judging, rules, and getting there.
+
+Dates: Nov 14-15, 2026. 24 hours of building. 1-4 people per team. $2,500+ in prizes.
+Venue: Newlab Detroit, 1st Floor, 2050 15th St, Detroit, MI.
+Website: builderwars.dev. Email: awssbg@wayne.edu.
+
+== START HERE: BEFORE YOU ARRIVE ==
+
+Do these tonight:
+- Verify on Discord. Join the BuilderWars Discord and run /verify. Announcements during the event happen there.
+- Find a team (optional). Use /team in #looking-for-team, or come to Team Matchmaking at noon on Saturday. Solo teams are allowed.
+- Join BuilderWars on Shipyard, where you'll submit your project: shipyardhq.tech/hackathons/builderwars
+- Skim the rules (see the Rules section). Your code has to be written during the 24 hours.
+
+What to bring:
+- Laptop and charger (plus a phone charger)
+- Your student ID
+- Any hardware you plan to build with
+- Staying overnight? A sleeping bag or blanket, pillow, toiletries, and a change of clothes
+- A water bottle and any medication you need
+
+Leave at home:
+- Weapons of any kind, alcohol, or drugs
+- Drones, and pets (service animals are welcome)
+
+Doors lock at 8:00 PM Saturday. You can leave anytime, but no one can enter between 8:00 PM and 7:00 AM. If you're staying overnight, be inside by 8:00 PM.
+
+What is BuilderWars?
+A hackathon is a building sprint. You and up to three teammates pick a problem, build a working prototype in 24 hours, and demo it to judges. You don't need to be a CS major or have done this before. Mentors from AWS and FREE-WILi are on site the whole time, and most people here are doing their first hackathon.
+Your goal: find a real problem, build something that solves it, and show it working. A small project that works beats a big one that doesn't.
+
+Who's hosting:
+BuilderWars is run by the AWS Student Builder Group at Wayne State University, a student-led club of 300+ members that runs hands-on cloud workshops, open-source projects, AWS certification study groups, and networking events. Learn more at wayneaws.dev.
+
+== SCHEDULE ==
+All times Eastern. Meals include dietary accommodations. Changes are posted in Discord #announcements.
+
+SATURDAY, NOVEMBER 14
+- 10:00-11:30 AM: Check-in & breakfast. Every team member must check in at the BuilderWars table.
+- 11:30 AM-12:00 PM: Opening ceremony. Welcome, rules, tracks, and a quick Shipyard walkthrough.
+- 12:00 PM: Hacking begins.
+- 12:00-1:00 PM: Team matchmaking. Meet teammates or confirm your team.
+- 1:00-2:00 PM: Lunch.
+- 2:00-3:00 PM: AWS Workshop: Build a Strands Agent on AWS. Gift card raffle.
+- 3:30-4:30 PM: FREE-WILi Workshop: Getting the most out of FREE-WILi. Gift card raffle. Recommended for the Deep End Challenge.
+- 5:00-6:00 PM: AWS Demo: Run Remote Agents on EC2.
+- 7:30 PM: Dinner.
+- 8:00 PM: Doors lock. No new entry until 7:00 AM. Anyone already inside can stay overnight.
+- Evening: Game night. Prizes up for grabs. Time announced in Discord.
+
+SUNDAY, NOVEMBER 15
+- 7:00 AM: Doors reopen.
+- 8:30 AM: Breakfast.
+- 11:00 AM-12:00 PM: Last hour of hacking. Polish, practice your demo, and submit early.
+- 12:00 PM: Hacking ends. Shipyard submission deadline. Late submissions are not accepted.
+- 12:00-12:30 PM: Lunch.
+- 12:30-2:30 PM: Judging. Table demos for three judging panels, plus track judging (see the Judging section).
+- 2:30-3:00 PM: Closing ceremony & awards.
+- 3:00 PM: Event ends.
+
+== WORKSHOPS ==
+Workshops are optional. Every workshop has a gift card raffle, so it's worth stepping away from the keyboard.
+
+Saturday 2:00-3:00 PM, AWS: Build a Strands Agent on AWS.
+A hands-on workshop led by AWS. You'll build an AI agent with the open-source Strands Agents SDK and run it on AWS. Useful for anyone entering the AWS track. Bring your laptop. Workshop guide: catalog.workshops.aws
+
+Saturday 3:30-4:30 PM, FREE-WILi: Getting the most out of FREE-WILi.
+An overview of the basics of working with the FREE-WILi unit, and the best ways to use it in your project. Especially helpful if you're taking on the Deep End Challenge.
+
+Saturday 5:00-6:00 PM, AWS: Run Remote Agents on EC2 (live demo).
+A live demo from AWS: launching an EC2 instance, setting up a Strands agent on it, and using that agent in your own workflow.
+
+Food & fuel:
+All meals, snacks, and drinks are free, with dietary accommodations: breakfast, lunch, and dinner Saturday, then breakfast and lunch Sunday. Plus 360 cans of Red Bull, Little Caesars pizza (donated through The District Detroit Opportunity Center), Mochi Co donuts and boba, Wing Snob, Cedarland Bakery, and Pit Stop Eatery.
+
+== PRIZES & TRACKS ==
+$2,500+ in prizes. Every project automatically competes for the top 3. Tracks are optional extras on top of that.
+
+Top 3 prizes (Amazon gift cards):
+- 1st place: $1,000
+- 2nd place: $500
+- 3rd place: $250
+
+AWS Track: Most Impactful AI Architecture on AWS
+- Prize: $500 Amazon gift card plus AWS credits for every team member.
+- AWS is investing heavily in AI, but it's a cloud provider first. Build an architecture that uses AI creatively to make a larger app more capable, where that app solves a real, substantial problem you've identified.
+- Judged by AWS representatives.
+
+FREE-WILi Track: The Deep End Challenge
+- Prize: $250 Amazon gift card plus a FREE-WILi OG and Accessory Kit for every team member.
+- Runner-up: a FREE-WILi 2 T-shirt for every team member.
+- Use embedded development to create a practical solution to a problem using the FREE-WILi OG unit. Learn the unit at the FREE-WILi workshop (Saturday 3:30 PM).
+- Judged by FREE-WILi representatives.
+
+How tracks work:
+- Tracks are optional. Build anything you want.
+- You can enter one track, both tracks, or none. Choose them in your Shipyard submission.
+- Entering a track never takes you out of the running for the top 3. One project can win a track prize and a top-3 prize.
+- Gift cards are per team and split evenly among teammates.
+- More ways to win: gift card raffles at the workshops and prizes at game night.
+
+== THEMES (YOUR CHOICE) ==
+Need an idea? Start with one of these themes, or ignore them completely. Ideas are limitless.
+- Technology & emerging tech: Generative AI, Cloud & DevOps, Cybersecurity, Internet of Things, Web3 & Blockchain, AR / VR
+- Industry solutions: FinTech, HealthTech, EdTech, Logistics, E-Commerce
+- Tech for good & social impact: Sustainability, Civic Tech, Accessibility, Disaster Relief
+- Gaming & productivity: Game Development, Future of Work
+- Open innovation: No constraints. Build whatever you want.
+Themes are only for inspiration and aren't judged separately. If you aren't entering a track, Shipyard asks for your project's general theme.
+
+== RULES ==
+Timing:
+- Building happens only during the 24 hours, from 12:00 PM Saturday to 12:00 PM Sunday.
+- Submit on Shipyard by 12:00 PM Sunday. Late submissions are not accepted.
+
+Eligibility & teams:
+- You must be a currently enrolled college or university student.
+- Teams have 1 to 4 members. Each person is on one team.
+- Every team member must check in on Saturday.
+- Each team submits one project.
+
+Fresh code only:
+- All code and assets must be created during the 24 hours. Brainstorming ideas beforehand is fine; writing the code beforehand is not.
+- Projects from earlier hackathons, classes, or past work aren't allowed.
+- Free and open-source frameworks, libraries, APIs, and cloud services are allowed and encouraged.
+
+AI tools:
+- AI assistants are allowed for code completion, code generation, images, and more.
+- List every AI tool you used in your Shipyard submission, and be ready to talk openly about how you used it with judges, organizers, and other participants.
+
+Be a good teammate:
+- Treat everyone with respect. Harassment, discrimination, or intimidation of any kind isn't tolerated.
+- Follow directions from organizers and Newlab / Michigan Central staff.
+- Respect the venue (see the Safety & venue rules section).
+
+Breaking these rules can lead to disqualification or removal from the event. If something makes you uncomfortable, tell any organizer or call (313) 603-8950.
+
+== JUDGING ==
+Judging is a live, in-person demo at your table. Judges score projects right there, based on what they see working.
+
+The judges:
+- Top 3 prizes: a panel of university professors, software engineers, startup founders, and other industry professionals.
+- Tracks: representatives from AWS and FREE-WILi, who judge only their own track.
+
+Sunday, step by step:
+1. 12:00 PM: submissions close. Eat lunch, then set up your demo at your table.
+2. 12:30 PM, three rounds of table demos: teams are split into three groups and judges into three panels. Each round, every panel visits the tables in one group, one team at a time. Panels rotate after each round, so by the end your team has presented to all three panels. You get 5 minutes with each panel to present, demo, and answer questions.
+3. Track judging, between your turns: AWS and FREE-WILi judges visit the teams in their tracks while those teams wait for their next panel. If a main panel arrives, track judges step aside until it's done. Stay at your table until organizers release you.
+4. After the last round: judges meet to pick the winners.
+5. 2:30 PM: winners are announced at the closing ceremony.
+
+What judges look for (every project is scored on the same criteria, whatever the track or theme):
+1. Creativity: How original is the idea, and how clever is the approach?
+2. Completeness: How much of what you claim actually works? Judges score the live demo, not the slides.
+3. Practicality & impact: Would it really solve the problem? Is it a problem many people have?
+4. Technical complexity: How hard was it to build, and did you choose tools that fit together, not just buzzwords?
+
+Track judges also look at:
+- AWS track: Does AI add something real to a larger app that solves a substantial problem? Do your AWS services fit together naturally? Did you think about integrations and performance tradeoffs? Did you use modern tools creatively, or just name-drop them?
+- FREE-WILi track: How deeply and creatively does the project use the FREE-WILi unit? Does the hardware do real work in the project, not just appear in it?
+
+To be judged, you must:
+- Submit on Shipyard by 12:00 PM Sunday.
+- Have every team member checked in.
+- Be at your table with a working demo when your judges arrive.
+Judges' decisions are final. Organizers may disqualify projects that break the rules.
+
+== YOUR PITCH ==
+You give it three times, once per panel, and each turn is 5 minutes. Present in about 3 to 4 minutes to leave time for questions, and lead with the demo, not slides. Cover:
+1. The team. Who you are, your roles, and your experience coming in.
+2. The problem. The real-world issue you're solving and who has it.
+3. The demo. Show it working. Explain it simply, as if to someone with no background in your topic.
+4. How it's built. Your architecture and tech stack, including any AWS services or FREE-WILi features, and how it differs from what already exists.
+5. What you learned. The biggest hurdle you hit and how you got past it.
+
+== SUBMITTING ON SHIPYARD ==
+Shipyard is where you submit your project and where judges score it. We'll walk through it at the opening ceremony.
+
+What the submission asks for:
+- Project title: Your project's name.
+- Elevator pitch: One or two sentences: what it does and who it's for.
+- Project track: AWS, FREE-WILi, or both. Not entering a track? Choose Other and enter your general theme.
+- GitHub repository: Make sure judges can open it (public is easiest). Code should be committed during the 24 hours.
+- AI tools used: Every AI tool you used, or "None."
+- Demo video (optional): Not required, since judging is live. A 1-2 minute screen recording is a good backup if your live demo breaks, and it's great for your portfolio.
+
+Tip: commit to GitHub often. If your laptop dies Sunday morning, your work is safe.
+
+Steps:
+1. Sign up and join BuilderWars at shipyardhq.tech/hackathons/builderwars. Do it tonight or Saturday morning.
+2. Set up your team early so the final submission takes two minutes.
+3. Submit by 11:30 AM Sunday to leave time for problems. The hard deadline is 12:00 PM.
+
+== VENUE & PARKING ==
+Newlab Detroit, 1st Floor, 2050 15th St, Detroit, MI, on the Michigan Central campus in Corktown. Check-in starts at 10:00 AM Saturday. Everything happens on the 1st floor.
+
+Hours:
+- Sat 10:00 AM: doors open for check-in
+- Sat 8:00 PM: doors lock. You can leave, but you can't get back in until morning.
+- Sun 7:00 AM: doors reopen
+- Sun 3:00 PM: event ends
+
+Parking:
+- Garage, $10 event rate: LAZ Bagley Mobility Hub, 1501 Wabash St, a short walk to Newlab. BuilderWars rate of $10, no code needed: Sat 8:00 AM-8:00 PM, Sun 7:00 AM-1:00 PM.
+- Street parking, free: Nearby street parking around Newlab is free. Read the signs: some blocks have time limits or restrictions, and tickets and towing are enforced.
+
+== SAFETY & VENUE RULES ==
+In an emergency:
+Call Michigan Central Security (DSOC): (313) 222-4890. They're staffed 24/7, know the building, and send police, fire, or EMS directly. If you can't reach them, call 911. Then tell an organizer.
+Non-emergency security line: (313) 222-4879
+
+Alarms:
+- Evacuate: three-tone horn with flashing lights. Leave calmly by the nearest exit, go to the outdoor assembly area (not the entrance), and wait for the all clear.
+- Shelter in place: high-low tone. Follow the voice announcement.
+- All clear: steady tone followed by an announcement.
+
+Look after yourself:
+- Sleep a little, drink water, and step outside for air (you can leave anytime, but you can't come back in between 8 PM and 7 AM).
+- Keep your laptop and valuables with you. The venue isn't responsible for lost items; turn found items in to an organizer.
+
+Michigan Central venue rules:
+- Smoke-free campus: no smoking, vaping, or nicotine anywhere, inside or outside.
+- No alcohol, drugs, weapons, or open flames.
+- No tape, stickers, or anything stuck to walls, floors, or furniture.
+- No drones, inside or outside.
+- Only service animals.
+- Keep exits, walkways, and fire equipment clear, and run cords where no one will trip.
+- Stay in the BuilderWars area on the 1st floor.
+- Security may inspect bags.
+
+Contact us:
+Event director: Mohammad Altiwainy, (313) 603-8950, awssbg@wayne.edu.
+Fastest during the event: find any organizer, or post in the Discord.
+
+== THANK YOU ==
+Made possible by:
+- Gold sponsors: Amazon Web Services, FREE-WILi, WSU Engineering Student Senate, Newlab
+- Bronze sponsor: Ford
+- Fuel sponsors: Red Bull, Mochi Co, The District Detroit Opportunity Center, Cedarland Bakery, Wing Snob Dearborn, Pit Stop Eatery
+Organized by the AWS Student Builder Group at Wayne State University: Mohammad Altiwainy (Founder & Director), Tahmid Ambia (Vice President), Faiyaz Chowdhury (Secretary).
+builderwars.dev. Discord. Instagram @builderwars.hack
