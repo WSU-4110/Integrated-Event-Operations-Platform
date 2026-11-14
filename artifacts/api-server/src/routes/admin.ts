@@ -881,22 +881,47 @@ router.get("/admin/export", async (_req, res): Promise<void> => {
     "confirmation_email_sent_at",
     "created_at",
   ] as const;
+  
+  // FR-16: Allow organizers to select which fields to export.
+  // Only fields in the approved list can be exported.
+  const requestedFields =
+    typeof _req.query.fields === "string"
+      ? _req.query.fields.split(",").map((field) => field.trim())
+      : null;
+
+  if (requestedFields && (
+    requestedFields.length === 0 ||
+    requestedFields.some((field) => field === "") ||
+    requestedFields.some((field) => !columns.includes(field as typeof columns[number]))
+  )) {
+    res.status(400).json({ error: "Invalid CSV export fields" });
+    return;
+  }
+
+  const selectedColumns = requestedFields ?? [...columns];
+
   const ids = registrations.map((r) => r.id);
   const [links, teams] = await Promise.all([
     loadDiscordLinks(ids),
     loadDiscordTeams(ids),
   ]);
   const rows = registrations.map((r) => {
-    const api = { ...toApi(r, links, teams), discord_team: teams?.get(r.id)?.name };
-    return columns.map((column) => csvCell(api[column])).join(",");
-  });
+  const api = {
+    ...toApi(r, links, teams),
+    discord_team: teams?.get(r.id)?.name,
+  };
+
+  return selectedColumns
+    .map((column) => csvCell(api[column as keyof typeof api]))
+    .join(",");
+});
 
   res.setHeader("Content-Type", "text/csv");
   res.setHeader(
     "Content-Disposition",
     `attachment; filename="registrations-${new Date().toISOString().split("T")[0]}.csv"`,
   );
-  res.send([columns.join(","), ...rows].join("\n") + "\n");
+  res.send([selectedColumns.join(","), ...rows].join("\n") + "\n");
 });
 
 export default router;
