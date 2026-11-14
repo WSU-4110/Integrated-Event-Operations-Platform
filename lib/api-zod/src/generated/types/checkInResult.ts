@@ -10,6 +10,7 @@ export interface CheckInResult {
   registration_id: number;
   event_id: string;
   checked_in_at: Date;
+  attendance_version: number;
   /** Authenticated organizer user ID; provided by the server */
   checked_in_by: string;
 }

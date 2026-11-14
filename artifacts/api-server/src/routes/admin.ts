@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import {
   and,
+  desc,
   count,
   eq,
   exists,
@@ -15,6 +16,7 @@ import {
 } from "drizzle-orm";
 import {
   ACTIVE_STATUSES,
+  attendanceCorrectionsTable,
   db,
   discordParticipantLinksTable,
   discordTeamMembersTable,
@@ -32,6 +34,7 @@ import {
   ListRegistrationsQueryParams,
   UpdateRegistrationBody,
   UpdateRegistrationStatusBody,
+  UndoCheckInBody,
 } from "@workspace/api-zod";
 import { sendRegistrationConfirmation } from "../lib/registrationConfirmationEmail";
 import { organizerEventContent } from "./eventContent";
@@ -230,6 +233,7 @@ function toApi(
     source: r.source,
     confirmation_email_sent_at: r.confirmationEmailSentAt,
     checked_in_at: r.checkedInAt,
+    attendance_version: r.attendanceVersion,
     discord_team: team
       ? { name: team.name, member_count: team.memberCount }
       : null,
@@ -254,7 +258,8 @@ router.post(
     try {
       const [checkedIn] = await db
         .update(registrationsTable)
-        .set({ checkedInAt: sql`clock_timestamp()`, checkedInBy: req.user!.id })
+        .set({ checkedInAt: sql`clock_timestamp()`, checkedInBy: req.user!.id,
+          attendanceVersion: sql`${registrationsTable.attendanceVersion} + 1` })
         .where(
           and(
             forThisEvent,
@@ -280,6 +285,7 @@ router.post(
           event_id: checkedIn.eventId,
           checked_in_at: checkedIn.checkedInAt,
           checked_in_by: checkedIn.checkedInBy,
+          attendance_version: checkedIn.attendanceVersion,
         });
         return;
       }
@@ -299,7 +305,7 @@ router.post(
           .status(409)
           .json({
             error:
-              "This participant is already checked in. Reload attendance to see the saved time.",
+              `This participant is already checked in at ${current.checkedInAt.toISOString()}. Attendance was not changed.`,
           });
       } else {
         res
@@ -320,6 +326,58 @@ router.post(
     }
   },
 );
+
+router.post("/admin/registrations/:id/undo-check-in", async (req, res): Promise<void> => {
+  const id = parseId(req.params.id), parsed = UndoCheckInBody.safeParse(req.body);
+  if (!id || id > 2_147_483_647 || !parsed.success ||
+      !Number.isSafeInteger(parsed.data.expected_attendance_version) || parsed.data.expected_attendance_version < 0 || parsed.data.expected_attendance_version > 2_147_483_647 ||
+      !parsed.data.reason.trim() || parsed.data.reason.trim().length > 1000) {
+    res.status(400).json({ error: "Enter a reason (1–1000 characters) and reload the current attendance before correcting it." }); return;
+  }
+  try {
+    const result = await db.transaction(async tx => {
+      const [current] = await tx.select().from(registrationsTable)
+        .where(and(forThisEvent, eq(registrationsTable.id, id))).for("update");
+      if (!current) return { status: 404, error: "Registration not found for this event." } as const;
+      if (!current.checkedInAt || current.attendanceVersion !== parsed.data.expected_attendance_version)
+        return { status: 409, error: "Attendance changed or is no longer checked in. Reload before correcting it." } as const;
+      const version = current.attendanceVersion + 1;
+      await tx.update(registrationsTable).set({ checkedInAt: null, checkedInBy: null, attendanceVersion: version })
+        .where(eq(registrationsTable.id, id));
+      await tx.insert(attendanceCorrectionsTable).values({ registrationId: id, eventId: current.eventId,
+        reason: parsed.data.reason.trim(), originalCheckedInAt: current.checkedInAt,
+        originalCheckedInBy: current.checkedInBy, correctedBy: req.user!.id,
+        correctedByEmail: res.locals.adminEmail as string, attendanceVersion: version });
+      return { status: 200, data: { registration_id: id, event_id: current.eventId,
+        checked_in_at: null, checked_in_by: null, attendance_version: version } } as const;
+    });
+    if (result.status !== 200) { res.status(result.status).json({ error: result.error }); return; }
+    res.json(result.data);
+  } catch (err) {
+    req.log.error({ err, registrationId: id }, "Attendance correction could not be confirmed");
+    res.status(500).json({ error: "Correction could not be confirmed. Reload attendance before retrying; no partial correction was saved." });
+  }
+});
+
+router.get("/admin/registrations/:id/attendance-corrections", async (req, res): Promise<void> => {
+  const id = parseId(req.params.id);
+  if (!id || id > 2_147_483_647) { res.status(400).json({ error: "A valid registration ID is required." }); return; }
+  try {
+    const [registration] = await db.select({ id: registrationsTable.id }).from(registrationsTable)
+      .where(and(forThisEvent, eq(registrationsTable.id, id)));
+    if (!registration) { res.status(404).json({ error: "Registration not found for this event." }); return; }
+    const rows = await db.select().from(attendanceCorrectionsTable)
+      .where(and(eq(attendanceCorrectionsTable.registrationId, id), eq(attendanceCorrectionsTable.eventId, EVENT_ID)))
+      .orderBy(desc(attendanceCorrectionsTable.id));
+    res.json({ corrections: rows.map(r => ({ id: r.id, reason: r.reason,
+      original_checked_in_at: r.originalCheckedInAt, original_checked_in_by: r.originalCheckedInBy,
+      corrected_by: r.correctedBy, corrected_by_email: r.correctedByEmail, corrected_at: r.correctedAt,
+      attendance_version: r.attendanceVersion })) });
+  } catch (err) {
+    req.log.error({ err, registrationId: id }, "Attendance correction history unavailable");
+    res.status(500).json({ error: "Correction history could not be loaded. Please try again." });
+  }
+});
 
 router.get("/admin/registrations", async (req, res): Promise<void> => {
   const parsed = ListRegistrationsQueryParams.safeParse(req.query);

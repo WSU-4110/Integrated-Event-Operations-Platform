@@ -309,6 +309,117 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /admin/registrations/{id}/undo-check-in:
+    post:
+      operationId: undoCheckIn
+      tags: [admin]
+      summary: Reverse a mistaken check-in with a required reason
+      description: Organizer-only. Requires the displayed attendance version; refuses stale corrections. Clearing attendance and saving its reason, correcting organizer, time and original attendance are transactional.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendanceCorrectionInput"
+      responses:
+        "200":
+          description: Attendance reversed and correction saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceState"
+        "400":
+          description: Invalid reason or version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Organizer permission required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Registration not found in this event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Attendance changed; reload before correcting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: Correction could not be confirmed; reload before retrying
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/registrations/{id}/attendance-corrections:
+    get:
+      operationId: getAttendanceCorrections
+      tags: [admin]
+      summary: Organizer-only attendance correction history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Correction history, newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceCorrections"
+        "400":
+          description: Invalid registration ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Organizer permission required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Registration not found in this event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: History unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /admin/registrations/{id}/status:
     patch:
       operationId: updateRegistrationStatus
@@ -603,6 +714,8 @@ components:
         confirmation_email_sent_at:
           type: ["string", "null"]
           format: date-time
+        attendance_version:
+          type: number
         checked_in_at:
           type: ["string", "null"]
           format: date-time
@@ -618,7 +731,7 @@ components:
 
     CheckInResult:
       type: object
-      required: [registration_id, event_id, checked_in_at, checked_in_by]
+      required: [registration_id, event_id, checked_in_at, checked_in_by, attendance_version]
       properties:
         registration_id:
           type: number
@@ -627,9 +740,71 @@ components:
         checked_in_at:
           type: string
           format: date-time
+        attendance_version:
+          type: number
         checked_in_by:
           type: string
           description: Authenticated organizer user ID; provided by the server
+
+    AttendanceCorrectionInput:
+      type: object
+      required: [reason, expected_attendance_version]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        expected_attendance_version:
+          type: number
+          minimum: 0
+
+    AttendanceState:
+      type: object
+      required: [registration_id, event_id, checked_in_at, checked_in_by, attendance_version]
+      properties:
+        registration_id:
+          type: number
+        event_id:
+          type: string
+        checked_in_at:
+          type: ["string", "null"]
+          format: date-time
+        checked_in_by:
+          type: ["string", "null"]
+        attendance_version:
+          type: number
+
+    AttendanceCorrection:
+      type: object
+      required: [id, reason, original_checked_in_at, corrected_by, corrected_by_email, corrected_at, attendance_version]
+      properties:
+        id:
+          type: number
+        reason:
+          type: string
+        original_checked_in_at:
+          type: string
+          format: date-time
+        original_checked_in_by:
+          type: ["string", "null"]
+        corrected_by:
+          type: string
+        corrected_by_email:
+          type: string
+        corrected_at:
+          type: string
+          format: date-time
+        attendance_version:
+          type: number
+
+    AttendanceCorrections:
+      type: object
+      required: [corrections]
+      properties:
+        corrections:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceCorrection"
 
     StatusChangeInput:
       type: object

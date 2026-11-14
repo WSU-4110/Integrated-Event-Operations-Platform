@@ -76,6 +76,7 @@ export const registrationsTable = pgTable(
     // Arrival at the venue (FR-10). Empty until an organizer checks them in.
     checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
     checkedInBy: text("checked_in_by"),
+    attendanceVersion: integer("attendance_version").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
