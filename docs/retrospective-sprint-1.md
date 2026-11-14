@@ -134,9 +134,9 @@ The table is ordered by proposed priority and sized in person-hours. These are d
 | 5 | Implement Discord verification and participant role assignment; show successful linking and refused invalid verification attempts. | Tahmid Ambia | 16 |
 | 6 | Add an organizer Edit action beside Delete; validate participant changes, save them, and reject unauthorized requests. | Sammy Moussa | 12 |
 | 7 | Synchronize relevant participant edits with linked Discord information and roles after editing and verification are available; make failures visible and provide a recovery path. | Tahmid Ambia | 8 |
-| 8 | Implement event check-in with duplicate prevention and saved attendance records. | Sammy Moussa | 12 |
-| 9 | Complete a bounded participant hub with the event schedule, announcements, and clear post-registration guidance; remove or label unfinished controls and review readability. | Tajwar Khan | 14 |
-| 10 | Record acceptance tests for persistence after refresh and a new session, organizer access, registration failures, responsive layout, and readability; log defects and rehearse these flows for the demo. | Arian Azad | 14 |
+| 8 | Implement event check-in with duplicate prevention and saved attendance records. | Arian Azad | 10 |
+| 9 | Complete a bounded participant hub with the event schedule, announcements, and clear post-registration guidance; remove or label unfinished controls and review readability. | Tajwar Khan | 18 |
+| 10 | Record acceptance tests for persistence after refresh and a new session, organizer access, registration failures, responsive layout, and readability; log defects and rehearse these flows for the demo. | Sammy Moussa | 12 |
 | 11 | Investigate confirmation email delivery, document findings and any configuration changes, and retain the spam-folder notice and resend option while needed. | Mohammad Altiwainy | 8 |
 | | **Total proposed effort** | | **120** |
 
