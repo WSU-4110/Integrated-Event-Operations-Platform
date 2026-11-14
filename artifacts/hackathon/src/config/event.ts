@@ -28,7 +28,6 @@ export const SCHEDULE = [
   { time: "Sat · 1:00–2:00 PM", event: "Lunch", description: "Lunch is provided with dietary accommodations." },
   { time: "Sat · 2:00–3:00 PM", event: "AWS Workshop: Build a Strands Agent on AWS", description: "A hands-on workshop from Amazon Web Services, with a gift card raffle." },
   { time: "Sat · 3:30–4:30 PM", event: "FREE-WILi Workshop", description: "The basics of the FREE-WILi unit and how to get the most out of it, with a gift card raffle. Recommended for the Deep End Challenge." },
-  { time: "Sat · 5:00–6:00 PM", event: "AWS Demo: Run Remote Agents on EC2", description: "A live demo of launching an EC2 instance, setting up a Strands agent on it, and using it in your workflow." },
   { time: "Sat · 7:30 PM", event: "Dinner", description: "Dinner is provided with dietary accommodations." },
   { time: "Sat · 8:00 PM", event: "Doors Lock", description: "No new entry until 7:00 AM Sunday. Participants already inside can stay overnight." },
   { time: "Sun · 7:00 AM", event: "Doors Reopen", description: "Entry opens again for the final stretch." },
