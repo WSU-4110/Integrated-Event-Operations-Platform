@@ -127,9 +127,9 @@ The table is ordered by proposed priority and sized in person-hours. These are d
 
 | Priority | Task and acceptance criteria | Proposed owner | Starting estimate (hours) |
 |---|---|---|---:|
-| 1 | Prepare UML activity or sequence diagrams for participant editing and Discord verification, including actors, normal steps, and failure paths; check them with the feature owners before those features are implemented. | Arian Azad | 6 |
+| 1 | Prepare UML activity or sequence diagrams for participant editing and Discord verification, including actors, normal steps, and failure paths; check them with the feature owners before those features are implemented. | Tajwar Khan | 6 |
 | 2 | Send approval notices and verification codes for issue #6; check successful delivery, failed delivery, and the participant’s next step. | Mohammad Altiwainy | 16 |
-| 3 | Expand the admin table into the available desktop width, retain visible headers during vertical scrolling, and make long registration lists manageable; test long records and mobile access. | Tajwar Khan | 10 |
+| 3 | Expand the admin table into the available desktop width, retain visible headers during vertical scrolling, and make long registration lists manageable; test long records and mobile access. | Arian Azad | 10 |
 | 4 | Add red borders and specific written messages for missing required fields and invalid `.edu` emails; preserve valid entries and support keyboard correction. | Arian Azad | 4 |
 | 5 | Implement Discord verification and participant role assignment; show successful linking and refused invalid verification attempts. | Tahmid Ambia | 16 |
 | 6 | Add an organizer Edit action beside Delete; validate participant changes, save them, and reject unauthorized requests. | Sammy Moussa | 12 |
