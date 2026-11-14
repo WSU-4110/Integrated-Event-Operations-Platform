@@ -885,6 +885,8 @@ router.get("/admin/export", async (_req, res): Promise<void> => {
     .orderBy(registrationsTable.createdAt);
 
   const columns = [
+    "event_id",
+    "exported_at",
     "id",
     "name",
     "email",
@@ -927,14 +929,18 @@ router.get("/admin/export", async (_req, res): Promise<void> => {
     loadDiscordLinks(ids),
     loadDiscordTeams(ids),
   ]);
+  const exportedAt = new Date().toISOString();
+
   const rows = registrations.map((r) => {
-  const api = {
-    ...toApi(r, links, teams),
-    discord_team: teams?.get(r.id)?.name,
-  };
+    const api = {
+      ...toApi(r, links, teams),
+      event_id: EVENT_ID,
+      exported_at: exportedAt,
+      discord_team: teams?.get(r.id)?.name,
+    };
 
   return selectedColumns
-    .map((column) => csvCell(api[column as keyof typeof api]))
+    .map((column) => csvCell(api[column as (typeof columns)[number]]))
     .join(",");
 });
 
