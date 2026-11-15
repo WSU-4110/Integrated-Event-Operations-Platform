@@ -5,7 +5,7 @@ import {
   type VerificationAttempt,
   type VerificationResult,
 } from '../schema/index.js';
-import type { Database } from '../types.js';
+import { rowsOf, type Database } from '../types.js';
 
 /** Results that count toward the rate limit and organizer queue. */
 export const FAILED_RESULTS: readonly VerificationResult[] = [
@@ -71,9 +71,9 @@ export function createVerificationAttemptRepository(
     async isLockedOut(discordUserId, windowMs) {
       // Use the database clock for both stored timestamps
       // and the current time.
-      const [clock] = await db.select({
-        now: sql<Date>`now()`,
-      });
+      const [clock] = rowsOf<{ now: Date | string }>(
+        await db.execute(sql`select now() as now`),
+      );
 
       const now = new Date(clock?.now ?? Date.now()).getTime();
 
@@ -101,20 +101,16 @@ export function createVerificationAttemptRepository(
       let index = 0;
 
       while (index + 4 < recent.length) {
-        const first = recent[index].createdAt.getTime();
+        const first = recent[index]!.createdAt.getTime();
 
-        let fifthIndex = index + 4;
-
-        while (
-          fifthIndex < recent.length &&
-          recent[fifthIndex].createdAt.getTime() - first > windowMs
-        ) {
+        const fifth = recent[index + 4]!.createdAt.getTime();
+        if (fifth - first > windowMs) {
+          // Slide the whole window: retaining the old first timestamp can
+          // overlook a later group of five fresh failures.
           index++;
-          if (index + 4 >= recent.length) return false;
-          fifthIndex = index + 4;
+          continue;
         }
 
-        const fifth = recent[fifthIndex].createdAt.getTime();
         const expiresAt = fifth + windowMs;
 
         if (now < expiresAt) {
@@ -124,7 +120,7 @@ export function createVerificationAttemptRepository(
         // Skip failures that happened during the expired lockout.
         while (
           index < recent.length &&
-          recent[index].createdAt.getTime() < expiresAt
+          recent[index]!.createdAt.getTime() < expiresAt
         ) {
           index++;
         }
