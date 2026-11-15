@@ -1,14 +1,3 @@
-# Sprint 1 retrospective
+# Sprint 1 Retrospective
 
-- **Date:** _to fill in_
-- **Attendees:** _to fill in_
-
-## What went well
-
-## What didn't go well
-
-## What we'll change next sprint
-
-| Change | Owner |
-| --- | --- |
-| | |
+[Read the full Sprint 1 retrospective](../../retrospective-sprint-1.md)
