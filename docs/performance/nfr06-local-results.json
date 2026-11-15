@@ -1,0 +1,134 @@
+{
+  "requirement": "NFR-06",
+  "date": "2026-11-15T02:35:40.982Z",
+  "node": "v24.22.1",
+  "platform": "linux x64",
+  "cpus": 9,
+  "runtime_profile": {
+    "name": "local-baseline",
+    "cpu_affinity": "unrestricted",
+    "v8_heap_limit_mb": null,
+    "artifact_layout": "source build"
+  },
+  "records": 1000,
+  "concurrency": 100,
+  "rounds": 10,
+  "main_commit": "bdc7193",
+  "external_services": "Discord I/O simulated; email disabled",
+  "measurements": {
+    "event_hub_html": {
+      "requests": 1000,
+      "failures": 0,
+      "p95_ms": 152.84235399999943,
+      "max_ms": 395.11787899999945,
+      "limit_ms": 2000,
+      "passed": true
+    },
+    "published_content": {
+      "requests": 1000,
+      "failures": 0,
+      "p95_ms": 91.78863499999989,
+      "max_ms": 110.319614,
+      "limit_ms": 2000,
+      "passed": true
+    },
+    "participant_search": {
+      "requests": 1000,
+      "failures": 0,
+      "p95_ms": 300.01551500000005,
+      "max_ms": 319.1347449999994,
+      "limit_ms": 2000,
+      "passed": true,
+      "gate": "every response"
+    },
+    "dashboard_stats": {
+      "requests": 1000,
+      "failures": 0,
+      "p95_ms": 211.93833599999925,
+      "max_ms": 219.18513499999972,
+      "limit_ms": 2000,
+      "passed": true
+    },
+    "csv_export_1000": {
+      "requests": 1000,
+      "failures": 0,
+      "p95_ms": 1642.6489889999993,
+      "max_ms": 1842.3538389999994,
+      "limit_ms": 10000,
+      "passed": true,
+      "gate": "every response"
+    },
+    "all_api_responses": {
+      "requests": 4000,
+      "failures": 0,
+      "p95_ms": 1436.455145,
+      "max_ms": 1842.3538389999994,
+      "limit_ms": 2000,
+      "passed": true
+    }
+  },
+  "checks": {
+    "concurrent_duplicate_check_in": {
+      "passed": true,
+      "concurrent_requests": 200,
+      "successes": 1,
+      "conflicts": 199
+    },
+    "database_lock_timeout": {
+      "passed": true,
+      "status": 500,
+      "ms": 324.7995770000016,
+      "attendance_unchanged": true
+    },
+    "final_integrity": {
+      "passed": true,
+      "total": 1000,
+      "emails": 1000,
+      "arrivals": 1
+    }
+  },
+  "discord_verification": {
+    "passed": true,
+    "requests": 1000,
+    "failures": 0,
+    "p95_ms": 448.68419400000016,
+    "max_ms": 456.164575,
+    "limit_ms": 5000,
+    "gate": "every completed verification",
+    "source_sha": "8eb651d217f53682efdff301eab5e8220e47a648",
+    "database_role": "discord_bot_app",
+    "pool_connections": 10,
+    "discord_io": "SIMULATED successful calls, 25ms per operation; no live Discord request",
+    "includes": "actual modal handler, database lookup/link/audit, member fetch, role assignment, confirmation, organizer log",
+    "duplicate_requests": 200,
+    "role_grants": 1000,
+    "integrity": {
+      "total": 1000,
+      "registrations": 1000,
+      "accounts": 1000,
+      "active": 1000
+    }
+  },
+  "database": {
+    "version": "PostgreSQL 18.6 on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0, 64-bit",
+    "tls": false,
+    "certificate_validation": false
+  },
+  "browser": {
+    "passed": true,
+    "widths": [
+      1440,
+      390
+    ],
+    "javascript_errors": 0,
+    "csv_records": 1000,
+    "fixture_reset": true,
+    "external_oauth": "not exercised; login destination stubbed",
+    "scope": "published content, search, cancel, confirmed check-in persisted after reload, duplicate rejection, CSV download, signed-out protection"
+  },
+  "app_peak_rss_kb": 476708,
+  "website_passed": true,
+  "controlled_suite_passed": true,
+  "live_deployment_validated": false,
+  "full_nfr06_passed": false
+}
