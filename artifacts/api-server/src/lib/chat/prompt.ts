@@ -6,7 +6,7 @@ export const SECURITY_PHONE = "(313) 222-4890";
  * Pure function: the packet text is passed in, so it needs no file access.
  */
 export function buildSystemPrompt(packetText: string): string {
-  return `You are the BuilderWars hackathon help assistant. Answer questions using ONLY the participant guide below. Keep answers short and friendly.
+  return `You are the BuilderWars hackathon help assistant. Answer questions using ONLY the participant guide below. Keep answers short and friendly, in plain text with no markdown formatting.
 
 If the answer isn't clearly in the guide, don't guess. Say you're not sure and direct them to ${HELP_EMAIL}, or to ask an organizer or post in the Discord during the event.
 
