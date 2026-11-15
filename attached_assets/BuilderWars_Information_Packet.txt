@@ -46,7 +46,6 @@ SATURDAY, NOVEMBER 14
 - 1:00-2:00 PM: Lunch.
 - 2:00-3:00 PM: AWS Workshop: Build a Strands Agent on AWS. Gift card raffle.
 - 3:30-4:30 PM: FREE-WILi Workshop: Getting the most out of FREE-WILi. Gift card raffle. Recommended for the Deep End Challenge.
-- 5:00-6:00 PM: AWS Demo: Run Remote Agents on EC2.
 - 7:30 PM: Dinner.
 - 8:00 PM: Doors lock. No new entry until 7:00 AM. Anyone already inside can stay overnight.
 - Evening: Game night. Prizes up for grabs. Time announced in Discord.
@@ -69,9 +68,6 @@ A hands-on workshop led by AWS. You'll build an AI agent with the open-source St
 
 Saturday 3:30-4:30 PM, FREE-WILi: Getting the most out of FREE-WILi.
 An overview of the basics of working with the FREE-WILi unit, and the best ways to use it in your project. Especially helpful if you're taking on the Deep End Challenge.
-
-Saturday 5:00-6:00 PM, AWS: Run Remote Agents on EC2 (live demo).
-A live demo from AWS: launching an EC2 instance, setting up a Strands agent on it, and using that agent in your own workflow.
 
 Food & fuel:
 All meals, snacks, and drinks are free, with dietary accommodations: breakfast, lunch, and dinner Saturday, then breakfast and lunch Sunday. Plus 360 cans of Red Bull, Little Caesars pizza (donated through The District Detroit Opportunity Center), Mochi Co donuts and boba, Wing Snob, Cedarland Bakery, and Pit Stop Eatery.
