@@ -5,6 +5,7 @@
  * Hackathon website API
  * OpenAPI spec version: 0.1.0
  */
+import type { DiscordTeam } from './discordTeam';
 import type { RegistrationDiscordStatus } from './registrationDiscordStatus';
 import type { RegistrationVerificationCodeStatus } from './registrationVerificationCodeStatus';
 
@@ -34,10 +35,13 @@ export interface Registration {
   confirmation_email_sent_at?: Date | null;
   /** Latest Discord verification code: none = no usable code, email_failed = issued but the email didn't go out. */
   verification_code_status?: RegistrationVerificationCodeStatus;
+  attendance_version?: number;
   /**
      * When the participant checked in at the venue (FR-10); null until then.
      * @nullable
      */
   checked_in_at?: Date | null;
+  /** The team this person is on in the Discord bot (/team); null if none or if the bot's records can't be read. */
+  discord_team?: DiscordTeam | null;
   created_at: Date;
 }

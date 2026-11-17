@@ -11,12 +11,16 @@ import {
   isNull,
   not,
   or,
+  sql,
   type SQL,
 } from "drizzle-orm";
 import {
   ACTIVE_STATUSES,
+  attendanceCorrectionsTable,
   db,
   discordParticipantLinksTable,
+  discordTeamMembersTable,
+  discordTeamsTable,
   EVENT_ID,
   REMOVED_STATUSES,
   registrationStatusChangesTable,
@@ -31,6 +35,7 @@ import {
   ListRegistrationsQueryParams,
   UpdateRegistrationBody,
   UpdateRegistrationStatusBody,
+  UndoCheckInBody,
 } from "@workspace/api-zod";
 import { sendRegistrationConfirmation } from "../lib/registrationConfirmationEmail";
 import {
@@ -105,7 +110,8 @@ async function loadDiscordLinks(ids: number[]): Promise<DiscordLinks> {
         linkedAt: discordParticipantLinksTable.linkedAt,
       })
       .from(discordParticipantLinksTable)
-      .where(inArray(discordParticipantLinksTable.registrationId, ids));
+      // One bound array keeps bulk exports from building 1,000 SQL placeholders.
+      .where(sql`${discordParticipantLinksTable.registrationId} = ANY(${`{${ids.join(",")}}`}::integer[])`);
     return new Map(
       rows.map((row) => [
         row.registrationId,
@@ -116,6 +122,87 @@ async function loadDiscordLinks(ids: number[]): Promise<DiscordLinks> {
     if (isDiscordUnavailable(err)) return null;
     throw err;
   }
+}
+
+type DiscordTeamInfo = { name: string; memberCount: number };
+type DiscordTeams = Map<number, DiscordTeamInfo> | null;
+
+// The Discord bot's /team team for each of these registrations, keyed by
+// registration ID; null if the website can't read the bot's team tables.
+async function loadDiscordTeams(ids: number[]): Promise<DiscordTeams> {
+  if (ids.length === 0) return new Map();
+  try {
+    const rows = await db
+      .select({
+        registrationId: discordParticipantLinksTable.registrationId,
+        teamId: discordTeamsTable.id,
+        name: discordTeamsTable.name,
+      })
+      .from(discordTeamMembersTable)
+      .innerJoin(
+        discordParticipantLinksTable,
+        eq(
+          discordParticipantLinksTable.id,
+          discordTeamMembersTable.participantLinkId,
+        ),
+      )
+      .innerJoin(
+        discordTeamsTable,
+        eq(discordTeamsTable.id, discordTeamMembersTable.teamId),
+      )
+      // One bound array keeps bulk exports from building 1,000 SQL placeholders.
+      .where(sql`${discordParticipantLinksTable.registrationId} = ANY(${`{${ids.join(",")}}`}::integer[])`);
+    const teamIds = [...new Set(rows.map((row) => row.teamId))];
+    const sizes =
+      teamIds.length === 0
+        ? []
+        : await db
+            .select({
+              teamId: discordTeamMembersTable.teamId,
+              size: count(),
+            })
+            .from(discordTeamMembersTable)
+            .where(inArray(discordTeamMembersTable.teamId, teamIds))
+            .groupBy(discordTeamMembersTable.teamId);
+    const sizeOf = new Map(sizes.map((row) => [row.teamId, Number(row.size)]));
+    return new Map(
+      rows.map((row) => [
+        row.registrationId,
+        { name: row.name, memberCount: sizeOf.get(row.teamId) ?? 1 },
+      ]),
+    );
+  } catch (err) {
+    if (isDiscordUnavailable(err)) return null;
+    throw err;
+  }
+}
+
+// True when the registration is on a Discord /team team (SQL, for filters).
+const onDiscordTeam = () =>
+  exists(
+    db
+      .select({ one: discordTeamMembersTable.id })
+      .from(discordTeamMembersTable)
+      .innerJoin(
+        discordParticipantLinksTable,
+        eq(
+          discordParticipantLinksTable.id,
+          discordTeamMembersTable.participantLinkId,
+        ),
+      )
+      .where(
+        eq(discordParticipantLinksTable.registrationId, registrationsTable.id),
+      ),
+  );
+
+// The team filter. With the bot's records, joining a /team team counts as
+// having a team, whatever the person picked when they registered.
+function teamStatusCondition(teamStatus: string, useDiscordTeams: boolean): SQL {
+  const picked = eq(registrationsTable.teamStatus, teamStatus);
+  if (!useDiscordTeams) return picked;
+  return teamStatus === "has_team"
+    ? or(picked, onDiscordTeam())!
+    : and(picked, not(onDiscordTeam()))!;
 }
 
 function discordStatus(id: number, links: DiscordLinks) {
@@ -155,8 +242,14 @@ async function loadCodeStatuses(ids: number[]): Promise<CodeStatuses> {
   return statuses;
 }
 
-function toApi(r: Registration, links: DiscordLinks, codes: CodeStatuses) {
+function toApi(
+  r: Registration,
+  links: DiscordLinks,
+  teams: DiscordTeams = null,
+  codes: CodeStatuses = new Map(),
+) {
   const discord = discordStatus(r.id, links);
+  const team = teams?.get(r.id);
   return {
     id: r.id,
     name: r.name,
@@ -176,11 +269,151 @@ function toApi(r: Registration, links: DiscordLinks, codes: CodeStatuses) {
     confirmation_email_sent_at: r.confirmationEmailSentAt,
     verification_code_status: codes.get(r.id) ?? ("none" as const),
     checked_in_at: r.checkedInAt,
+    attendance_version: r.attendanceVersion,
+    discord_team: team
+      ? { name: team.name, member_count: team.memberCount }
+      : null,
     created_at: r.createdAt,
   };
 }
 
 const forThisEvent = eq(registrationsTable.eventId, EVENT_ID);
+
+// FR-10: authoritative attendance lives on the website's event registration.
+// The conditional write locks/rechecks the row and saves both fields together.
+// Do not call optional integrations after saving and turn a saved check-in
+// into a misleading error if Discord happens to be unavailable.
+router.post(
+  "/admin/registrations/:id/check-in",
+  async (req, res): Promise<void> => {
+    const registrationId = parseId(req.params.id);
+    if (!registrationId || registrationId > 2_147_483_647) {
+      res.status(400).json({ error: "A valid registration ID is required." });
+      return;
+    }
+    try {
+      const [checkedIn] = await db
+        .update(registrationsTable)
+        .set({ checkedInAt: sql`clock_timestamp()`, checkedInBy: req.user!.id,
+          attendanceVersion: sql`${registrationsTable.attendanceVersion} + 1` })
+        .where(
+          and(
+            forThisEvent,
+            eq(registrationsTable.id, registrationId),
+            // Active access (pending or approved). Approval was replaced by
+            // Remove/Restore, so registrations stay "pending" (FR-04).
+            inArray(registrationsTable.status, ACTIVE_STATUSES),
+            isNull(registrationsTable.checkedInAt),
+          ),
+        )
+        .returning();
+      if (checkedIn) {
+        req.log.info(
+          {
+            registrationId,
+            eventId: checkedIn.eventId,
+            organizerId: req.user!.id,
+          },
+          "Participant checked in",
+        );
+        res.json({
+          registration_id: checkedIn.id,
+          event_id: checkedIn.eventId,
+          checked_in_at: checkedIn.checkedInAt,
+          checked_in_by: checkedIn.checkedInBy,
+          attendance_version: checkedIn.attendanceVersion,
+        });
+        return;
+      }
+      const [current] = await db
+        .select({
+          status: registrationsTable.status,
+          checkedInAt: registrationsTable.checkedInAt,
+        })
+        .from(registrationsTable)
+        .where(and(forThisEvent, eq(registrationsTable.id, registrationId)));
+      if (!current) {
+        res
+          .status(404)
+          .json({ error: "Registration not found for this event." });
+      } else if (current.checkedInAt) {
+        res
+          .status(409)
+          .json({
+            error:
+              `This participant is already checked in at ${current.checkedInAt.toISOString()}. Attendance was not changed.`,
+          });
+      } else {
+        res
+          .status(409)
+          .json({
+            error:
+              "This participant was removed from the event, so they can't be checked in. Reload to review their access.",
+          });
+      }
+    } catch (err: unknown) {
+      req.log.error({ err, registrationId }, "Check-in could not be confirmed");
+      res
+        .status(500)
+        .json({
+          error:
+            "Check-in could not be confirmed. Reload attendance before trying again.",
+        });
+    }
+  },
+);
+
+router.post("/admin/registrations/:id/undo-check-in", async (req, res): Promise<void> => {
+  const id = parseId(req.params.id), parsed = UndoCheckInBody.safeParse(req.body);
+  if (!id || id > 2_147_483_647 || !parsed.success ||
+      !Number.isSafeInteger(parsed.data.expected_attendance_version) || parsed.data.expected_attendance_version < 0 || parsed.data.expected_attendance_version > 2_147_483_647 ||
+      !parsed.data.reason.trim() || parsed.data.reason.trim().length > 1000) {
+    res.status(400).json({ error: "Enter a reason (1–1000 characters) and reload the current attendance before correcting it." }); return;
+  }
+  try {
+    const result = await db.transaction(async tx => {
+      const [current] = await tx.select().from(registrationsTable)
+        .where(and(forThisEvent, eq(registrationsTable.id, id))).for("update");
+      if (!current) return { status: 404, error: "Registration not found for this event." } as const;
+      if (!current.checkedInAt || current.attendanceVersion !== parsed.data.expected_attendance_version)
+        return { status: 409, error: "Attendance changed or is no longer checked in. Reload before correcting it." } as const;
+      const version = current.attendanceVersion + 1;
+      await tx.update(registrationsTable).set({ checkedInAt: null, checkedInBy: null, attendanceVersion: version })
+        .where(eq(registrationsTable.id, id));
+      await tx.insert(attendanceCorrectionsTable).values({ registrationId: id, eventId: current.eventId,
+        reason: parsed.data.reason.trim(), originalCheckedInAt: current.checkedInAt,
+        originalCheckedInBy: current.checkedInBy, correctedBy: req.user!.id,
+        correctedByEmail: res.locals.adminEmail as string, attendanceVersion: version });
+      return { status: 200, data: { registration_id: id, event_id: current.eventId,
+        checked_in_at: null, checked_in_by: null, attendance_version: version } } as const;
+    });
+    if (result.status !== 200) { res.status(result.status).json({ error: result.error }); return; }
+    res.json(result.data);
+  } catch (err) {
+    req.log.error({ err, registrationId: id }, "Attendance correction could not be confirmed");
+    res.status(500).json({ error: "Correction could not be confirmed. Reload attendance before retrying; no partial correction was saved." });
+  }
+});
+
+router.get("/admin/registrations/:id/attendance-corrections", async (req, res): Promise<void> => {
+  const id = parseId(req.params.id);
+  if (!id || id > 2_147_483_647) { res.status(400).json({ error: "A valid registration ID is required." }); return; }
+  try {
+    const [registration] = await db.select({ id: registrationsTable.id }).from(registrationsTable)
+      .where(and(forThisEvent, eq(registrationsTable.id, id)));
+    if (!registration) { res.status(404).json({ error: "Registration not found for this event." }); return; }
+    const rows = await db.select().from(attendanceCorrectionsTable)
+      .where(and(eq(attendanceCorrectionsTable.registrationId, id), eq(attendanceCorrectionsTable.eventId, EVENT_ID)))
+      .orderBy(desc(attendanceCorrectionsTable.id));
+    res.json({ corrections: rows.map(r => ({ id: r.id, reason: r.reason,
+      original_checked_in_at: r.originalCheckedInAt, original_checked_in_by: r.originalCheckedInBy,
+      corrected_by: r.correctedBy, corrected_by_email: r.correctedByEmail, corrected_at: r.correctedAt,
+      attendance_version: r.attendanceVersion })) });
+  } catch (err) {
+    req.log.error({ err, registrationId: id }, "Attendance correction history unavailable");
+    res.status(500).json({ error: "Correction history could not be loaded. Please try again." });
+  }
+});
 
 router.get("/admin/registrations", async (req, res): Promise<void> => {
   const parsed = ListRegistrationsQueryParams.safeParse(req.query);
@@ -215,9 +448,6 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
   }
   if (experience_level) {
     conditions.push(eq(registrationsTable.experienceLevel, experience_level));
-  }
-  if (team_status) {
-    conditions.push(eq(registrationsTable.teamStatus, team_status));
   }
   if (class_standing) {
     conditions.push(eq(registrationsTable.classStanding, class_standing));
@@ -255,12 +485,14 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
       ),
     );
   }
-  const whereClause = and(...conditions);
-
-  let registrations: Registration[];
-  let totalResult: { count: number }[];
-  try {
-    [registrations, totalResult] = await Promise.all([
+  const runQuery = (useDiscordTeams: boolean) => {
+    const whereClause = and(
+      ...conditions,
+      ...(team_status
+        ? [teamStatusCondition(team_status, useDiscordTeams)]
+        : []),
+    );
+    return Promise.all([
       db
         .select()
         .from(registrationsTable)
@@ -270,6 +502,18 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
         .offset(offset),
       db.select({ count: count() }).from(registrationsTable).where(whereClause),
     ]);
+  };
+
+  let registrations: Registration[];
+  let totalResult: { count: number }[];
+  try {
+    try {
+      [registrations, totalResult] = await runQuery(true);
+    } catch (err) {
+      // Without the bot's team tables, filter on the registration answer.
+      if (!team_status || discord || !isDiscordUnavailable(err)) throw err;
+      [registrations, totalResult] = await runQuery(false);
+    }
   } catch (err) {
     if (discord && isDiscordUnavailable(err)) {
       res.status(503).json({
@@ -282,10 +526,13 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
   }
 
   const ids = registrations.map((r) => r.id);
-  const links = await loadDiscordLinks(ids);
-  const codes = await loadCodeStatuses(ids);
+  const [links, teams, codes] = await Promise.all([
+    loadDiscordLinks(ids),
+    loadDiscordTeams(ids),
+    loadCodeStatuses(ids),
+  ]);
   res.json({
-    registrations: registrations.map((r) => toApi(r, links, codes)),
+    registrations: registrations.map((r) => toApi(r, links, teams, codes)),
     total: Number(totalResult[0]?.count ?? 0),
   });
 });
@@ -429,6 +676,7 @@ router.patch("/admin/registrations/:id", async (req, res): Promise<void> => {
       toApi(
         updated,
         await loadDiscordLinks([updated.id]),
+        await loadDiscordTeams([updated.id]),
         await loadCodeStatuses([updated.id]),
       ),
     );
@@ -513,6 +761,7 @@ router.patch(
         toApi(
           updated,
           await loadDiscordLinks([updated.id]),
+          await loadDiscordTeams([updated.id]),
           await loadCodeStatuses([updated.id]),
         ),
       );
@@ -693,6 +942,28 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
     discordVerified = null;
   }
 
+  // Active registrations still looking: they said "looking" and aren't on a
+  // Discord /team team (just their registration answer if the bot's team
+  // records can't be read).
+  const lookingFor = (useDiscordTeams: boolean) =>
+    db
+      .select({ count: count() })
+      .from(registrationsTable)
+      .where(
+        and(
+          forThisEvent,
+          inArray(registrationsTable.status, ACTIVE_STATUSES),
+          teamStatusCondition("looking", useDiscordTeams),
+        ),
+      );
+  let lookingRows: { count: number }[];
+  try {
+    lookingRows = await lookingFor(true);
+  } catch (err) {
+    if (!isDiscordUnavailable(err)) throw err;
+    lookingRows = await lookingFor(false);
+  }
+
   const tally = (rows: { key: string | null; count: number }[]) =>
     Object.fromEntries(
       rows.map((row) => [row.key ?? "unknown", Number(row.count)]),
@@ -705,6 +976,7 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
     by_status: tally(byStatus),
     discord_verified: discordVerified,
     checked_in: Number(checkedIn[0]?.count ?? 0),
+    looking_for_team: Number(lookingRows[0]?.count ?? 0),
   });
 });
 
@@ -739,6 +1011,7 @@ router.get("/admin/export", async (_req, res): Promise<void> => {
     "discord_username",
     "team_status",
     "team_name",
+    "discord_team",
     "status",
     "discord_status",
     "discord_verified_at",
@@ -746,9 +1019,13 @@ router.get("/admin/export", async (_req, res): Promise<void> => {
     "confirmation_email_sent_at",
     "created_at",
   ] as const;
-  const links = await loadDiscordLinks(registrations.map((r) => r.id));
+  const ids = registrations.map((r) => r.id);
+  const [links, teams] = await Promise.all([
+    loadDiscordLinks(ids),
+    loadDiscordTeams(ids),
+  ]);
   const rows = registrations.map((r) => {
-    const api = toApi(r, links, new Map()); // code status isn't exported
+    const api = { ...toApi(r, links, teams), discord_team: teams?.get(r.id)?.name };
     return columns.map((column) => csvCell(api[column])).join(",");
   });
 

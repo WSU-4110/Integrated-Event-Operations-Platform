@@ -84,7 +84,7 @@ export const listRegistrationsQueryOffsetDefault = 0;
 export const ListRegistrationsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "experience_level": zod.coerce.string().optional(),
-  "team_status": zod.coerce.string().optional(),
+  "team_status": zod.coerce.string().optional().describe('has_team, looking, or solo. When the Discord bot\'s team records can be read, someone on a \/team team counts as has_team, even if they registered as looking or solo.'),
   "access": zod.enum(['active', 'removed']).optional().describe('active (pending or approved) or removed (declined or waitlisted)'),
   "class_standing": zod.enum(['freshman', 'sophomore', 'junior', 'senior', 'graduate']).optional(),
   "discord": zod.enum(['verified', 'not_verified']).optional().describe('verified or not_verified, from the Discord bot\'s records'),
@@ -112,7 +112,12 @@ export const ListRegistrationsResponse = zod.object({
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
   "verification_code_status": zod.enum(['none', 'sent', 'email_failed', 'used', 'expired']).optional().describe('Latest Discord verification code: none = no usable code, email_failed = issued but the email didn\'t go out.'),
+  "attendance_version": zod.number().optional(),
   "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
+  "discord_team": zod.union([zod.object({
+  "name": zod.string(),
+  "member_count": zod.number()
+}),zod.null()]).optional().describe('The team this person is on in the Discord bot (\/team); null if none or if the bot\'s records can\'t be read.'),
   "created_at": zod.coerce.date()
 })),
   "total": zod.number()
@@ -187,8 +192,79 @@ export const UpdateRegistrationResponse = zod.object({
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
   "verification_code_status": zod.enum(['none', 'sent', 'email_failed', 'used', 'expired']).optional().describe('Latest Discord verification code: none = no usable code, email_failed = issued but the email didn\'t go out.'),
+  "attendance_version": zod.number().optional(),
   "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
+  "discord_team": zod.union([zod.object({
+  "name": zod.string(),
+  "member_count": zod.number()
+}),zod.null()]).optional().describe('The team this person is on in the Discord bot (\/team); null if none or if the bot\'s records can\'t be read.'),
   "created_at": zod.coerce.date()
+})
+
+
+/**
+ * Requires organizer authentication. Saves the database time and authenticated organizer ID for an approved registration in this event. Refuses unapproved or already checked-in records and ignores client-supplied attendance metadata. Duplicate requests never overwrite the first check-in. Reload attendance after any uncertain response.
+ * @summary Check in an approved participant
+ */
+export const CheckInRegistrationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CheckInRegistrationResponse = zod.object({
+  "registration_id": zod.number(),
+  "event_id": zod.string(),
+  "checked_in_at": zod.coerce.date(),
+  "attendance_version": zod.number(),
+  "checked_in_by": zod.string().describe('Authenticated organizer user ID; provided by the server')
+})
+
+
+/**
+ * Organizer-only. Requires the displayed attendance version; refuses stale corrections. Clearing attendance and saving its reason, correcting organizer, time and original attendance are transactional.
+ * @summary Reverse a mistaken check-in with a required reason
+ */
+export const UndoCheckInParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const undoCheckInBodyReasonMax = 1000;
+
+export const undoCheckInBodyExpectedAttendanceVersionMin = 0;
+
+
+
+export const UndoCheckInBody = zod.object({
+  "reason": zod.string().min(1).max(undoCheckInBodyReasonMax),
+  "expected_attendance_version": zod.number().min(undoCheckInBodyExpectedAttendanceVersionMin)
+})
+
+export const UndoCheckInResponse = zod.object({
+  "registration_id": zod.number(),
+  "event_id": zod.string(),
+  "checked_in_at": zod.coerce.date().nullable(),
+  "checked_in_by": zod.string().nullable(),
+  "attendance_version": zod.number()
+})
+
+
+/**
+ * @summary Organizer-only attendance correction history
+ */
+export const GetAttendanceCorrectionsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetAttendanceCorrectionsResponse = zod.object({
+  "corrections": zod.array(zod.object({
+  "id": zod.number(),
+  "reason": zod.string(),
+  "original_checked_in_at": zod.coerce.date(),
+  "original_checked_in_by": zod.string().nullish(),
+  "corrected_by": zod.string(),
+  "corrected_by_email": zod.string(),
+  "corrected_at": zod.coerce.date(),
+  "attendance_version": zod.number()
+}))
 })
 
 
@@ -223,7 +299,12 @@ export const UpdateRegistrationStatusResponse = zod.object({
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
   "verification_code_status": zod.enum(['none', 'sent', 'email_failed', 'used', 'expired']).optional().describe('Latest Discord verification code: none = no usable code, email_failed = issued but the email didn\'t go out.'),
+  "attendance_version": zod.number().optional(),
   "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
+  "discord_team": zod.union([zod.object({
+  "name": zod.string(),
+  "member_count": zod.number()
+}),zod.null()]).optional().describe('The team this person is on in the Discord bot (\/team); null if none or if the bot\'s records can\'t be read.'),
   "created_at": zod.coerce.date()
 })
 
@@ -281,7 +362,8 @@ export const GetAdminStatsResponse = zod.object({
   "by_team_status": zod.record(zod.string(), zod.number()),
   "by_status": zod.record(zod.string(), zod.number()),
   "discord_verified": zod.number().nullable().describe('Active registrations verified on Discord; null if the bot\'s records can\'t be read.'),
-  "checked_in": zod.number().describe('Registrations checked in at the venue.')
+  "checked_in": zod.number().describe('Registrations checked in at the venue.'),
+  "looking_for_team": zod.number().describe('Active registrations that said they\'re looking for a team and aren\'t on a Discord \/team team yet (registration answer only, if the bot\'s records can\'t be read).')
 })
 
 

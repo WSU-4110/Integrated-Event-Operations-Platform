@@ -33,7 +33,7 @@ This is a proposed action plan. The named owners and estimates below need team a
 | Action | Proposed owner | When | Completion evidence |
 |---|---|---|---|
 | Establish shared task ownership and daily progress tracking. | Mohammad Altiwainy | At Sprint 2 planning, then each working day | Every member has a task with acceptance criteria and an hour estimate. Teams contains stand-up updates, the workbook records daily hours remaining, and each member can explain their own progress. |
-| Fix and verify the admin table’s layout and scrolling behavior. | Tajwar Khan | Before the next Sprint 2 review or demonstration | A PR shows the table using the available desktop width and keeping headers visible while scrolling. Arian records checks with long records and at desktop and mobile sizes. |
+| Fix and verify the admin table’s layout and scrolling behavior. | Arian Azad | Before the next Sprint 2 review or demonstration | A PR shows the table using the available desktop width and keeping headers visible while scrolling. Arian records checks with long records and at desktop and mobile sizes. |
 
 ## 4. Staff and Class Feedback and Our Response
 
@@ -127,16 +127,16 @@ The table is ordered by proposed priority and sized in person-hours. These are d
 
 | Priority | Task and acceptance criteria | Proposed owner | Starting estimate (hours) |
 |---|---|---|---:|
-| 1 | Prepare UML activity or sequence diagrams for participant editing and Discord verification, including actors, normal steps, and failure paths; check them with the feature owners before those features are implemented. | Arian Azad | 6 |
+| 1 | Prepare UML activity or sequence diagrams for participant editing and Discord verification, including actors, normal steps, and failure paths; check them with the feature owners before those features are implemented. | Tajwar Khan | 6 |
 | 2 | Send approval notices and verification codes for issue #6; check successful delivery, failed delivery, and the participant’s next step. | Mohammad Altiwainy | 16 |
-| 3 | Expand the admin table into the available desktop width, retain visible headers during vertical scrolling, and make long registration lists manageable; test long records and mobile access. | Tajwar Khan | 10 |
+| 3 | Expand the admin table into the available desktop width, retain visible headers during vertical scrolling, and make long registration lists manageable; test long records and mobile access. | Arian Azad | 10 |
 | 4 | Add red borders and specific written messages for missing required fields and invalid `.edu` emails; preserve valid entries and support keyboard correction. | Arian Azad | 4 |
 | 5 | Implement Discord verification and participant role assignment; show successful linking and refused invalid verification attempts. | Tahmid Ambia | 16 |
 | 6 | Add an organizer Edit action beside Delete; validate participant changes, save them, and reject unauthorized requests. | Sammy Moussa | 12 |
 | 7 | Synchronize relevant participant edits with linked Discord information and roles after editing and verification are available; make failures visible and provide a recovery path. | Tahmid Ambia | 8 |
-| 8 | Implement event check-in with duplicate prevention and saved attendance records. | Sammy Moussa | 12 |
-| 9 | Complete a bounded participant hub with the event schedule, announcements, and clear post-registration guidance; remove or label unfinished controls and review readability. | Tajwar Khan | 14 |
-| 10 | Record acceptance tests for persistence after refresh and a new session, organizer access, registration failures, responsive layout, and readability; log defects and rehearse these flows for the demo. | Arian Azad | 14 |
+| 8 | Implement event check-in with duplicate prevention and saved attendance records. | Arian Azad | 10 |
+| 9 | Complete a bounded participant hub with the event schedule, announcements, and clear post-registration guidance; remove or label unfinished controls and review readability. | Tajwar Khan | 18 |
+| 10 | Record acceptance tests for persistence after refresh and a new session, organizer access, registration failures, responsive layout, and readability; log defects and rehearse these flows for the demo. | Sammy Moussa | 12 |
 | 11 | Investigate confirmation email delivery, document findings and any configuration changes, and retain the spam-folder notice and resend option while needed. | Mohammad Altiwainy | 8 |
 | | **Total proposed effort** | | **120** |
 

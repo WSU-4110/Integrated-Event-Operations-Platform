@@ -21,4 +21,6 @@ export interface AdminStats {
   discord_verified: number | null;
   /** Registrations checked in at the venue. */
   checked_in: number;
+  /** Active registrations that said they're looking for a team and aren't on a Discord /team team yet (registration answer only, if the bot's records can't be read). */
+  looking_for_team: number;
 }

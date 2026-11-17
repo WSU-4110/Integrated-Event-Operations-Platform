@@ -13,6 +13,9 @@ import type { ListRegistrationsDiscord } from './listRegistrationsDiscord';
 export type ListRegistrationsParams = {
 search?: string;
 experience_level?: string;
+/**
+ * has_team, looking, or solo. When the Discord bot's team records can be read, someone on a /team team counts as has_team, even if they registered as looking or solo.
+ */
 team_status?: string;
 /**
  * active (pending or approved) or removed (declined or waitlisted)
