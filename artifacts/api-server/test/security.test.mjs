@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { checkInTests } from "./checkIn.mjs";
 import { attendanceCorrectionTests } from "./attendanceCorrections.mjs";
+import { eventScheduleTests } from "./eventSchedule.mjs";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 if (!DATABASE_URL) {
@@ -148,6 +149,7 @@ checkInTests({ getBase: () => base, call, databaseUrl: DATABASE_URL,
   admin: cookie(SESSIONS.admin), organizerId: `admin-${run}` });
 attendanceCorrectionTests({ getBase: () => base, call, databaseUrl: DATABASE_URL,
   admin: cookie(SESSIONS.admin), organizerId: `admin-${run}` });
+eventScheduleTests({ getBase: () => base, call, databaseUrl: DATABASE_URL });
 
 before(async () => {
   base = await startServer(18_400 + Math.floor(Math.random() * 500), {
