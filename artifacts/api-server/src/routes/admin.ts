@@ -856,14 +856,185 @@ function csvCell(value: string | number | Date | null | undefined): string {
   return str;
 }
 
+
 router.get("/admin/export", async (_req, res): Promise<void> => {
-  const registrations = await db
-    .select()
-    .from(registrationsTable)
-    .where(forThisEvent)
-    .orderBy(registrationsTable.createdAt);
+  // FR-16: Filter exported participants by attendance.
+  const checkInFilter = _req.query.check_in;
+
+  if (
+    checkInFilter !== undefined &&
+    checkInFilter !== "checked_in" &&
+    checkInFilter !== "not_checked_in"
+  ) {
+    res.status(400).json({ error: "Invalid attendance filter" });
+    return;
+  }
+
+  const conditions: SQL[] = [forThisEvent];
+  
+  // FR-16: Filter exported participants by experience level.
+  const experienceLevel = _req.query.experience_level;
+
+  if (experienceLevel !== undefined) {
+    if (typeof experienceLevel !== "string" || !experienceLevel.trim()) {
+      res.status(400).json({ error: "Invalid experience level filter" });
+      return;
+    }
+
+    conditions.push(
+      eq(registrationsTable.experienceLevel, experienceLevel)
+    );
+  }
+
+  // FR-16: Filter exported participants by class standing.
+  const classStanding = _req.query.class_standing;
+
+  if (classStanding !== undefined) {
+    if (typeof classStanding !== "string" || !classStanding.trim()) {
+      res.status(400).json({ error: "Invalid class standing filter" });
+      return;
+    }
+
+    conditions.push(
+      eq(registrationsTable.classStanding, classStanding)
+    );
+  }
+
+  // FR-16: Filter exported participants by registration access.
+  const accessFilter = _req.query.access;
+
+  if (accessFilter !== undefined) {
+    if (accessFilter !== "active" && accessFilter !== "removed") {
+      res.status(400).json({ error: "Invalid access filter" });
+      return;
+    }
+
+    conditions.push(
+      inArray(
+        registrationsTable.status,
+        accessFilter === "active" ? ACTIVE_STATUSES : REMOVED_STATUSES
+      )
+    );
+  }
+
+  // FR-16: Filter exported participants by search.
+  const searchFilter = _req.query.search;
+
+  if (searchFilter !== undefined) {
+    if (typeof searchFilter !== "string") {
+      res.status(400).json({ error: "Invalid search filter" });
+      return;
+    }
+
+    if (searchFilter.trim()) {
+      conditions.push(
+        or(
+          ilike(registrationsTable.name, `%${searchFilter}%`),
+          ilike(registrationsTable.email, `%${searchFilter}%`),
+          ilike(registrationsTable.school, `%${searchFilter}%`),
+          ilike(registrationsTable.discordUsername, `%${searchFilter}%`),
+          ilike(registrationsTable.teamName, `%${searchFilter}%`)
+        )!
+      );
+    }
+  }
+
+  // FR-16: Filter exported participants by Discord verification.
+  const discordFilter = _req.query.discord;
+
+  if (discordFilter !== undefined) {
+    if (discordFilter !== "verified" && discordFilter !== "not_verified") {
+      res.status(400).json({ error: "Invalid Discord filter" });
+      return;
+    }
+
+    const verified = exists(
+      db
+        .select({ one: discordParticipantLinksTable.id })
+        .from(discordParticipantLinksTable)
+        .where(
+          and(
+            eq(
+              discordParticipantLinksTable.registrationId,
+              registrationsTable.id
+            ),
+            eq(discordParticipantLinksTable.active, true)
+          )
+        )
+    );
+
+    conditions.push(
+      discordFilter === "verified" ? verified : not(verified)
+    );
+  }
+
+  // FR-16: Filter exported participants by team status.
+  const teamStatusFilter = _req.query.team_status;
+
+  if (teamStatusFilter !== undefined) {
+    if (
+      teamStatusFilter !== "has_team" &&
+      teamStatusFilter !== "looking"
+    ) {
+      res.status(400).json({ error: "Invalid team status filter" });
+      return;
+    }
+
+    
+  // Team status will be applied when running the export query.
+    
+  }
+
+
+
+  if (checkInFilter === "checked_in") {
+    conditions.push(isNotNull(registrationsTable.checkedInAt));
+  } else if (checkInFilter === "not_checked_in") {
+    conditions.push(isNull(registrationsTable.checkedInAt));
+  }
+
+  
+  // FR-16: Fall back to registration answers if Discord team tables are unavailable.
+  const runExportQuery = (useDiscordTeams: boolean) =>
+    db
+      .select()
+      .from(registrationsTable)
+      .where(
+        and(
+          ...conditions,
+          ...(teamStatusFilter
+            ? [teamStatusCondition(teamStatusFilter, useDiscordTeams)]
+            : [])
+        )
+      )
+      .orderBy(registrationsTable.createdAt);
+
+  let registrations: Registration[];
+
+  try {
+    registrations = await runExportQuery(true);
+  } catch (err) {
+    if (
+      !teamStatusFilter ||
+      discordFilter ||
+      !isDiscordUnavailable(err)
+    ) {
+      if (discordFilter && isDiscordUnavailable(err)) {
+        res.status(503).json({
+          error: "Discord verification data is currently unavailable.",
+        });
+        return;
+      }
+      throw err;
+    }
+
+    registrations = await runExportQuery(false);
+  }
+
 
   const columns = [
+    "event_id",
+    "exported_at",
     "id",
     "name",
     "email",
@@ -879,24 +1050,84 @@ router.get("/admin/export", async (_req, res): Promise<void> => {
     "discord_verified_at",
     "source",
     "confirmation_email_sent_at",
+    "checked_in_at",
     "created_at",
   ] as const;
+  
+  // FR-16: Allow organizers to select which fields to export.
+  // Only fields in the approved list can be exported.
+  
+  // FR-16: Validate the requested CSV fields.
+  const fieldsParam = _req.query.fields;
+
+  if (
+    fieldsParam !== undefined &&
+    typeof fieldsParam !== "string"
+  ) {
+    res.status(400).json({
+      error: "Invalid CSV export fields",
+    });
+    return;
+  }
+
+  const requestedFields =
+    typeof fieldsParam === "string"
+      ? fieldsParam.split(",").map((field) => field.trim())
+      : null;
+
+
+  if (requestedFields && (
+    requestedFields.length === 0 ||
+    requestedFields.some((field) => field === "") ||
+    requestedFields.some((field) => !columns.includes(field as typeof columns[number]))
+  )) {
+    res.status(400).json({ error: "Invalid CSV export fields" });
+    return;
+  }
+
+  
+  // FR-16: Always include event metadata in CSV exports.
+  const selectedColumns = requestedFields
+    ? [
+        "event_id",
+        "exported_at",
+        ...requestedFields.filter(
+          (field) => field !== "event_id" && field !== "exported_at"
+        ),
+      ]
+    : [...columns];
+
+
   const ids = registrations.map((r) => r.id);
   const [links, teams] = await Promise.all([
     loadDiscordLinks(ids),
     loadDiscordTeams(ids),
   ]);
+  const exportedAt = new Date().toISOString();
+
   const rows = registrations.map((r) => {
-    const api = { ...toApi(r, links, teams), discord_team: teams?.get(r.id)?.name };
-    return columns.map((column) => csvCell(api[column])).join(",");
-  });
+    const api = {
+      ...toApi(r, links, teams),
+      event_id: EVENT_ID,
+      exported_at: exportedAt,
+      discord_team: teams?.get(r.id)?.name,
+    };
+
+  return selectedColumns
+    
+    .map((column) =>
+      csvCell(api[column as keyof typeof api] as string | number | Date | null | undefined)
+    )
+
+    .join(",");
+});
 
   res.setHeader("Content-Type", "text/csv");
   res.setHeader(
     "Content-Disposition",
     `attachment; filename="registrations-${new Date().toISOString().split("T")[0]}.csv"`,
   );
-  res.send([columns.join(","), ...rows].join("\n") + "\n");
+  res.send([selectedColumns.join(","), ...rows].join("\n") + "\n");
 });
 
 export default router;
