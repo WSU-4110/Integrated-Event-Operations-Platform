@@ -84,7 +84,7 @@ export const listRegistrationsQueryOffsetDefault = 0;
 export const ListRegistrationsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "experience_level": zod.coerce.string().optional(),
-  "team_status": zod.coerce.string().optional(),
+  "team_status": zod.coerce.string().optional().describe('has_team, looking, or solo. When the Discord bot\'s team records can be read, someone on a \/team team counts as has_team, even if they registered as looking or solo.'),
   "access": zod.enum(['active', 'removed']).optional().describe('active (pending or approved) or removed (declined or waitlisted)'),
   "class_standing": zod.enum(['freshman', 'sophomore', 'junior', 'senior', 'graduate']).optional(),
   "discord": zod.enum(['verified', 'not_verified']).optional().describe('verified or not_verified, from the Discord bot\'s records'),
@@ -112,6 +112,10 @@ export const ListRegistrationsResponse = zod.object({
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
   "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
+  "discord_team": zod.union([zod.object({
+  "name": zod.string(),
+  "member_count": zod.number()
+}),zod.null()]).optional().describe('The team this person is on in the Discord bot (\/team); null if none or if the bot\'s records can\'t be read.'),
   "created_at": zod.coerce.date()
 })),
   "total": zod.number()
@@ -186,7 +190,27 @@ export const UpdateRegistrationResponse = zod.object({
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
   "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
+  "discord_team": zod.union([zod.object({
+  "name": zod.string(),
+  "member_count": zod.number()
+}),zod.null()]).optional().describe('The team this person is on in the Discord bot (\/team); null if none or if the bot\'s records can\'t be read.'),
   "created_at": zod.coerce.date()
+})
+
+
+/**
+ * Requires organizer authentication. Saves the database time and authenticated organizer ID for an approved registration in this event. Refuses unapproved or already checked-in records and ignores client-supplied attendance metadata. Duplicate requests never overwrite the first check-in. Reload attendance after any uncertain response.
+ * @summary Check in an approved participant
+ */
+export const CheckInRegistrationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CheckInRegistrationResponse = zod.object({
+  "registration_id": zod.number(),
+  "event_id": zod.string(),
+  "checked_in_at": zod.coerce.date(),
+  "checked_in_by": zod.string().describe('Authenticated organizer user ID; provided by the server')
 })
 
 
@@ -221,6 +245,10 @@ export const UpdateRegistrationStatusResponse = zod.object({
   "source": zod.string(),
   "confirmation_email_sent_at": zod.coerce.date().nullish(),
   "checked_in_at": zod.coerce.date().nullish().describe('When the participant checked in at the venue (FR-10); null until then.'),
+  "discord_team": zod.union([zod.object({
+  "name": zod.string(),
+  "member_count": zod.number()
+}),zod.null()]).optional().describe('The team this person is on in the Discord bot (\/team); null if none or if the bot\'s records can\'t be read.'),
   "created_at": zod.coerce.date()
 })
 
@@ -265,7 +293,8 @@ export const GetAdminStatsResponse = zod.object({
   "by_team_status": zod.record(zod.string(), zod.number()),
   "by_status": zod.record(zod.string(), zod.number()),
   "discord_verified": zod.number().nullable().describe('Active registrations verified on Discord; null if the bot\'s records can\'t be read.'),
-  "checked_in": zod.number().describe('Registrations checked in at the venue.')
+  "checked_in": zod.number().describe('Registrations checked in at the venue.'),
+  "looking_for_team": zod.number().describe('Active registrations that said they\'re looking for a team and aren\'t on a Discord \/team team yet (registration answer only, if the bot\'s records can\'t be read).')
 })
 
 

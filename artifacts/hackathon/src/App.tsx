@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
   useCheckRegistration,
+  useCheckInRegistration,
   useDeleteRegistration,
   useResendConfirmation,
   useUpdateRegistration,
@@ -71,6 +72,7 @@ import { Switch, Route } from "wouter";
 import { EVENT_CONFIG, FAQ, SCHEDULE } from "@/config/event";
 import NotFound from "@/pages/not-found";
 import { OrganizerEventContent, PublishedEventContent } from "@/components/EventContent";
+import { ChatWidget } from "@/components/ChatWidget";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -480,13 +482,15 @@ const PLACE_PRIZES = [
 const TRACK_PRIZES = [
   {
     track: "AWS track",
+    name: "Most Impactful AI Architecture on AWS",
     amount: "$500",
     perk: "AWS credits for every team member",
   },
   {
-    track: "FREE WILi track",
+    track: "FREE-WILi track",
+    name: "The Deep End Challenge",
     amount: "$250",
-    perk: "A FREE WILi OG and Accessory Kit for every team member",
+    perk: "A FREE-WILi OG and Accessory Kit for every team member. Runner-up team members get a FREE-WILi 2 T-shirt",
   },
 ];
 function Prizes() {
@@ -525,12 +529,13 @@ function Prizes() {
           ))}
         </div>
         <div className="mx-auto mt-4 grid max-w-3xl gap-4 sm:grid-cols-2">
-          {TRACK_PRIZES.map(({ track, amount, perk }) => (
+          {TRACK_PRIZES.map(({ track, name, amount, perk }) => (
             <div
               key={track}
               className="panel border-t-4 border-t-[#a78bfa] p-6"
             >
               <p className="eyebrow">{track}</p>
+              <p className="mt-2 font-semibold text-[#f7f4ed]">{name}</p>
               <p className="mt-3 font-mono text-3xl text-[#a78bfa]">
                 {amount}
                 <span className="ml-2 font-sans text-xs text-[#9ca3af]">
@@ -550,8 +555,8 @@ function Prizes() {
           </p>
           <p className="mt-2">
             Gift cards are per team and split evenly among teammates. Tracks
-            are optional, so build anything you want; a project can win a track
-            prize and a top-3 prize.
+            are optional, so build anything you want. Enter one track, both, or
+            neither; a project can win a track prize and a top-3 prize.
           </p>
         </div>
       </div>
@@ -1265,6 +1270,7 @@ function Home() {
         <Registration />
       </main>
       <Footer />
+      <ChatWidget />
     </>
   );
 }
@@ -1472,6 +1478,55 @@ function DiscordCell({
     </div>
   );
 }
+function CheckInControl({ registration, onChanged }: {
+  registration: AdminRegistration;
+  onChanged: () => Promise<unknown>;
+}) {
+  const [error, setError] = useState("");
+  const checkIn = useCheckInRegistration({ mutation: {
+    onSuccess: async () => { await onChanged(); },
+    onError: async (err) => {
+      const status = getApiErrorStatus(err);
+      setError(status === 409
+        ? "Attendance or access changed. Review the refreshed record before trying again."
+        : status === 401 || status === 403
+          ? "Your organizer session has ended. Sign in again."
+          : "Check-in could not be confirmed. Review the refreshed attendance before trying again.");
+      await onChanged();
+    },
+  } });
+  if (registration.checked_in_at) return (
+    <div className="space-y-1 text-xs text-[#b8e5c0]" role="status" data-testid={`status-check-in-${registration.id}`}>
+      <span className="flex items-center gap-1"><Check size={14} /> Checked in</span>
+      <time dateTime={registration.checked_in_at} className="block text-[#9ca3af]">
+        {new Date(registration.checked_in_at).toLocaleString()}
+      </time>
+    </div>
+  );
+  if (!isActiveStatus(registration.status)) return (
+    <span className="text-xs text-[#9ca3af]" data-testid={`status-check-in-${registration.id}`}>
+      Removed · can't check in
+    </span>
+  );
+  return (
+    <div className="min-w-0 space-y-1">
+      <span className="block text-xs text-[#9ca3af]">Not checked in</span>
+      <button type="button" disabled={checkIn.isPending}
+        className="inline-flex min-h-[34px] items-center gap-2 rounded-md border border-[#38573f] px-3 py-1.5 text-xs font-semibold text-[#b8e5c0] disabled:opacity-50"
+        data-testid={`button-check-in-${registration.id}`}
+        onClick={() => {
+          if (!window.confirm(`Check in ${registration.name}?\n\nThis records their arrival at BuilderWars.`)) return;
+          setError("");
+          checkIn.mutate({ id: registration.id });
+        }}>
+        {checkIn.isPending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+        {checkIn.isPending ? "Saving…" : "Check in"}
+      </button>
+      {error && <p role="alert" className="text-xs text-[#ff9985]">{error}</p>}
+    </div>
+  );
+}
+
 function ResendConfirmationButton({
   id,
   onSent,
@@ -1895,14 +1950,14 @@ function Admin() {
       enabled: isAuthenticated,
     },
   });
-  const refreshAdminData = () => {
-    void queryClient.invalidateQueries({
-      queryKey: getListRegistrationsQueryKey(params),
-    });
-    void queryClient.invalidateQueries({
+  const refreshAdminData = () => Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: getListRegistrationsQueryKey(),
+    }),
+    queryClient.invalidateQueries({
       queryKey: getGetAdminStatsQueryKey(),
-    });
-  };
+    }),
+  ]);
   if (isLoading)
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#111418] text-[#a78bfa]">
@@ -1959,7 +2014,7 @@ function Admin() {
             ["Checked in", statsData?.checked_in ?? "—"],
             [
               "Looking for a team",
-              statsData ? (statsData.by_team_status?.looking ?? 0) : "—",
+              statsData?.looking_for_team ?? "—",
             ],
           ].map(([l, v], i) => (
             <div className="panel p-5" key={l as string}>
@@ -2137,10 +2192,35 @@ function Admin() {
                       />
                     </td>
                     <td role="cell" data-label="Team" className="p-2 text-[#9ca3af]">
-                      {r.team_status
-                        ? (TEAM_LABELS[r.team_status] ?? r.team_status)
-                        : "—"}
-                      {r.team_name ? ` · ${r.team_name}` : ""}
+                      {r.discord_team ? (
+                        // Their actual team from the Discord bot's /team.
+                        <div data-testid={`text-discord-team-${r.id}`}>
+                          <span className="text-[#e7e5df]">
+                            {r.discord_team.name}
+                          </span>
+                          <span className="block text-xs text-[#a78bfa]">
+                            On Discord · {r.discord_team.member_count}{" "}
+                            {r.discord_team.member_count === 1
+                              ? "member"
+                              : "members"}
+                          </span>
+                          {r.team_status && r.team_status !== "has_team" && (
+                            <span className="block text-xs text-[#7d848e]">
+                              Registered as{" "}
+                              {(
+                                TEAM_LABELS[r.team_status] ?? r.team_status
+                              ).toLowerCase()}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {r.team_status
+                            ? (TEAM_LABELS[r.team_status] ?? r.team_status)
+                            : "—"}
+                          {r.team_name ? ` · ${r.team_name}` : ""}
+                        </>
+                      )}
                     </td>
                     <td role="cell" data-label="Access" className="p-2">
                       <AccessControl
@@ -2170,6 +2250,7 @@ function Admin() {
                     </td>
                     <td role="cell" data-label="Actions" className="p-2">
                       <div className="flex flex-col items-start gap-2">
+                        <CheckInControl registration={r} onChanged={refreshAdminData} />
                         <EditRegistrationButton
                           registration={r}
                           onSaved={refreshAdminData}

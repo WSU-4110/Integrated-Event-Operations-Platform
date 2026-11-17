@@ -24,6 +24,7 @@ import type {
   AdminStats,
   ApiError,
   AuthUser,
+  CheckInResult,
   CheckRegistrationParams,
   HealthStatus,
   ListRegistrationsParams,
@@ -603,6 +604,78 @@ export const useUpdateRegistration = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getUpdateRegistrationMutationOptions(options));
+    }
+
+export const getCheckInRegistrationUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/registrations/${id}/check-in`
+}
+
+/**
+ * Requires organizer authentication. Saves the database time and authenticated organizer ID for an approved registration in this event. Refuses unapproved or already checked-in records and ignores client-supplied attendance metadata. Duplicate requests never overwrite the first check-in. Reload attendance after any uncertain response.
+ * @summary Check in an approved participant
+ */
+export const checkInRegistration = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<CheckInResult> => {
+
+  return customFetch<CheckInResult>(getCheckInRegistrationUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCheckInRegistrationMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkInRegistration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkInRegistration>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['checkInRegistration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkInRegistration>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  checkInRegistration(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckInRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof checkInRegistration>>>
+
+    export type CheckInRegistrationMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Check in an approved participant
+ */
+export const useCheckInRegistration = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkInRegistration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkInRegistration>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getCheckInRegistrationMutationOptions(options));
     }
 
 export const getUpdateRegistrationStatusUrl = (id: number,) => {

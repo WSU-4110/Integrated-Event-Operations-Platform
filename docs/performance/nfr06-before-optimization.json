@@ -1,0 +1,110 @@
+{
+  "requirement": "NFR-06",
+  "date": "2026-11-15T02:01:39.343Z",
+  "node": "v24.22.1",
+  "platform": "linux x64",
+  "cpus": 9,
+  "records": 1000,
+  "concurrency": 100,
+  "rounds": 10,
+  "main_commit": "bdc7193",
+  "external_services": "Discord I/O simulated; email disabled",
+  "measurements": {
+    "event_hub_html": {
+      "requests": 1000,
+      "failures": 0,
+      "p95_ms": 143.3153940000002,
+      "max_ms": 160.64454900000055,
+      "limit_ms": 2000,
+      "passed": true
+    },
+    "published_content": {
+      "requests": 1000,
+      "failures": 0,
+      "p95_ms": 83.55120499999975,
+      "max_ms": 119.51634699999977,
+      "limit_ms": 2000,
+      "passed": true
+    },
+    "participant_search": {
+      "requests": 1000,
+      "failures": 0,
+      "p95_ms": 304.58414300000004,
+      "max_ms": 324.47722299999987,
+      "limit_ms": 2000,
+      "passed": true,
+      "gate": "every response"
+    },
+    "dashboard_stats": {
+      "requests": 1000,
+      "failures": 0,
+      "p95_ms": 214.00386199999957,
+      "max_ms": 234.3585320000002,
+      "limit_ms": 2000,
+      "passed": true
+    },
+    "csv_export_1000": {
+      "requests": 1000,
+      "failures": 0,
+      "p95_ms": 2562.2018849999986,
+      "max_ms": 2685.7689059999993,
+      "limit_ms": 10000,
+      "passed": true,
+      "gate": "every response"
+    },
+    "all_api_responses": {
+      "requests": 4000,
+      "failures": 0,
+      "p95_ms": 2397.7905009999995,
+      "max_ms": 2685.7689059999993,
+      "limit_ms": 2000,
+      "passed": false
+    }
+  },
+  "checks": {
+    "concurrent_duplicate_check_in": {
+      "passed": true,
+      "concurrent_requests": 200,
+      "successes": 1,
+      "conflicts": 199
+    },
+    "database_lock_timeout": {
+      "passed": true,
+      "status": 500,
+      "ms": 328.2977299999984,
+      "attendance_unchanged": true
+    },
+    "final_integrity": {
+      "passed": true,
+      "total": 1000,
+      "emails": 1000,
+      "arrivals": 1
+    }
+  },
+  "discord_verification": {
+    "passed": true,
+    "requests": 1000,
+    "failures": 0,
+    "p95_ms": 522.649856,
+    "max_ms": 530.5631429999999,
+    "limit_ms": 5000,
+    "gate": "every completed verification",
+    "source_sha": "80ac0e9d838d4ffdea1f03e4a8892ca1bd6749c9",
+    "database_role": "discord_bot_app",
+    "pool_connections": 10,
+    "discord_io": "SIMULATED successful calls, 25ms per operation; no live Discord request",
+    "includes": "actual modal handler, database lookup/link/audit, member fetch, role assignment, confirmation, organizer log",
+    "duplicate_requests": 200,
+    "role_grants": 1000,
+    "integrity": {
+      "total": 1000,
+      "registrations": 1000,
+      "accounts": 1000,
+      "active": 1000
+    }
+  },
+  "website_passed": false,
+  "controlled_suite_passed": false,
+  "live_deployment_validated": false,
+  "full_nfr06_passed": false
+}
