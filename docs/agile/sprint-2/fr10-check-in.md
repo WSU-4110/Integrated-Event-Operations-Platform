@@ -1,3 +1,5 @@
+> Current behavior: pending and approved registrations are active and can check in; waitlisted and declined registrations cannot. This follows Remove/Restore and supersedes the original approved-only description below. FR-10 is merged in #78; subsequent attendance work targets main.
+
 # FR-10: Check in an approved participant
 
 Implement issue #11 independently on `arian/fr-10-check-in`, based on main. Do not merge or deploy this branch automatically. Use the existing `checked_in_at` and `checked_in_by` fields from migration 0005; no new database migration is needed.
