@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import {
   and,
-  desc,
   count,
+  desc,
   eq,
   exists,
   ilike,
@@ -27,6 +27,7 @@ import {
   registrationsTable,
   STATUS_TRANSITIONS,
   usersTable,
+  verificationCodesTable,
   type Registration,
   type RegistrationStatus,
 } from "@workspace/db";
@@ -37,6 +38,10 @@ import {
   UndoCheckInBody,
 } from "@workspace/api-zod";
 import { sendRegistrationConfirmation } from "../lib/registrationConfirmationEmail";
+import {
+  invalidateVerificationCodes,
+  issueAndSendVerificationCode,
+} from "../lib/verificationCode";
 import { organizerEventContent } from "./eventContent";
 
 const router: IRouter = Router();
@@ -210,10 +215,38 @@ function discordStatus(id: number, links: DiscordLinks) {
   };
 }
 
+type CodeStatus = "none" | "sent" | "email_failed" | "used" | "expired";
+type CodeStatuses = Map<number, CodeStatus>;
+
+// The latest verification code's state for each registration (FR-05). Never
+// includes the code or its hash.
+async function loadCodeStatuses(ids: number[]): Promise<CodeStatuses> {
+  const statuses: CodeStatuses = new Map();
+  if (ids.length === 0) return statuses;
+  const rows = await db
+    .select()
+    .from(verificationCodesTable)
+    .where(inArray(verificationCodesTable.registrationId, ids))
+    .orderBy(desc(verificationCodesTable.id));
+  const now = Date.now();
+  for (const row of rows) {
+    if (statuses.has(row.registrationId)) continue; // newest row wins
+    let status: CodeStatus;
+    if (row.usedAt) status = "used";
+    else if (row.invalidatedAt) status = "none";
+    else if (row.expiresAt.getTime() <= now) status = "expired";
+    else if (row.emailSentAt) status = "sent";
+    else status = "email_failed";
+    statuses.set(row.registrationId, status);
+  }
+  return statuses;
+}
+
 function toApi(
   r: Registration,
   links: DiscordLinks,
   teams: DiscordTeams = null,
+  codes: CodeStatuses = new Map(),
 ) {
   const discord = discordStatus(r.id, links);
   const team = teams?.get(r.id);
@@ -234,6 +267,7 @@ function toApi(
     discord_verified_at: discord.verifiedAt,
     source: r.source,
     confirmation_email_sent_at: r.confirmationEmailSentAt,
+    verification_code_status: codes.get(r.id) ?? ("none" as const),
     checked_in_at: r.checkedInAt,
     attendance_version: r.attendanceVersion,
     discord_team: team
@@ -492,12 +526,13 @@ router.get("/admin/registrations", async (req, res): Promise<void> => {
   }
 
   const ids = registrations.map((r) => r.id);
-  const [links, teams] = await Promise.all([
+  const [links, teams, codes] = await Promise.all([
     loadDiscordLinks(ids),
     loadDiscordTeams(ids),
+    loadCodeStatuses(ids),
   ]);
   res.json({
-    registrations: registrations.map((r) => toApi(r, links, teams)),
+    registrations: registrations.map((r) => toApi(r, links, teams, codes)),
     total: Number(totalResult[0]?.count ?? 0),
   });
 });
@@ -637,11 +672,14 @@ router.patch("/admin/registrations/:id", async (req, res): Promise<void> => {
       { registrationId, changedFields, changedBy: req.user!.id },
       "Organizer edited a registration",
     );
-    res.json(toApi(
+    res.json(
+      toApi(
         updated,
         await loadDiscordLinks([updated.id]),
         await loadDiscordTeams([updated.id]),
-      ));
+        await loadCodeStatuses([updated.id]),
+      ),
+    );
   } catch (err: unknown) {
     if (isUniqueViolation(err)) {
       res
@@ -712,16 +750,21 @@ router.patch(
           changedByEmail: res.locals.adminEmail as string,
           changedAt: now,
         });
+        // FR-05: someone who is removed can't use an outstanding code.
+        if (REMOVED_STATUSES.includes(nextStatus)) {
+          await invalidateVerificationCodes(registrationId, tx);
+        }
         return row;
       });
 
-      // #6 (FR-05) will send the approval notice and verification code here,
-      // after the change is saved; a failed notification must not undo it.
-      res.json(toApi(
-        updated,
-        await loadDiscordLinks([updated.id]),
-        await loadDiscordTeams([updated.id]),
-      ));
+      res.json(
+        toApi(
+          updated,
+          await loadDiscordLinks([updated.id]),
+          await loadDiscordTeams([updated.id]),
+          await loadCodeStatuses([updated.id]),
+        ),
+      );
     } catch (err: unknown) {
       if (err instanceof StatusChangeError) {
         res.status(err.httpStatus).json({ error: err.message });
@@ -814,6 +857,41 @@ router.post(
       .set({ confirmationEmailSentAt: sentAt })
       .where(eq(registrationsTable.id, registrationId));
     res.json({ confirmation_email_sent_at: sentAt });
+  },
+);
+
+// FR-05: issue a new single-use Discord verification code and email it. Also
+// the retry for a failed email: the plaintext code isn't stored, so a retry
+// issues a replacement and the earlier unused code stops working.
+router.post(
+  "/admin/registrations/:id/verification-code",
+  async (req, res): Promise<void> => {
+    const registrationId = parseId(req.params.id);
+    if (!registrationId) {
+      res.status(400).json({ error: "A valid registration ID is required." });
+      return;
+    }
+
+    const outcome = await issueAndSendVerificationCode(
+      registrationId,
+      req.log,
+    );
+    if (!outcome.ok) {
+      if (outcome.reason === "not_found") {
+        res.status(404).json({ error: "Registration not found." });
+      } else {
+        res.status(409).json({
+          error:
+            "This registration has been removed, so it can't receive a verification code.",
+        });
+      }
+      return;
+    }
+    req.log.info(
+      { registrationId, emailSent: outcome.emailSent, requestedBy: req.user!.id },
+      "Organizer issued a verification code",
+    );
+    res.json({ email_sent: outcome.emailSent });
   },
 );
 

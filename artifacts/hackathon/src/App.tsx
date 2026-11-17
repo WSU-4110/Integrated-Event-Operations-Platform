@@ -10,6 +10,7 @@ import {
   getGetAttendanceCorrectionsQueryKey,
   useDeleteRegistration,
   useResendConfirmation,
+  useSendVerificationCode,
   useUpdateRegistration,
   useUpdateRegistrationStatus,
   useGetRegistrationHistory,
@@ -1629,6 +1630,63 @@ function ResendConfirmationButton({
     </span>
   );
 }
+// The Discord bot can't accept verification codes yet (#7), so the dashboard
+// doesn't offer to send them. Turn this on once /verify checks codes.
+const VERIFICATION_CODES_ENABLED = false;
+
+// FR-05: send (or re-send) the single-use Discord verification code. A new
+// code replaces any earlier unused one, so this is also the retry for a
+// failed email.
+function VerificationCodeControl({
+  id,
+  status,
+  onSent,
+}: {
+  id: number;
+  status: AdminRegistration["verification_code_status"];
+  onSent: () => void;
+}) {
+  const send = useSendVerificationCode();
+  const [emailFailed, setEmailFailed] = useState(false);
+  const label =
+    emailFailed || status === "email_failed"
+      ? "code email failed"
+      : status === "sent"
+        ? "code sent"
+        : status === "used"
+          ? "code used"
+          : status === "expired"
+            ? "code expired"
+            : "no code sent";
+  const action =
+    status === "none" || status === undefined ? "send code" : "send new code";
+  return (
+    <span className="block text-xs text-[#a78bfa]">
+      {label} ·{" "}
+      <button
+        type="button"
+        className="underline disabled:opacity-50"
+        disabled={send.isPending}
+        onClick={() => {
+          setEmailFailed(false);
+          send.mutate(
+            { id },
+            {
+              onSuccess: (data) => {
+                setEmailFailed(!data.email_sent);
+                onSent();
+              },
+              onError: () => setEmailFailed(true),
+            },
+          );
+        }}
+        data-testid={`button-send-code-${id}`}
+      >
+        {send.isPending ? "sending…" : action}
+      </button>
+    </span>
+  );
+}
 type EditForm = {
   name: string;
   email: string;
@@ -2316,6 +2374,14 @@ function Admin() {
                             onSent={refreshAdminData}
                           />
                         )}
+                      {VERIFICATION_CODES_ENABLED &&
+                        (r.status === "pending" || r.status === "approved") && (
+                        <VerificationCodeControl
+                          id={r.id}
+                          status={r.verification_code_status}
+                          onSent={refreshAdminData}
+                        />
+                      )}
                     </td>
                     <td role="cell" data-label="Registered" className="p-2 text-[#9ca3af]">
                       {new Date(r.created_at).toLocaleDateString()}

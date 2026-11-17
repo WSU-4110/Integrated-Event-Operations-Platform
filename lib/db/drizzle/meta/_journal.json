@@ -50,6 +50,13 @@
       "when": 1794532296499,
       "tag": "0006_attendance_corrections",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794875462492,
+      "tag": "0007_verification_codes",
+      "breakpoints": true
     }
   ]
 }
