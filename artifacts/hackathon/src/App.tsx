@@ -75,6 +75,7 @@ import { Switch, Route } from "wouter";
 import { EVENT_CONFIG, FAQ, SCHEDULE } from "@/config/event";
 import NotFound from "@/pages/not-found";
 import { OrganizerEventContent, PublishedEventContent } from "@/components/EventContent";
+import { ChatWidget } from "@/components/ChatWidget";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -1272,6 +1273,7 @@ function Home() {
         <Registration />
       </main>
       <Footer />
+      <ChatWidget />
     </>
   );
 }

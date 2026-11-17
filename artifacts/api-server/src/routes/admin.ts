@@ -105,7 +105,8 @@ async function loadDiscordLinks(ids: number[]): Promise<DiscordLinks> {
         linkedAt: discordParticipantLinksTable.linkedAt,
       })
       .from(discordParticipantLinksTable)
-      .where(inArray(discordParticipantLinksTable.registrationId, ids));
+      // One bound array keeps bulk exports from building 1,000 SQL placeholders.
+      .where(sql`${discordParticipantLinksTable.registrationId} = ANY(${`{${ids.join(",")}}`}::integer[])`);
     return new Map(
       rows.map((row) => [
         row.registrationId,
@@ -144,7 +145,8 @@ async function loadDiscordTeams(ids: number[]): Promise<DiscordTeams> {
         discordTeamsTable,
         eq(discordTeamsTable.id, discordTeamMembersTable.teamId),
       )
-      .where(inArray(discordParticipantLinksTable.registrationId, ids));
+      // One bound array keeps bulk exports from building 1,000 SQL placeholders.
+      .where(sql`${discordParticipantLinksTable.registrationId} = ANY(${`{${ids.join(",")}}`}::integer[])`);
     const teamIds = [...new Set(rows.map((row) => row.teamId))];
     const sizes =
       teamIds.length === 0
