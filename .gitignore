@@ -26,6 +26,5 @@ Thumbs.db
 
 # Internal notes (infrastructure details, not for the public repo)
 docs/
-README.md
 # Uses the real test-server Discord IDs
 tests/config/env.test.ts
