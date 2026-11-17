@@ -4,6 +4,8 @@ The Discord bot for **BuilderWars** (AWS Student Builder Group @ Wayne State, No
 
 Registration happens on the website ([builderwars.dev](https://builderwars.dev)), never in Discord. The bot links Discord accounts to existing registrations.
 
+The skeleton of this bot was developed using Claude Code AI, as well as planning many of the features. Claude also assisted in creating many of the testing functions and files (also creating this README), while also helping debug any issues.
+
 ## Status
 
 | Phase | Scope                                                                                 | State   |
