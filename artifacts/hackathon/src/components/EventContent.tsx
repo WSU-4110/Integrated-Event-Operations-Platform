@@ -45,24 +45,47 @@ export function PublishedEventContent({ heading }: { heading: ReactNode }) {
   });
   const items = content.data ?? [];
   if (items.length === 0) return null;
-  const announcements = items.filter((item) => item.kind === "announcement");
-  const resources = items.filter((item) => item.kind === "resource" && item.url);
+  // Newest announcement first; resources in the organizer's chosen order.
+  const announcements = items
+    .filter((item) => item.kind === "announcement")
+    .sort(
+      (a, b) =>
+        (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0) ||
+        b.id - a.id,
+    );
+  const resources = items
+    .filter((item) => item.kind === "resource" && item.url)
+    .sort((a, b) => a.position - b.position || a.id - b.id);
 
   return (
     <section id="updates" className="section" data-testid="section-event-content">
       <div className="container-shell">
         {heading}
         <div className="mx-auto grid max-w-3xl gap-4">
-          {announcements.map((item) => (
-            <article key={item.id} className="panel p-6">
+          {announcements.map((item, index) => (
+            <article
+              key={item.id}
+              className="panel p-6"
+              data-testid={`announcement-${item.id}`}
+            >
+              {index === 0 && (
+                <span
+                  className="mb-3 inline-block rounded bg-[#2d2148] px-3 py-1 text-xs font-semibold text-[#c4b5fd]"
+                  data-testid="latest-announcement"
+                >
+                  Latest Announcement
+                </span>
+              )}
               <h3 className="text-lg font-semibold text-[#f7f4ed]">{item.title}</h3>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#9ca3af]">
-                {item.body}
-              </p>
+              {item.body && (
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#9ca3af]">
+                  {item.body}
+                </p>
+              )}
             </article>
           ))}
           {resources.length > 0 && (
-            <div className="panel p-6">
+            <div className="panel p-6" data-testid="section-resources">
               <p className="eyebrow">Resources</p>
               <ul className="mt-4 grid gap-3">
                 {resources.map((item) => (

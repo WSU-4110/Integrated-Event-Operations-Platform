@@ -26,3 +26,17 @@ export const discordParticipantLinksTable = discordBot.table(
 
 export type DiscordParticipantLink =
   typeof discordParticipantLinksTable.$inferSelect;
+
+// Teams made with the bot's /team command. Members (including the owner) are
+// referenced through participant_links, so a team member's registration is
+// participant_links.registration_id.
+export const discordTeamsTable = discordBot.table("teams", {
+  id: integer("id").primaryKey(),
+  name: text("name").notNull(),
+});
+
+export const discordTeamMembersTable = discordBot.table("team_members", {
+  id: integer("id").primaryKey(),
+  teamId: integer("team_id").notNull(),
+  participantLinkId: integer("participant_link_id").notNull(),
+});

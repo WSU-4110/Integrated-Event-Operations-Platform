@@ -11,6 +11,8 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { checkInTests } from "./checkIn.mjs";
+import { attendanceCorrectionTests } from "./attendanceCorrections.mjs";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 if (!DATABASE_URL) {
@@ -94,6 +96,9 @@ const ADMIN_REQUESTS = [
   ["PUT", "/admin/event-content/1"],
   ["DELETE", "/admin/event-content/1"],
   ["GET", "/admin/registrations/1/history"],
+  ["POST", "/admin/registrations/1/check-in"],
+  ["POST", "/admin/registrations/1/undo-check-in", { reason: "Mistake", expected_attendance_version: 1 }],
+  ["GET", "/admin/registrations/1/attendance-corrections"],
   [
     "PATCH",
     "/admin/registrations/1/status",
@@ -114,6 +119,7 @@ const ADMIN_REQUESTS = [
     },
   ],
   ["POST", "/admin/registrations/1/resend-confirmation"],
+  ["POST", "/admin/registrations/1/verification-code"],
   ["DELETE", "/admin/registrations/1"],
 ];
 
@@ -137,6 +143,11 @@ function assertNoParticipantData(text) {
 
 let base;
 let unconfiguredBase;
+
+checkInTests({ getBase: () => base, call, databaseUrl: DATABASE_URL,
+  admin: cookie(SESSIONS.admin), organizerId: `admin-${run}` });
+attendanceCorrectionTests({ getBase: () => base, call, databaseUrl: DATABASE_URL,
+  admin: cookie(SESSIONS.admin), organizerId: `admin-${run}` });
 
 before(async () => {
   base = await startServer(18_400 + Math.floor(Math.random() * 500), {
@@ -753,5 +764,197 @@ describe("NFR-05 availability status", () => {
     assert.equal(body.database, "unavailable");
     assert.equal(body.discordLinkStore, "unknown");
     assert.equal((await call(withoutDb, "GET", "/healthz")).status, 200);
+  });
+});
+
+describe("FR-05 verification codes", () => {
+  const admin = cookie(SESSIONS.admin);
+  const CODE_EMAIL = `code-${run}@wayne.edu`;
+  let id;
+
+  const dbRows = async (sql, params = []) => {
+    const client = new pg.Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    try {
+      return (await client.query(sql, params)).rows;
+    } finally {
+      await client.end();
+    }
+  };
+  const codes = () =>
+    dbRows(
+      "select * from verification_codes where registration_id = $1 order by id",
+      [id],
+    );
+  const issue = () =>
+    call(base, "POST", `/admin/registrations/${id}/verification-code`, null, admin);
+
+  before(async () => {
+    const res = await call(base, "POST", "/registrations", {
+      name: "Code Person",
+      email: CODE_EMAIL,
+      school: "Wayne State",
+      class_standing: "junior",
+      experience_level: "beginner",
+      discord_username: "codeperson",
+      team_status: "solo",
+    });
+    assert.equal(res.status, 201);
+    id = JSON.parse(res.text).id;
+  });
+
+  test("a code is stored hashed, expires within 24 hours, and is never returned", async () => {
+    const res = await issue();
+    assert.equal(res.status, 200);
+    // Tests run without RESEND_API_KEY, so the email fails: still recorded.
+    assert.deepEqual(JSON.parse(res.text), { email_sent: false });
+    const [row] = await codes();
+    assert.match(row.code_hash, /^[0-9a-f]{64}$/);
+    assert.ok(row.email_failed_at, "the failed email is recorded");
+    assert.equal(row.email_sent_at, null);
+    const ms = row.expires_at.getTime() - Date.now();
+    assert.ok(ms > 0 && ms <= 24 * 60 * 60 * 1000);
+  });
+
+  test("a replacement invalidates the earlier unused code", async () => {
+    assert.equal((await issue()).status, 200);
+    const rows = await codes();
+    assert.equal(rows.length, 2);
+    assert.ok(rows[0].invalidated_at, "the first code was invalidated");
+    assert.equal(rows[1].invalidated_at, null);
+    const unused = rows.filter((r) => !r.used_at && !r.invalidated_at);
+    assert.equal(unused.length, 1, "only one unused code at a time");
+  });
+
+  test("the database refuses a second unused code", async () => {
+    await assert.rejects(
+      dbRows(
+        "insert into verification_codes (registration_id, code_hash, expires_at) values ($1, 'x', now())",
+        [id],
+      ),
+      /verification_codes_one_unused_idx/,
+    );
+  });
+
+  test("the dashboard shows the code status, not the code", async () => {
+    const res = await call(
+      base,
+      "GET",
+      `/admin/registrations?search=${encodeURIComponent(CODE_EMAIL)}`,
+      null,
+      admin,
+    );
+    const registration = JSON.parse(res.text).registrations[0];
+    assert.equal(registration.verification_code_status, "email_failed");
+    assert.ok(!res.text.includes("code_hash"));
+  });
+
+  test("removing someone invalidates their code and blocks new ones", async () => {
+    const removed = await call(
+      base,
+      "PATCH",
+      `/admin/registrations/${id}/status`,
+      { status: "declined", expected_status: "pending" },
+      admin,
+    );
+    assert.equal(removed.status, 200);
+    const unused = (await codes()).filter(
+      (r) => !r.used_at && !r.invalidated_at,
+    );
+    assert.equal(unused.length, 0);
+    const refused = await issue();
+    assert.equal(refused.status, 409);
+    assert.equal((await codes()).length, 2, "no code was created");
+  });
+
+  test("an unknown registration gets a 404", async () => {
+    const res = await call(
+      base,
+      "POST",
+      "/admin/registrations/999999999/verification-code",
+      null,
+      admin,
+    );
+    assert.equal(res.status, 404);
+  });
+});
+
+describe("Discord /team teams on the dashboard", () => {
+  const admin = cookie(SESSIONS.admin);
+  const TEAM_NAME = `Night Owls ${run}`;
+  const LOOKING_EMAIL = `looking-${run}@wayne.edu`;
+  const get = async (path) =>
+    JSON.parse((await call(base, "GET", path, null, admin)).text);
+  const find = async (email, query = "") =>
+    get(
+      `/admin/registrations?search=${encodeURIComponent(email)}${query ? `&${query}` : ""}`,
+    );
+
+  test("without the bot's team tables, teams fall back to the registration answer", async () => {
+    const list = await find(PARTICIPANT_EMAIL);
+    assert.equal(list.registrations[0].discord_team, null);
+    // The participant registered as solo; the filter still works.
+    assert.equal((await find(PARTICIPANT_EMAIL, "team_status=solo")).total, 1);
+    assert.equal(typeof (await get("/admin/stats")).looking_for_team, "number");
+  });
+
+  test("a /team team shows on the dashboard and counts as having a team", async () => {
+    const res = await call(base, "POST", "/registrations", {
+      name: "Looking Person",
+      email: LOOKING_EMAIL,
+      school: "Wayne State",
+      class_standing: "freshman",
+      experience_level: "beginner",
+      discord_username: "looking.person",
+      team_status: "looking",
+    });
+    assert.equal(res.status, 201);
+    const lookingId = JSON.parse(res.text).id;
+    const lookingBefore = (await get("/admin/stats")).looking_for_team;
+
+    const client = new pg.Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    try {
+      // Same shape as the bot's teams migration (Discord-Bot branch).
+      await client.query(`create table if not exists discord_bot.teams (
+        id serial primary key, name text not null, owner_link_id integer not null)`);
+      await client.query(`create table if not exists discord_bot.team_members (
+        id serial primary key, team_id integer not null,
+        participant_link_id integer not null unique)`);
+      const owner = await client.query(
+        "select l.id from discord_bot.participant_links l join registrations r on r.id = l.registration_id where r.email = $1",
+        [PARTICIPANT_EMAIL],
+      );
+      const member = await client.query(
+        "insert into discord_bot.participant_links (discord_user_id, registration_id) values ($1, $2) returning id",
+        [`discord-looking-${run}`, lookingId],
+      );
+      const team = await client.query(
+        "insert into discord_bot.teams (name, owner_link_id) values ($1, $2) returning id",
+        [TEAM_NAME, owner.rows[0].id],
+      );
+      for (const linkId of [owner.rows[0].id, member.rows[0].id]) {
+        await client.query(
+          "insert into discord_bot.team_members (team_id, participant_link_id) values ($1, $2)",
+          [team.rows[0].id, linkId],
+        );
+      }
+    } finally {
+      await client.end();
+    }
+
+    const looking = (await find(LOOKING_EMAIL)).registrations[0];
+    assert.deepEqual(looking.discord_team, { name: TEAM_NAME, member_count: 2 });
+    assert.equal(looking.team_status, "looking", "the registration answer is kept");
+
+    // Joining a team on Discord counts as having a team.
+    assert.equal((await find(LOOKING_EMAIL, "team_status=has_team")).total, 1);
+    assert.equal((await find(LOOKING_EMAIL, "team_status=looking")).total, 0);
+    assert.equal((await find(PARTICIPANT_EMAIL, "team_status=solo")).total, 0);
+    assert.equal((await get("/admin/stats")).looking_for_team, lookingBefore - 1);
+
+    const csv = (await call(base, "GET", "/admin/export", null, admin)).text;
+    assert.ok(csv.split("\n")[0].includes("discord_team"));
+    assert.ok(csv.includes(TEAM_NAME));
   });
 });

@@ -23,7 +23,11 @@ import type {
   AdminRegistrationList,
   AdminStats,
   ApiError,
+  AttendanceCorrectionInput,
+  AttendanceCorrections,
+  AttendanceState,
   AuthUser,
+  CheckInResult,
   CheckRegistrationParams,
   HealthStatus,
   ListRegistrationsParams,
@@ -33,6 +37,7 @@ import type {
   RegistrationInput,
   RegistrationUpdateInput,
   ResendConfirmationResult,
+  SendVerificationCodeResult,
   StatusChangeInput,
   StatusHistory
 } from './api.schemas';
@@ -605,6 +610,228 @@ export const useUpdateRegistration = <TError = ErrorType<ApiError>,
       return useMutation(getUpdateRegistrationMutationOptions(options));
     }
 
+export const getCheckInRegistrationUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/registrations/${id}/check-in`
+}
+
+/**
+ * Requires organizer authentication. Saves the database time and authenticated organizer ID for an approved registration in this event. Refuses unapproved or already checked-in records and ignores client-supplied attendance metadata. Duplicate requests never overwrite the first check-in. Reload attendance after any uncertain response.
+ * @summary Check in an approved participant
+ */
+export const checkInRegistration = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<CheckInResult> => {
+
+  return customFetch<CheckInResult>(getCheckInRegistrationUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCheckInRegistrationMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkInRegistration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkInRegistration>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['checkInRegistration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkInRegistration>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  checkInRegistration(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckInRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof checkInRegistration>>>
+
+    export type CheckInRegistrationMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Check in an approved participant
+ */
+export const useCheckInRegistration = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkInRegistration>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkInRegistration>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getCheckInRegistrationMutationOptions(options));
+    }
+
+export const getUndoCheckInUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/registrations/${id}/undo-check-in`
+}
+
+/**
+ * Organizer-only. Requires the displayed attendance version; refuses stale corrections. Clearing attendance and saving its reason, correcting organizer, time and original attendance are transactional.
+ * @summary Reverse a mistaken check-in with a required reason
+ */
+export const undoCheckIn = async (id: number,
+    attendanceCorrectionInput: AttendanceCorrectionInput, options?: Parameters<typeof customFetch>[1]): Promise<AttendanceState> => {
+
+  return customFetch<AttendanceState>(getUndoCheckInUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(attendanceCorrectionInput)
+  }
+);}
+
+
+
+
+
+export const getUndoCheckInMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoCheckIn>>, TError,{id: number;data: BodyType<AttendanceCorrectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof undoCheckIn>>, TError,{id: number;data: BodyType<AttendanceCorrectionInput>}, TContext> => {
+
+const mutationKey = ['undoCheckIn'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof undoCheckIn>>, {id: number;data: BodyType<AttendanceCorrectionInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  undoCheckIn(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UndoCheckInMutationResult = NonNullable<Awaited<ReturnType<typeof undoCheckIn>>>
+    export type UndoCheckInMutationBody = BodyType<AttendanceCorrectionInput>
+    export type UndoCheckInMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Reverse a mistaken check-in with a required reason
+ */
+export const useUndoCheckIn = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoCheckIn>>, TError,{id: number;data: BodyType<AttendanceCorrectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof undoCheckIn>>,
+        TError,
+        {id: number;data: BodyType<AttendanceCorrectionInput>},
+        TContext
+      > => {
+      return useMutation(getUndoCheckInMutationOptions(options));
+    }
+
+export const getGetAttendanceCorrectionsUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/registrations/${id}/attendance-corrections`
+}
+
+/**
+ * @summary Organizer-only attendance correction history
+ */
+export const getAttendanceCorrections = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<AttendanceCorrections> => {
+
+  return customFetch<AttendanceCorrections>(getGetAttendanceCorrectionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAttendanceCorrectionsQueryKey = (id: number,) => {
+    return [
+    `/api/admin/registrations/${id}/attendance-corrections`
+    ] as const;
+    }
+
+
+export const getGetAttendanceCorrectionsQueryOptions = <TData = Awaited<ReturnType<typeof getAttendanceCorrections>>, TError = ErrorType<ApiError>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAttendanceCorrections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAttendanceCorrectionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAttendanceCorrections>>> = ({ signal }) => getAttendanceCorrections(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAttendanceCorrections>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAttendanceCorrectionsQueryResult = NonNullable<Awaited<ReturnType<typeof getAttendanceCorrections>>>
+export type GetAttendanceCorrectionsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Organizer-only attendance correction history
+ */
+
+export function useGetAttendanceCorrections<TData = Awaited<ReturnType<typeof getAttendanceCorrections>>, TError = ErrorType<ApiError>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAttendanceCorrections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAttendanceCorrectionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getUpdateRegistrationStatusUrl = (id: number,) => {
 
 
@@ -825,6 +1052,78 @@ export const useResendConfirmation = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getResendConfirmationMutationOptions(options));
+    }
+
+export const getSendVerificationCodeUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/registrations/${id}/verification-code`
+}
+
+/**
+ * Issues a new single-use code (valid up to 24 hours), invalidates any earlier unused code, and emails it to the registered address. Only active registrations (pending or approved) can receive one. If the email fails the code is still recorded and organizers can call this again to retry. The code itself is never returned. Requires organizer authentication.
+ * @summary Send a Discord verification code
+ */
+export const sendVerificationCode = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<SendVerificationCodeResult> => {
+
+  return customFetch<SendVerificationCodeResult>(getSendVerificationCodeUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSendVerificationCodeMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendVerificationCode>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendVerificationCode>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['sendVerificationCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendVerificationCode>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  sendVerificationCode(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendVerificationCodeMutationResult = NonNullable<Awaited<ReturnType<typeof sendVerificationCode>>>
+
+    export type SendVerificationCodeMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Send a Discord verification code
+ */
+export const useSendVerificationCode = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendVerificationCode>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendVerificationCode>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getSendVerificationCodeMutationOptions(options));
     }
 
 export const getGetAdminStatsUrl = () => {

@@ -5,6 +5,7 @@ import registrationRouter from "./registration";
 import adminRouter from "./admin";
 import { publicEventContent } from "./eventContent";
 import { publicEventSchedule } from "./eventSchedule";
+import chatRouter from "./chat";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(registrationRouter);
 router.use(adminRouter);
 router.use(publicEventContent);
 router.use(publicEventSchedule);
+router.use(chatRouter);
 
 export default router;

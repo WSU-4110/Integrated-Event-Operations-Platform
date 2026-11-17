@@ -159,6 +159,25 @@ export const RegistrationDiscordStatus = {
   unknown: 'unknown',
 } as const;
 
+/**
+ * Latest Discord verification code: none = no usable code, email_failed = issued but the email didn't go out.
+ */
+export type RegistrationVerificationCodeStatus = typeof RegistrationVerificationCodeStatus[keyof typeof RegistrationVerificationCodeStatus];
+
+
+export const RegistrationVerificationCodeStatus = {
+  none: 'none',
+  sent: 'sent',
+  email_failed: 'email_failed',
+  used: 'used',
+  expired: 'expired',
+} as const;
+
+export interface DiscordTeam {
+  name: string;
+  member_count: number;
+}
+
 export interface Registration {
   id: number;
   name: string;
@@ -183,12 +202,62 @@ export interface Registration {
   source: string;
   /** @nullable */
   confirmation_email_sent_at?: string | null;
+  /** Latest Discord verification code: none = no usable code, email_failed = issued but the email didn't go out. */
+  verification_code_status?: RegistrationVerificationCodeStatus;
+  attendance_version?: number;
   /**
      * When the participant checked in at the venue (FR-10); null until then.
      * @nullable
      */
   checked_in_at?: string | null;
+  /** The team this person is on in the Discord bot (/team); null if none or if the bot's records can't be read. */
+  discord_team?: DiscordTeam | null;
   created_at: string;
+}
+
+export interface CheckInResult {
+  registration_id: number;
+  event_id: string;
+  checked_in_at: string;
+  attendance_version: number;
+  /** Authenticated organizer user ID; provided by the server */
+  checked_in_by: string;
+}
+
+export interface AttendanceCorrectionInput {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  reason: string;
+  /** @minimum 0 */
+  expected_attendance_version: number;
+}
+
+export interface AttendanceState {
+  registration_id: number;
+  event_id: string;
+  /** @nullable */
+  checked_in_at: string | null;
+  /** @nullable */
+  checked_in_by: string | null;
+  attendance_version: number;
+}
+
+export interface AttendanceCorrection {
+  id: number;
+  reason: string;
+  original_checked_in_at: string;
+  /** @nullable */
+  original_checked_in_by?: string | null;
+  corrected_by: string;
+  corrected_by_email: string;
+  corrected_at: string;
+  attendance_version: number;
+}
+
+export interface AttendanceCorrections {
+  corrections: AttendanceCorrection[];
 }
 
 export type StatusChangeInputStatus = typeof StatusChangeInputStatus[keyof typeof StatusChangeInputStatus];
@@ -219,6 +288,10 @@ export interface ResendConfirmationResult {
   confirmation_email_sent_at: string;
 }
 
+export interface SendVerificationCodeResult {
+  email_sent: boolean;
+}
+
 export interface RegistrationCheckResult {
   registered: boolean;
 }
@@ -246,6 +319,8 @@ export interface AdminStats {
   discord_verified: number | null;
   /** Registrations checked in at the venue. */
   checked_in: number;
+  /** Active registrations that said they're looking for a team and aren't on a Discord /team team yet (registration answer only, if the bot's records can't be read). */
+  looking_for_team: number;
 }
 
 export interface AuthUser {
@@ -268,6 +343,9 @@ email: string;
 export type ListRegistrationsParams = {
 search?: string;
 experience_level?: string;
+/**
+ * has_team, looking, or solo. When the Discord bot's team records can be read, someone on a /team team counts as has_team, even if they registered as looking or solo.
+ */
 team_status?: string;
 /**
  * active (pending or approved) or removed (declined or waitlisted)
