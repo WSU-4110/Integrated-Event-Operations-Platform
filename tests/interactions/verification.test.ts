@@ -97,7 +97,7 @@ describe('verification form submit', () => {
     await router.handle(interaction);
 
     expect(interaction.fetchedMember.roles.add).not.toHaveBeenCalled();
-    expect(editedText(interaction)).toContain("couldn't find a registration");
+    expect(editedText(interaction)).toContain("couldn't verify your registration");
     expect(await ctx.services.verification.getLink(USER_ID)).toBeNull();
   });
 
